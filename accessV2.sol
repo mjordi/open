@@ -1,83 +1,103 @@
-pragma solidity ^0.4.10;
+ pragma solidity ^0.4.10;
 
-contract AssetTracker {
+    contract AccessManagement {
     
-    address creator;
-
-struct Asset {
-    string name;
-    string description;
-    string manufacturer;
-    bool initialized;    
-}
-
-struct Authorization {
-    string role;
-        string duration;
-
-}
-
-mapping(string => Asset) private assetStore;
-mapping(address => mapping(string => bool)) private walletStore;
-mapping(string => mapping(string => bool)) private authorizationStore;
-
-event AssetCreate(address account, string uuid, string manufacturer);
-event RejectCreate(address account, string uuid, string message);
-event AssetTransfer(address from, address to, string uuid);
-event RejectTransfer(address from, address to, string uuid, string message);
-
-function createAsset(string name, string description, string uuid, string manufacturer) {
- 
-    if(assetStore[uuid].initialized) {
-        RejectCreate(msg.sender, uuid, "Asset with this UUID already exists.");
-        return;
-      }
- 
-      assetStore[uuid] = Asset(name, description, manufacturer, true);
-      walletStore[msg.sender][uuid] = true;
-      AssetCreate(msg.sender, uuid, manufacturer);
-}
-
-function transferAsset(address to, string uuid) {
-    if(!assetStore[uuid].initialized) {
-        RejectTransfer(msg.sender, to, uuid, "No asset with this UUID exists");
-        return;
+    struct Authorization
+    {
+        string role; 
+        //uint voteCount; // number of accumulated votes
+        // add more non-key fields as needed
     }
-    if(!walletStore[msg.sender][uuid]) {
-        RejectTransfer(msg.sender, to, uuid, "Sender does not own this asset.");
-        return;
-    }
-    walletStore[msg.sender][uuid] = false;
-    walletStore[to][uuid] = true;
-    AssetTransfer(msg.sender, to, uuid);
-}
 
-function getAssetByUUID(string uuid) constant returns (string, string, string) {
-    return (assetStore[uuid].name, assetStore[uuid].description, assetStore[uuid].manufacturer);
-}
-function isOwnerOf(address owner, string uuid) constant returns (bool) {
-    if(walletStore[owner][uuid]) {
+    struct Asset
+    {
+        string description;
+        string[] authorizationList;
+        mapping(string => Authorization) authorizationStructs;
+        bool initialized;    
+    }
+
+    mapping(string => Asset) assetStructs; // random access by question key
+    string[] assetList; // list of question keys so we can enumerate them
+    
+    event AssetCreate(address account, string assetKey, string assetDescription);
+    event RejectCreate(address account, string assetKey, string message);
+    //event AssetTransfer(address from, address to, string uuid);
+    //event RejectTransfer(address from, address to, string uuid, string message);
+
+    function newAsset(string assetKey, string assetDescription)
+    {
+        // checking for duplicates
+        if(assetStructs[assetKey].initialized) {
+            RejectCreate(msg.sender, assetKey, "Asset with this Serial already exists.");
+            return;
+        }
+ 
+        //assetStructs[assetKey] = Asset(name, description, manufacturer, true);
+        //walletStore[msg.sender][uuid] = true;
+
+        assetStructs[assetKey].description = assetDescription;
+        assetStructs[assetKey].initialized = true;
+        assetList.push(assetKey);
+        AssetCreate(msg.sender, assetKey, assetDescription);
+    }
+
+    function getAsset(string assetKey) public constant returns(string wording, uint authorizationCount)
+    {
+        return(assetStructs[assetKey].description, assetStructs[assetKey].authorizationList.length);
+    }
+
+    function addAuthorization(string assetKey, string authorizationKey, string authorizationRole)
+        // onlyOwner
+        returns(bool success)
+    {
+        assetStructs[assetKey].authorizationList.push(authorizationKey);
+        assetStructs[assetKey].authorizationStructs[authorizationKey].role = authorizationRole;
+        // answer vote will init to 0 without our help
         return true;
     }
-    return false;
-}
 
-  function assignRole (address entity, string role) hasRole('superadmin') {
-    authorizationStore[entity][role] = true;
-
-    //authorizationStore[uuid][entity][role] = true;
-    //assetStore[uuid][access][role] = true;
-    //assetStore[uuid].access.push(anAddress);
-  }
-  
-  function isAssignedRole (address entity, string role) returns (bool) {
-    return authorizationStore[entity][role];
-  }
-  
-  modifier hasRole (string role) {
-    if (!authorizationStore[msg.sender][role] && msg.sender != creator) {
-      throw;
+    function getAssetAuthorization(string assetKey, string authorizationKey)
+        public
+        constant
+        returns(string authorizationRole)
+        //returns(string authorizationRole, uint authorizationVoteCount)
+    {
+        return(
+            /* assetStructs[assetKey].authorizationStructs[authorizationKey].role,
+            assetStructs[assetKey].authorizationStructs[authorizationKey].voteCount); */
+            assetStructs[assetKey].authorizationStructs[authorizationKey].role);
     }
-    _;
-  }
+
+    function getAssetCount()
+        public
+        constant
+        returns(uint assetCount)
+    {
+        return assetList.length;
+    }
+
+    function getAssetAtIndex(uint row)
+        public
+        constant
+        returns(string assetkey)
+    {
+        return assetList[row];
+    }
+
+    function getAssetAuthorizationCount(string assetKey)
+        public
+        constant
+        returns(uint authorizationCount)
+    {
+        return(assetStructs[assetKey].authorizationList.length);
+    }
+
+    function getAssetAuthorizationAtIndex(string assetKey, uint authorizationRow)
+        public
+        constant
+        returns(string authorizationKey)
+    {
+        return(assetStructs[assetKey].authorizationList[authorizationRow]);
+    }  
 }

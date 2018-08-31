@@ -6,11 +6,12 @@
 pragma solidity ^0.4.10;
 
 contract RoleBasedAcl {
+  
   address creator;
+  
   mapping(address => mapping(string => bool)) roles;
  
   event RoleChange(address _client, string _role);
-
 
   function RoleBasedAcl () {
     creator = msg.sender;

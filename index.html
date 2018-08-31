@@ -30,9 +30,10 @@
         <div class="card-deck mb-2 text-center">
             <div class="card mb-4 shadow-sm">
                 <div class="card-header">
-                    <h4 class="my-0 font-weight-normal">Deploy Contract</h4>
+                    <h4 class="my-0 font-weight-normal">1) Deploy Smart Contract</h4>
                 </div>
                 <div class="card-body">
+                    <p>Needs to be done only once.</p>
                     <form id="form_deploy">
                         <button type="submit" class="btn btn-lg btn-block btn-primary">Submit</button>
                     </form>
@@ -40,13 +41,35 @@
             </div>
             <div class="card mb-4 shadow-sm">
                 <div class="card-header">
-                    <h4 class="my-0 font-weight-normal">Assign Role</h4>
+                    <h4 class="my-0 font-weight-normal">2) Add Asset</h4>
+                </div>
+                <div class="card-body">
+                    <form id="form_asset">
+                        <div class="form-group">
+                            <label for="assetKey">asset serial</label>
+                            <input type="text" class="form-control" id="assetKey" name="assetKey" value="123-456">
+                        </div>
+                        <div class="form-group">
+                            <label for="assetDescription">Asset Description</label>
+                            <input type="text" class="form-control" id="assetDescription" name="assetDescription" value="Front Door (Lock)">
+                        </div>
+                        <button type="submit" class="btn btn-lg btn-block btn-primary">Submit</button>
+                    </form>
+                </div>
+            </div>
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header">
+                    <h4 class="my-0 font-weight-normal">3) Add Authorization</h4>
                 </div>
                 <div class="card-body">
                     <form id="form_assign">
                         <div class="form-group">
+                            <label for="assetKey_assing">asset serial</label>
+                            <input type="text" class="form-control" id="assetKey_assign" name="assetKey_assign" value="123-456">
+                        </div>
+                        <div class="form-group">
                             <label for="address">address</label>
-                            <input type="text" class="form-control" id="address_assign" name="address_assign" value="0x6E635c30696f391d10419A4b0bC8d80adC28F6E3">
+                            <input type="text" class="form-control" id="address_assign" name="address_assign" value="0x46e2aB674C9a1F5A7846b22AcdBE268B85ce793f">
                         </div>
                         <div class="form-group">
                             <label for="role_assign">role</label>
@@ -61,52 +84,75 @@
                     </form>
                 </div>
             </div>
+        </div>
+        <div class="card-deck mb-3 text-center">
             <div class="card mb-4 shadow-sm">
                 <div class="card-header">
-                    <h4 class="my-0 font-weight-normal">Check Role</h4>
+                    <h4 class="my-0 font-weight-normal">4) Check Role</h4>
                 </div>
                 <div class="card-body">
                     <form id="form_isAssigned">
                         <div class="form-group">
-                            <label for="address_isAssigned">address</label>
-                            <input type="text" class="form-control" id="address_isAssigned" name="address" value="0x6E635c30696f391d10419A4b0bC8d80adC28F6E3">
+                            <label for="assetKey_isAssigned">asset serial</label>
+                            <input type="text" class="form-control" id="assetKey_isAssigned" name="assetKey" value="123-456">
                         </div>
                         <div class="form-group">
-                            <label for="role_isAssigned">role</label>
-                            <select id="role_isAssigned" name="role" class="form-control">
-                                <option selected>Choose...</option>
-                                <option>admin</option>
-                                <option>permenent</option>
-                                <option>temporary</option>
-                            </select>
+                            <label for="address_isAssigned">address</label>
+                            <input type="text" class="form-control" id="address_isAssigned" name="address" value="0x46e2aB674C9a1F5A7846b22AcdBE268B85ce793f">
                         </div>
                         <button type="submit" class="btn btn-lg btn-block btn-primary">Submit</button>
                     </form>
                 </div>
             </div>
+
             <div class="card mb-4 shadow-sm">
                 <div class="card-header">
-                    <h4 class="my-0 font-weight-normal">Unassigne Role</h4>
+                    <h4 class="my-0 font-weight-normal">5) Access the Asset</h4>
+                </div>
+                <div class="card-body">
+                    <form id="form_access">
+
+                    <div class="form-group">
+                            <label for="assetKey_access">asset serial</label>
+                            <input type="text" class="form-control" id="assetKey_access" name="assetKey_access" value="123-456">
+                        </div>
+                        <button type="submit" class="btn btn-lg btn-block btn-primary">Submit</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header">
+                    <h4 class="my-0 font-weight-normal">6) Remove Authorization</h4>
                 </div>
                 <div class="card-body">
                     <form id="form_unassign">
-                        <div class="form-group">
-                            <label for="address_unassign">address</label>
-                            <input type="text" class="form-control" id="address_unassign" name="address" value="0x6E635c30696f391d10419A4b0bC8d80adC28F6E3">
-                        </div>
-                        <div class="form-group">
-                            <label for="role_unassign">role</label>
-                            <select id="role_unassign" name="role" class="form-control">
-                                <option selected>Choose...</option>
-                                <option>admin</option>
-                                <option>permenent</option>
-                                <option>temporary</option>
-                            </select>
-                        </div>
+
+                            <div class="form-group">
+                                    <label for="assetKey_unassign">asset serial</label>
+                                    <input type="text" class="form-control" id="assetKey_unassign" name="assetKey_unassign" value="123-456">
+                                </div>
+                                <div class="form-group">
+                                    <label for="address_unassign">address</label>
+                                    <input type="text" class="form-control" id="address_unassign" name="address_unassign" value="0x46e2aB674C9a1F5A7846b22AcdBE268B85ce793f">
+                                </div>
+                                <div class="form-group">
+                                    <label for="role_unassign">role</label>
+                                    <select id="role_unassign" name="role_unassign" class="form-control">
+                                        <option selected>Choose...</option>
+                                        <option>admin</option>
+                                        <option>permenent</option>
+                                        <option>temporary</option>
+                                    </select>
+                                </div>
                         <button type="submit" class="btn btn-lg btn-block btn-primary">Submit</button>
                     </form>
                 </div>
             </div>
+
+
+
+
         </div>
     </div>
     <div id="log"></div>
@@ -132,7 +178,9 @@
             text: 'Thumbnail'
         });
     </script>
-    <script src="user1.js"></script>
+    <script src="user2.js"></script>
+    <script src="abi_aaas.js"></script>
+
 </body>
 
 </html>

@@ -7,7 +7,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <link rel="icon" href="favicon.ico">
-    <title>AAAS</title>
+    <title>OPEN</title>
     <link href="bootstrap.min.css" rel="stylesheet">
     <link href="aaas.css" rel="stylesheet">
 </head>
@@ -15,7 +15,7 @@
 <body>
 
     <div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom shadow-sm">
-        <h5 class="my-0 mr-md-auto font-weight-normal">Access as a Service</h5>
+        <h5 class="my-0 mr-md-auto font-weight-normal"><img src="logo_open_header.png" width="200" height="76"></h5>
         <nav class="my-2 my-md-0 mr-md-3">
             <a class="p-2 text-dark" href="#">Test</a>
         </nav>
@@ -112,7 +112,7 @@
                 <div class="card-body">
                     <form id="form_access">
 
-                    <div class="form-group">
+                        <div class="form-group">
                             <label for="assetKey_access">asset serial</label>
                             <input type="text" class="form-control" id="assetKey_access" name="assetKey_access" value="123-456">
                         </div>
@@ -128,31 +128,19 @@
                 <div class="card-body">
                     <form id="form_unassign">
 
-                            <div class="form-group">
-                                    <label for="assetKey_unassign">asset serial</label>
-                                    <input type="text" class="form-control" id="assetKey_unassign" name="assetKey_unassign" value="123-456">
-                                </div>
-                                <div class="form-group">
-                                    <label for="address_unassign">address</label>
-                                    <input type="text" class="form-control" id="address_unassign" name="address_unassign" value="0x46e2aB674C9a1F5A7846b22AcdBE268B85ce793f">
-                                </div>
-                                <div class="form-group">
-                                    <label for="role_unassign">role</label>
-                                    <select id="role_unassign" name="role_unassign" class="form-control">
-                                        <option selected>Choose...</option>
-                                        <option>admin</option>
-                                        <option>permenent</option>
-                                        <option>temporary</option>
-                                    </select>
-                                </div>
+                        <div class="form-group">
+                            <label for="assetKey_unassign">asset serial</label>
+                            <input type="text" class="form-control" id="assetKey_unassign" name="assetKey_unassign"
+                                value="123-456">
+                        </div>
+                        <div class="form-group">
+                            <label for="address_unassign">address</label>
+                            <input type="text" class="form-control" id="address_unassign" name="address_unassign" value="0x46e2aB674C9a1F5A7846b22AcdBE268B85ce793f">
+                        </div>
                         <button type="submit" class="btn btn-lg btn-block btn-primary">Submit</button>
                     </form>
                 </div>
             </div>
-
-
-
-
         </div>
     </div>
     <div id="log"></div>

@@ -22,7 +22,7 @@
     event AssetCreate(address account, string assetKey, string assetDescription);
     event RejectCreate(address account, string assetKey, string message);
     event AuthorizationCreate(address account, string assetKey, string authorizationRole);
-    event AuthorizationRemove(address account, string assetKey, string authorizationRole);
+    event AuthorizationRemove(address account, string assetKey);
     event AccessLog(address account, string assetKey);
 
     
@@ -44,9 +44,9 @@
     }
     
     function addAuthorization(string assetKey, address authorizationKey, string authorizationRole) public returns(bool success) {
-        //add admin
+        // keccak256(assetStructs[assetKey].authorizationStructs[authorizationKey].role) == keccak256("admin") -> does not work
         require(assetStructs[assetKey].owner == msg.sender || assetStructs[assetKey].authorizationStructs[msg.sender].active, "Only the owner or admins can add authorizations.");
-        // only unique "authorizationKey"
+        // push only unique "authorizationKey" to authorizationList[]
         assetStructs[assetKey].authorizationList.push(authorizationKey);
         assetStructs[assetKey].authorizationStructs[authorizationKey].role = authorizationRole;
         assetStructs[assetKey].authorizationStructs[authorizationKey].active = true;
@@ -54,11 +54,12 @@
         return true;
     }
     
-    function removeAuthorization(string assetKey, address authorizationKey, string authorizationRole) public returns(bool success) {
-        //add admin
-        require(assetStructs[assetKey].owner == msg.sender || assetStructs[assetKey].authorizationStructs[msg.sender].active, "Only the owner or admins can add authorizations.");
-        assetStructs[assetKey].authorizationStructs[authorizationKey].active = false;
-        emit AuthorizationRemove(authorizationKey, assetKey, authorizationRole);
+    function removeAuthorization(string assetKey, address authorizationKey) public returns(bool success) {
+        // keccak256(assetStructs[assetKey].authorizationStructs[authorizationKey].role) == keccak256("admin") -> does not work
+        require(assetStructs[assetKey].owner == msg.sender || assetStructs[assetKey].authorizationStructs[msg.sender].active, "Only the owner or admins can remove authorizations.");
+        assetStructs[assetKey].authorizationStructs[authorizationKey].role =  '';
+        assetStructs[assetKey].authorizationStructs[authorizationKey].active =  false;
+        emit AuthorizationRemove(authorizationKey, assetKey);
         return true;
     }
 
@@ -91,4 +92,8 @@
             return false;  
         }
     }
+
+    function compareStrings (string a, string b) view returns (bool){
+       return keccak256(a) == keccak256(b);
+   }
 }

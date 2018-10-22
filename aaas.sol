@@ -53,13 +53,14 @@
         emit AuthorizationCreate(authorizationKey, assetKey, authorizationRole);
         return true;
     }
-    
+   
     function removeAuthorization(string assetKey, address authorizationKey) public returns(bool success) {
         // keccak256(assetStructs[assetKey].authorizationStructs[authorizationKey].role) == keccak256("admin") -> does not work
         require(assetStructs[assetKey].owner == msg.sender || assetStructs[assetKey].authorizationStructs[msg.sender].active, "Only the owner or admins can remove authorizations.");
         assetStructs[assetKey].authorizationStructs[authorizationKey].role =  '';
         assetStructs[assetKey].authorizationStructs[authorizationKey].active =  false;
         emit AuthorizationRemove(authorizationKey, assetKey);
+
         return true;
     }
 

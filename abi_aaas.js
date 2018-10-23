@@ -1,51 +1,5 @@
 var smartContractAbi = [
 	{
-		"constant": true,
-		"inputs": [
-			{
-				"name": "assetKey",
-				"type": "string"
-			},
-			{
-				"name": "authorizationRow",
-				"type": "uint256"
-			}
-		],
-		"name": "getAssetAuthorizationAtIndex",
-		"outputs": [
-			{
-				"name": "authorizationKey",
-				"type": "address"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "assetKey",
-				"type": "string"
-			},
-			{
-				"name": "authorizationKey",
-				"type": "address"
-			}
-		],
-		"name": "removeAuthorization",
-		"outputs": [
-			{
-				"name": "success",
-				"type": "bool"
-			}
-		],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"constant": false,
 		"inputs": [
 			{
@@ -73,29 +27,6 @@ var smartContractAbi = [
 		"type": "function"
 	},
 	{
-		"constant": true,
-		"inputs": [
-			{
-				"name": "assetKey",
-				"type": "string"
-			},
-			{
-				"name": "authorizationKey",
-				"type": "address"
-			}
-		],
-		"name": "getAssetAuthorization",
-		"outputs": [
-			{
-				"name": "authorizationRole",
-				"type": "string"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
 		"constant": false,
 		"inputs": [
 			{
@@ -112,39 +43,6 @@ var smartContractAbi = [
 		],
 		"payable": false,
 		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "getAssetCount",
-		"outputs": [
-			{
-				"name": "assetCount",
-				"type": "uint256"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [
-			{
-				"name": "assetKey",
-				"type": "string"
-			}
-		],
-		"name": "getAssetAuthorizationCount",
-		"outputs": [
-			{
-				"name": "authorizationCount",
-				"type": "uint256"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -171,53 +69,26 @@ var smartContractAbi = [
 		"type": "function"
 	},
 	{
-		"constant": true,
-		"inputs": [
-			{
-				"name": "row",
-				"type": "uint256"
-			}
-		],
-		"name": "getAssetAtIndex",
-		"outputs": [
-			{
-				"name": "assetkey",
-				"type": "string"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": true,
+		"constant": false,
 		"inputs": [
 			{
 				"name": "assetKey",
 				"type": "string"
+			},
+			{
+				"name": "authorizationKey",
+				"type": "address"
 			}
 		],
-		"name": "getAsset",
+		"name": "removeAuthorization",
 		"outputs": [
 			{
-				"name": "assetOwner",
-				"type": "address"
-			},
-			{
-				"name": "assetDescription",
-				"type": "string"
-			},
-			{
-				"name": "initialized",
+				"name": "success",
 				"type": "bool"
-			},
-			{
-				"name": "authorizationCount",
-				"type": "uint256"
 			}
 		],
 		"payable": false,
-		"stateMutability": "view",
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -315,9 +186,143 @@ var smartContractAbi = [
 				"indexed": false,
 				"name": "assetKey",
 				"type": "string"
+			},
+			{
+				"indexed": false,
+				"name": "accessGranted",
+				"type": "bool"
 			}
 		],
 		"name": "AccessLog",
 		"type": "event"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "assetKey",
+				"type": "string"
+			}
+		],
+		"name": "getAsset",
+		"outputs": [
+			{
+				"name": "assetOwner",
+				"type": "address"
+			},
+			{
+				"name": "assetDescription",
+				"type": "string"
+			},
+			{
+				"name": "initialized",
+				"type": "bool"
+			},
+			{
+				"name": "authorizationCount",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "row",
+				"type": "uint256"
+			}
+		],
+		"name": "getAssetAtIndex",
+		"outputs": [
+			{
+				"name": "assetkey",
+				"type": "string"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "assetKey",
+				"type": "string"
+			},
+			{
+				"name": "authorizationKey",
+				"type": "address"
+			}
+		],
+		"name": "getAssetAuthorization",
+		"outputs": [
+			{
+				"name": "authorizationRole",
+				"type": "string"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "assetKey",
+				"type": "string"
+			},
+			{
+				"name": "authorizationRow",
+				"type": "uint256"
+			}
+		],
+		"name": "getAssetAuthorizationAtIndex",
+		"outputs": [
+			{
+				"name": "authorizationKey",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "assetKey",
+				"type": "string"
+			}
+		],
+		"name": "getAssetAuthorizationCount",
+		"outputs": [
+			{
+				"name": "authorizationCount",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "getAssetCount",
+		"outputs": [
+			{
+				"name": "assetCount",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
 	}
 ]

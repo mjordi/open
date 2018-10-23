@@ -23,7 +23,7 @@
     event RejectCreate(address account, string assetKey, string message);
     event AuthorizationCreate(address account, string assetKey, string authorizationRole);
     event AuthorizationRemove(address account, string assetKey);
-    event AccessLog(address account, string assetKey);
+    event AccessLog(address account, string assetKey, bool accessGranted);
 
     
     function newAsset(string assetKey, string assetDescription) public returns(bool success) {
@@ -87,9 +87,10 @@
     
     function getAccess (string assetKey) public returns (bool success) {
         if (assetStructs[assetKey].owner == msg.sender || assetStructs[assetKey].authorizationStructs[msg.sender].active){
-            emit AccessLog(msg.sender, assetKey);
+            emit AccessLog(msg.sender, assetKey, true);
             return true;
         } else {
+            emit AccessLog(msg.sender, assetKey, false);
             return false;  
         }
     }

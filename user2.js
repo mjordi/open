@@ -37,7 +37,7 @@ window.addEventListener('load', async () => {
 
     //Initiate Standard Smart Contract
     var smartContract = web3.eth.contract(smartContractAbi);
-    var smartContractAdress = "0x0bf3ace0105ce6d6f2a75b48acc8d347fc63c81f";
+    var smartContractAdress = "0x1614c607e0e36d210196941b954f9e5128f3e0f5";
     var smartContractInstance = smartContract.at(smartContractAdress);
     console.log("Default Smart Contract Adress: " + smartContractInstance.address);
 

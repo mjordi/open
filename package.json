@@ -1,11 +1,58 @@
 {
   "name": "open",
   "version": "1.0.0",
+  "description": "Smart contract asset management system with role-based access control",
+  "main": "index.js",
   "scripts": {
-    "test": "npx hardhat test"
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "test:unit": "npx hardhat test --grep 'AssetTracker|RoleBasedAcl|AccessManagement'",
+    "test:integration": "npx hardhat test test/sample-test.js",
+    "test:coverage": "npx hardhat coverage",
+    "test:gas": "REPORT_GAS=true npx hardhat test",
+    "test:gas-report": "REPORT_GAS=true npx hardhat test > gas-report.txt",
+    "test:ci": "npx hardhat test --reporter json > test-results.json",
+    "test:fuzz": "npx hardhat test test/PropertyBasedTests.js",
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:fuzz",
+    "analyze:performance": "npx hardhat run scripts/performance-analysis.js",
+    "size": "npx hardhat compile && echo 'Contract size analysis would require hardhat-contract-sizer plugin'",
+    "node": "npx hardhat node",
+    "clean": "npx hardhat clean && rm -rf cache artifacts typechain-types coverage",
+    "deploy:local": "npx hardhat run scripts/deploy.js --network localhost",
+    "deploy:sepolia": "npx hardhat run scripts/deploy.js --network sepolia",
+    "verify:sepolia": "npx hardhat verify --network sepolia",
+    "lint:sol": "npx solhint 'contracts/**/*.sol' || true",
+    "lint:js": "npx eslint . --ext .js || true",
+    "lint": "npm run lint:sol && npm run lint:js",
+    "format": "npx prettier --write .",
+    "format:check": "npx prettier --check .",
+    "audit": "npm audit --audit-level moderate",
+    "benchmark": "npm run test:gas && npm run size",
+    "performance": "npm run benchmark && npm run analyze:performance",
+    "optimize": "npm run test:all && npm run performance",
+    "validate": "npm run compile && npm run lint && npm run test:all && npm run audit"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^3.0.0",
     "hardhat": "^2.20.2"
+  },
+  "dependencies": {},
+  "keywords": [
+    "blockchain",
+    "ethereum",
+    "smart-contracts",
+    "asset-management",
+    "access-control",
+    "hardhat"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/open.git"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
   }
 }

@@ -58,12 +58,6 @@ updates:
         update-types:
           - "minor"
           - "patch"
-    # Allow automatic merging for patch updates to development dependencies
-    allow:
-      - dependency-type: "development"
-        update-types: ["version-update:semver-patch"]
-      - dependency-type: "production"
-        update-types: ["version-update:semver-patch"]
     # Ignore specific packages that might cause breaking changes
     ignore:
       - dependency-name: "node"
@@ -101,8 +95,3 @@ updates:
         update-types:
           - "minor"
           - "patch"
-    allow:
-      - dependency-type: "direct"
-        update-type: "version-update:semver-minor"
-      - dependency-type: "direct"
-        update-type: "version-update:semver-patch" 

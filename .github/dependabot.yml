@@ -61,12 +61,9 @@ updates:
     # Allow automatic merging for patch updates to development dependencies
     allow:
       - dependency-type: "development"
-        update-type: "version-update:semver-patch"
+        update-types: ["version-update:semver-patch"]
       - dependency-type: "production"
-        update-type: "version-update:semver-patch"
-    # Security updates get higher priority
-    security-updates:
-      enabled: true
+        update-types: ["version-update:semver-patch"]
     # Ignore specific packages that might cause breaking changes
     ignore:
       - dependency-name: "node"

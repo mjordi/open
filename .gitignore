@@ -24,3 +24,4 @@ $RECYCLE.BIN/
 
 #Project Folder
 .idea
+node_modules/

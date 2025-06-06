@@ -1,0 +1,111 @@
+version: 2
+updates:
+  # Monitor npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "mjordi"
+    assignees:
+      - "mjordi"
+    labels:
+      - "dependencies"
+      - "npm"
+      - "security"
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    # Group related updates together
+    groups:
+      hardhat:
+        patterns:
+          - "hardhat*"
+          - "@nomicfoundation/*"
+          - "@nomiclabs/*"
+        update-types:
+          - "minor"
+          - "patch"
+      testing:
+        patterns:
+          - "*mocha*"
+          - "*chai*"
+          - "*test*"
+          - "*jest*"
+        update-types:
+          - "minor"
+          - "patch"
+      linting:
+        patterns:
+          - "*eslint*"
+          - "*prettier*"
+          - "*solhint*"
+          - "*lint*"
+        update-types:
+          - "minor"
+          - "patch"
+      ethereum:
+        patterns:
+          - "ethers"
+          - "@openzeppelin/*"
+          - "solidity-*"
+          - "web3*"
+        update-types:
+          - "minor"
+          - "patch"
+    # Allow automatic merging for patch updates to development dependencies
+    allow:
+      - dependency-type: "development"
+        update-type: "version-update:semver-patch"
+      - dependency-type: "production"
+        update-type: "version-update:semver-patch"
+    # Security updates get higher priority
+    security-updates:
+      enabled: true
+    # Ignore specific packages that might cause breaking changes
+    ignore:
+      - dependency-name: "node"
+        versions: [">= 19.0.0"]
+      - dependency-name: "npm"
+        versions: [">= 9.0.0"]
+    # Rebase strategy for conflict resolution
+    rebase-strategy: "auto"
+
+  # Monitor GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 2
+    reviewers:
+      - "mjordi"
+    assignees:
+      - "mjordi"
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "ci"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    # Group GitHub Actions updates
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    allow:
+      - dependency-type: "direct"
+        update-type: "version-update:semver-minor"
+      - dependency-type: "direct"
+        update-type: "version-update:semver-patch" 

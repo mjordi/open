@@ -11,7 +11,7 @@ struct Asset {
     bool initialized;    
 }
 
-mapping(string  => Asset) private assetStore;
+    mapping(string => Asset) private assetStore;
 mapping(address => mapping(string => bool)) private walletStore;
 
 event AssetCreate(address account, string uuid, string manufacturer);
@@ -26,7 +26,7 @@ function createAsset(string name, string description, string uuid, string manufa
         return;
       }
  
-      assetStore[uuid] = Asset(name, description, true, manufacturer);
+      assetStore[uuid] = Asset(name, description, manufacturer, true);
       walletStore[msg.sender][uuid] = true;
       AssetCreate(msg.sender, uuid, manufacturer);
 }

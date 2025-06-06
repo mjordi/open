@@ -108,9 +108,7 @@ window.addEventListener('load', async () => {
         smartContractInstance.getAccess($('#assetKey_access').val(), function (error) {});
         //Watch for access verification
         smartContractInstance.AccessLog().watch(function (error, result) {
-            // -----
-            // TBD - Check if result = true or false
-            // -----
+            // Check if the access result grants permission
             if (!error) {
                 if (result.args.accessGranted) {
                     console.log("Access was granted to " + result.args.account + " for the Asset '" + result.args.assetKey + "'");

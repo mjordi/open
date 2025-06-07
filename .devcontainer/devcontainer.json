@@ -1,0 +1,31 @@
+{
+  "name": "Smart Contract Development",
+  "dockerFile": "Dockerfile",
+  "forwardPorts": [8545],
+  "settings": {
+    "terminal.integrated.shell.linux": "/bin/bash",
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "solidity.packageDefaultDependenciesContractsDirectory": "contracts",
+    "solidity.packageDefaultDependenciesDirectory": "node_modules"
+  },
+  "extensions": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "JuanBlanco.solidity",
+    "ms-azuretools.vscode-docker",
+    "ms-vscode.vscode-typescript-tslint-plugin",
+    "streetsidesoftware.code-spell-checker"
+  ],
+  "remoteUser": "node",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "18"
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.10"
+    },
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+  "postCreateCommand": "npm install && sudo apt-get update && sudo apt-get install -y build-essential python3-dev && python3 -m venv /workspace/.venv-slither && /workspace/.venv-slither/bin/pip install --upgrade pip && /workspace/.venv-slither/bin/pip install slither-analyzer && python3 -m venv /workspace/.venv-mythril && /workspace/.venv-mythril/bin/pip install --upgrade pip && /workspace/.venv-mythril/bin/pip install mythril && sudo ln -s /workspace/.venv-slither/bin/slither /usr/local/bin/slither && sudo ln -s /workspace/.venv-mythril/bin/myth /usr/local/bin/myth"
+}

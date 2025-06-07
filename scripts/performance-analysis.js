@@ -25,7 +25,9 @@ async function main() {
 
   // Deploy optimized contracts
   console.log('📦 Deploying Optimized Contracts...');
-  const AssetTrackerOptimized = await ethers.getContractFactory('AssetTrackerOptimized');
+  const AssetTrackerOptimized = await ethers.getContractFactory(
+    'AssetTrackerOptimized'
+  );
   const assetTrackerOpt = await AssetTrackerOptimized.deploy();
   await assetTrackerOpt.waitForDeployment();
 
@@ -45,19 +47,29 @@ async function main() {
   const optimizedDeployTx = assetTrackerOpt.deploymentTransaction();
 
   if (originalDeployTx && optimizedDeployTx) {
-    const originalReceipt = await ethers.provider.getTransactionReceipt(originalDeployTx.hash);
-    const optimizedReceipt = await ethers.provider.getTransactionReceipt(optimizedDeployTx.hash);
+    const originalReceipt = await ethers.provider.getTransactionReceipt(
+      originalDeployTx.hash
+    );
+    const optimizedReceipt = await ethers.provider.getTransactionReceipt(
+      optimizedDeployTx.hash
+    );
 
     performance.deployment.original = originalReceipt.gasUsed;
     performance.deployment.optimized = optimizedReceipt.gasUsed;
-    performance.deployment.savings = originalReceipt.gasUsed - optimizedReceipt.gasUsed;
+    performance.deployment.savings =
+      originalReceipt.gasUsed - optimizedReceipt.gasUsed;
     performance.deployment.percentSavings = (
-      (Number(performance.deployment.savings) / Number(performance.deployment.original)) *
+      (Number(performance.deployment.savings) /
+        Number(performance.deployment.original)) *
       100
     ).toFixed(2);
 
-    console.log(`Original AssetTracker: ${performance.deployment.original.toString()} gas`);
-    console.log(`Optimized AssetTracker: ${performance.deployment.optimized.toString()} gas`);
+    console.log(
+      `Original AssetTracker: ${performance.deployment.original.toString()} gas`
+    );
+    console.log(
+      `Optimized AssetTracker: ${performance.deployment.optimized.toString()} gas`
+    );
     console.log(
       `Deployment Savings: ${performance.deployment.savings.toString()} gas (${
         performance.deployment.percentSavings
@@ -126,7 +138,10 @@ async function main() {
   console.log('\nTesting asset transfer...');
   try {
     // Original contract transfer
-    const originalTransferTx = await assetTracker.transferAsset(user1.address, assetData.uuid);
+    const originalTransferTx = await assetTracker.transferAsset(
+      user1.address,
+      assetData.uuid
+    );
     const originalTransferReceipt = await originalTransferTx.wait();
 
     // Optimized contract transfer
@@ -139,7 +154,8 @@ async function main() {
     performance.operations.transferAsset = {
       original: originalTransferReceipt.gasUsed,
       optimized: optimizedTransferReceipt.gasUsed,
-      savings: originalTransferReceipt.gasUsed - optimizedTransferReceipt.gasUsed,
+      savings:
+        originalTransferReceipt.gasUsed - optimizedTransferReceipt.gasUsed,
     };
     performance.operations.transferAsset.percentSavings = (
       (Number(performance.operations.transferAsset.savings) /
@@ -194,11 +210,20 @@ async function main() {
     }
 
     const bulkSavings = originalBulkGas - optimizedBulkGas;
-    const bulkPercentSavings = ((Number(bulkSavings) / Number(originalBulkGas)) * 100).toFixed(2);
+    const bulkPercentSavings = (
+      (Number(bulkSavings) / Number(originalBulkGas)) *
+      100
+    ).toFixed(2);
 
-    console.log(`Bulk ${bulkTestSize} assets - Original: ${originalBulkGas.toString()} gas`);
-    console.log(`Bulk ${bulkTestSize} assets - Optimized: ${optimizedBulkGas.toString()} gas`);
-    console.log(`Bulk Savings: ${bulkSavings.toString()} gas (${bulkPercentSavings}%)`);
+    console.log(
+      `Bulk ${bulkTestSize} assets - Original: ${originalBulkGas.toString()} gas`
+    );
+    console.log(
+      `Bulk ${bulkTestSize} assets - Optimized: ${optimizedBulkGas.toString()} gas`
+    );
+    console.log(
+      `Bulk Savings: ${bulkSavings.toString()} gas (${bulkPercentSavings}%)`
+    );
 
     performance.operations.bulk = {
       original: originalBulkGas,
@@ -214,19 +239,28 @@ async function main() {
   console.log('\n💾 Storage Efficiency Analysis:');
 
   // Get contract sizes
-  const originalSize = await ethers.provider.getCode(await assetTracker.getAddress());
-  const optimizedSize = await ethers.provider.getCode(await assetTrackerOpt.getAddress());
+  const originalSize = await ethers.provider.getCode(
+    await assetTracker.getAddress()
+  );
+  const optimizedSize = await ethers.provider.getCode(
+    await assetTrackerOpt.getAddress()
+  );
 
   performance.storage.originalSize = originalSize.length;
   performance.storage.optimizedSize = optimizedSize.length;
-  performance.storage.sizeDifference = originalSize.length - optimizedSize.length;
+  performance.storage.sizeDifference =
+    originalSize.length - optimizedSize.length;
   performance.storage.percentSavings = (
     (performance.storage.sizeDifference / performance.storage.originalSize) *
     100
   ).toFixed(2);
 
-  console.log(`Original contract size: ${performance.storage.originalSize} bytes`);
-  console.log(`Optimized contract size: ${performance.storage.optimizedSize} bytes`);
+  console.log(
+    `Original contract size: ${performance.storage.originalSize} bytes`
+  );
+  console.log(
+    `Optimized contract size: ${performance.storage.optimizedSize} bytes`
+  );
   console.log(
     `Size difference: ${performance.storage.sizeDifference} bytes (${performance.storage.percentSavings}%)`
   );
@@ -236,7 +270,9 @@ async function main() {
   console.log('='.repeat(50));
 
   if (performance.deployment.savings) {
-    console.log(`💰 Deployment gas savings: ${performance.deployment.percentSavings}%`);
+    console.log(
+      `💰 Deployment gas savings: ${performance.deployment.percentSavings}%`
+    );
   }
 
   if (performance.operations.createAsset) {
@@ -252,17 +288,23 @@ async function main() {
   }
 
   if (performance.operations.bulk) {
-    console.log(`📦 Bulk operations savings: ${performance.operations.bulk.percentSavings}%`);
+    console.log(
+      `📦 Bulk operations savings: ${performance.operations.bulk.percentSavings}%`
+    );
   }
 
-  console.log(`💾 Contract size savings: ${performance.storage.percentSavings}%`);
+  console.log(
+    `💾 Contract size savings: ${performance.storage.percentSavings}%`
+  );
 
   // 6. Recommendations
   console.log('\n💡 Optimization Recommendations:');
   console.log('='.repeat(50));
   console.log('✅ Use custom errors instead of require statements');
   console.log('✅ Pack struct variables to optimize storage');
-  console.log('✅ Use calldata instead of memory for external function parameters');
+  console.log(
+    '✅ Use calldata instead of memory for external function parameters'
+  );
   console.log('✅ Implement proper access modifiers');
   console.log('✅ Add comprehensive event logging');
   console.log('✅ Use immutable variables where possible');
@@ -277,7 +319,10 @@ async function main() {
     fs.mkdirSync(reportsDir, { recursive: true });
   }
 
-  const reportFile = path.join(reportsDir, `performance-analysis-${Date.now()}.json`);
+  const reportFile = path.join(
+    reportsDir,
+    `performance-analysis-${Date.now()}.json`
+  );
 
   // Custom replacer function to handle BigInt serialization
   const jsonReplacer = (key, value) => {

@@ -17,7 +17,9 @@ describe('Property-Based Tests (Fuzzing)', function () {
     // Deploy contracts once for all fuzz tests
     const AssetTracker = await ethers.getContractFactory('AssetTracker');
     const RoleBasedAcl = await ethers.getContractFactory('RoleBasedAcl');
-    const AccessManagement = await ethers.getContractFactory('AccessManagement');
+    const AccessManagement = await ethers.getContractFactory(
+      'AccessManagement'
+    );
 
     assetTracker = await AssetTracker.deploy();
     roleBasedAcl = await RoleBasedAcl.deploy();
@@ -30,7 +32,8 @@ describe('Property-Based Tests (Fuzzing)', function () {
 
   // Utility functions for generating random data
   function randomString(length = 10) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const chars =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
     for (let i = 0; i < length; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -43,11 +46,20 @@ describe('Property-Based Tests (Fuzzing)', function () {
   }
 
   function randomUuid() {
-    return `uuid-${randomString(8)}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    return `uuid-${randomString(8)}-${Date.now()}-${Math.floor(
+      Math.random() * 1000
+    )}`;
   }
 
   function randomRole() {
-    const roles = ['admin', 'user', 'moderator', 'viewer', 'superadmin', 'guest'];
+    const roles = [
+      'admin',
+      'user',
+      'moderator',
+      'viewer',
+      'superadmin',
+      'guest',
+    ];
     return roles[Math.floor(Math.random() * roles.length)];
   }
 
@@ -78,10 +90,14 @@ describe('Property-Based Tests (Fuzzing)', function () {
         ).to.emit(assetTracker, 'AssetCreate');
 
         // Asset should be owned by creator
-        expect(await assetTracker.isOwnerOf(randomAccount.address, assetData.uuid)).to.be.true;
+        expect(
+          await assetTracker.isOwnerOf(randomAccount.address, assetData.uuid)
+        ).to.be.true;
 
         // Asset data should be retrievable
-        const retrievedAsset = await assetTracker.getAssetByUUID(assetData.uuid);
+        const retrievedAsset = await assetTracker.getAssetByUUID(
+          assetData.uuid
+        );
         expect(retrievedAsset[0]).to.equal(assetData.name);
         expect(retrievedAsset[1]).to.equal(assetData.description);
         expect(retrievedAsset[2]).to.equal(assetData.manufacturer);
@@ -99,13 +115,23 @@ describe('Property-Based Tests (Fuzzing)', function () {
         // First creation should succeed
         await assetTracker
           .connect(account1)
-          .createAsset(randomString(10), randomString(20), uuid, randomString(15));
+          .createAsset(
+            randomString(10),
+            randomString(20),
+            uuid,
+            randomString(15)
+          );
 
         // Second creation with same UUID should fail
         await expect(
           assetTracker
             .connect(account2)
-            .createAsset(randomString(10), randomString(20), uuid, randomString(15))
+            .createAsset(
+              randomString(10),
+              randomString(20),
+              uuid,
+              randomString(15)
+            )
         ).to.emit(assetTracker, 'RejectCreate');
       }
     });
@@ -130,18 +156,27 @@ describe('Property-Based Tests (Fuzzing)', function () {
         // Create asset
         await assetTracker
           .connect(owner)
-          .createAsset(randomString(10), randomString(20), uuid, randomString(15));
+          .createAsset(
+            randomString(10),
+            randomString(20),
+            uuid,
+            randomString(15)
+          );
 
         // Verify initial ownership
         expect(await assetTracker.isOwnerOf(owner.address, uuid)).to.be.true;
-        expect(await assetTracker.isOwnerOf(recipient.address, uuid)).to.be.false;
+        expect(await assetTracker.isOwnerOf(recipient.address, uuid)).to.be
+          .false;
 
         // Transfer asset
-        await assetTracker.connect(owner).transferAsset(recipient.address, uuid);
+        await assetTracker
+          .connect(owner)
+          .transferAsset(recipient.address, uuid);
 
         // Verify ownership transfer
         expect(await assetTracker.isOwnerOf(owner.address, uuid)).to.be.false;
-        expect(await assetTracker.isOwnerOf(recipient.address, uuid)).to.be.true;
+        expect(await assetTracker.isOwnerOf(recipient.address, uuid)).to.be
+          .true;
       }
     });
   });
@@ -161,11 +196,14 @@ describe('Property-Based Tests (Fuzzing)', function () {
         await roleBasedAcl.connect(creator).assignRole(user.address, role);
 
         // Verify role assignment
-        expect(await roleBasedAcl.isAssignedRole.staticCall(user.address, role)).to.be.true;
+        expect(await roleBasedAcl.isAssignedRole.staticCall(user.address, role))
+          .to.be.true;
 
         // Only verify that a different specific role is not assigned (to avoid state conflicts)
         const testRole = 'testRole' + i; // Use a role that definitely wasn't assigned
-        expect(await roleBasedAcl.isAssignedRole.staticCall(user.address, testRole)).to.be.false;
+        expect(
+          await roleBasedAcl.isAssignedRole.staticCall(user.address, testRole)
+        ).to.be.false;
       }
     });
 
@@ -179,10 +217,12 @@ describe('Property-Based Tests (Fuzzing)', function () {
 
         // Assign then unassign role
         await roleBasedAcl.connect(creator).assignRole(user.address, role);
-        expect(await roleBasedAcl.isAssignedRole.staticCall(user.address, role)).to.be.true;
+        expect(await roleBasedAcl.isAssignedRole.staticCall(user.address, role))
+          .to.be.true;
 
         await roleBasedAcl.connect(creator).unassignRole(user.address, role);
-        expect(await roleBasedAcl.isAssignedRole.staticCall(user.address, role)).to.be.false;
+        expect(await roleBasedAcl.isAssignedRole.staticCall(user.address, role))
+          .to.be.false;
       }
     });
 
@@ -204,22 +244,33 @@ describe('Property-Based Tests (Fuzzing)', function () {
 
         // First, ensure the user doesn't have superadmin (remove if exists)
         try {
-          await roleBasedAcl.connect(creator).unassignRole(nonSuperadmin.address, 'superadmin');
+          await roleBasedAcl
+            .connect(creator)
+            .unassignRole(nonSuperadmin.address, 'superadmin');
         } catch (e) {
           // Ignore if role wasn't assigned
         }
 
         // Assign a non-superadmin role explicitly
         const nonSuperadminRole = 'user'; // Use a specific non-superadmin role
-        await roleBasedAcl.connect(creator).assignRole(nonSuperadmin.address, nonSuperadminRole);
+        await roleBasedAcl
+          .connect(creator)
+          .assignRole(nonSuperadmin.address, nonSuperadminRole);
 
         // Verify they don't have superadmin
-        expect(await roleBasedAcl.isAssignedRole.staticCall(nonSuperadmin.address, 'superadmin')).to
-          .be.false;
+        expect(
+          await roleBasedAcl.isAssignedRole.staticCall(
+            nonSuperadmin.address,
+            'superadmin'
+          )
+        ).to.be.false;
 
         // Non-superadmin should not be able to assign roles
-        await expect(roleBasedAcl.connect(nonSuperadmin).assignRole(targetUser.address, 'admin')).to
-          .be.reverted;
+        await expect(
+          roleBasedAcl
+            .connect(nonSuperadmin)
+            .assignRole(targetUser.address, 'admin')
+        ).to.be.reverted;
       }
     });
   });
@@ -248,14 +299,21 @@ describe('Property-Based Tests (Fuzzing)', function () {
         }
 
         // Create asset
-        await accessManagement.connect(owner).newAsset(assetKey, randomString(20));
+        await accessManagement
+          .connect(owner)
+          .newAsset(assetKey, randomString(20));
 
         // Owner should have access
-        expect(await accessManagement.connect(owner).getAccess.staticCall(assetKey)).to.be.true;
+        expect(
+          await accessManagement.connect(owner).getAccess.staticCall(assetKey)
+        ).to.be.true;
 
         // Unauthorized user should not have access
-        expect(await accessManagement.connect(unauthorizedUser).getAccess.staticCall(assetKey)).to
-          .be.false;
+        expect(
+          await accessManagement
+            .connect(unauthorizedUser)
+            .getAccess.staticCall(assetKey)
+        ).to.be.false;
 
         // Add authorization
         const role = 'viewer'; // Use specific role instead of random
@@ -264,15 +322,23 @@ describe('Property-Based Tests (Fuzzing)', function () {
           .addAuthorization(assetKey, authorizedUser.address, role);
 
         // Authorized user should now have access
-        expect(await accessManagement.connect(authorizedUser).getAccess.staticCall(assetKey)).to.be
-          .true;
+        expect(
+          await accessManagement
+            .connect(authorizedUser)
+            .getAccess.staticCall(assetKey)
+        ).to.be.true;
 
         // Remove authorization
-        await accessManagement.connect(owner).removeAuthorization(assetKey, authorizedUser.address);
+        await accessManagement
+          .connect(owner)
+          .removeAuthorization(assetKey, authorizedUser.address);
 
         // Authorized user should lose access
-        expect(await accessManagement.connect(authorizedUser).getAccess.staticCall(assetKey)).to.be
-          .false;
+        expect(
+          await accessManagement
+            .connect(authorizedUser)
+            .getAccess.staticCall(assetKey)
+        ).to.be.false;
       }
     });
 
@@ -284,7 +350,9 @@ describe('Property-Based Tests (Fuzzing)', function () {
         const owner = randomAddress();
         const assetKey = `count-test-${randomString(8)}-${i}`;
 
-        await accessManagement.connect(owner).newAsset(assetKey, randomString(20));
+        await accessManagement
+          .connect(owner)
+          .newAsset(assetKey, randomString(20));
 
         const currentCount = await accessManagement.getAssetCount();
         expect(currentCount).to.equal(initialCount + BigInt(i + 1));
@@ -317,23 +385,41 @@ describe('Property-Based Tests (Fuzzing)', function () {
         await roleBasedAcl.connect(creator).assignRole(user.address, 'user');
 
         // Verify roles are assigned
-        expect(await roleBasedAcl.isAssignedRole.staticCall(admin.address, 'admin')).to.be.true;
-        expect(await roleBasedAcl.isAssignedRole.staticCall(user.address, 'user')).to.be.true;
+        expect(
+          await roleBasedAcl.isAssignedRole.staticCall(admin.address, 'admin')
+        ).to.be.true;
+        expect(
+          await roleBasedAcl.isAssignedRole.staticCall(user.address, 'user')
+        ).to.be.true;
 
         // Create assets in both systems
         await assetTracker
           .connect(admin)
-          .createAsset(randomString(10), randomString(20), assetUuid, randomString(15));
+          .createAsset(
+            randomString(10),
+            randomString(20),
+            assetUuid,
+            randomString(15)
+          );
 
-        await accessManagement.connect(admin).newAsset(assetKey, randomString(20));
+        await accessManagement
+          .connect(admin)
+          .newAsset(assetKey, randomString(20));
 
         // Verify ownership and access patterns
-        expect(await assetTracker.isOwnerOf(admin.address, assetUuid)).to.be.true;
-        expect(await accessManagement.connect(admin).getAccess.staticCall(assetKey)).to.be.true;
+        expect(await assetTracker.isOwnerOf(admin.address, assetUuid)).to.be
+          .true;
+        expect(
+          await accessManagement.connect(admin).getAccess.staticCall(assetKey)
+        ).to.be.true;
 
         // Add user authorization
-        await accessManagement.connect(admin).addAuthorization(assetKey, user.address, 'user');
-        expect(await accessManagement.connect(user).getAccess.staticCall(assetKey)).to.be.true;
+        await accessManagement
+          .connect(admin)
+          .addAuthorization(assetKey, user.address, 'user');
+        expect(
+          await accessManagement.connect(user).getAccess.staticCall(assetKey)
+        ).to.be.true;
       }
     });
   });
@@ -347,7 +433,9 @@ describe('Property-Based Tests (Fuzzing)', function () {
 
         // Test empty strings in asset creation
         try {
-          await assetTracker.connect(owner).createAsset('', '', randomUuid(), '');
+          await assetTracker
+            .connect(owner)
+            .createAsset('', '', randomUuid(), '');
           // If it doesn't revert, verify the asset was created
           // This tests how the contract handles empty strings
         } catch (error) {

@@ -161,7 +161,7 @@ modifier validAddress(address addr) {
 
 ```javascript
 // Example fuzzing test
-it("Property: Asset creation with random valid inputs should always succeed", async function () {
+it('Property: Asset creation with random valid inputs should always succeed', async function () {
   const iterations = 20;
   for (let i = 0; i < iterations; i++) {
     const randomData = generateRandomAssetData();

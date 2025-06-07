@@ -1,93 +1,93 @@
 version: 2
 updates:
   # Monitor npm dependencies
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "06:00"
-      timezone: "UTC"
+      interval: 'weekly'
+      day: 'monday'
+      time: '06:00'
+      timezone: 'UTC'
     open-pull-requests-limit: 5
     assignees:
-      - "mjordi"
+      - 'mjordi'
     labels:
-      - "dependencies"
-      - "npm"
-      - "security"
+      - 'dependencies'
+      - 'npm'
+      - 'security'
     commit-message:
-      prefix: "chore"
-      prefix-development: "chore"
-      include: "scope"
+      prefix: 'chore'
+      prefix-development: 'chore'
+      include: 'scope'
     # Group related updates together
     groups:
       hardhat:
         patterns:
-          - "hardhat*"
-          - "@nomicfoundation/*"
-          - "@nomiclabs/*"
+          - 'hardhat*'
+          - '@nomicfoundation/*'
+          - '@nomiclabs/*'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
       testing:
         patterns:
-          - "*mocha*"
-          - "*chai*"
-          - "*test*"
-          - "*jest*"
+          - '*mocha*'
+          - '*chai*'
+          - '*test*'
+          - '*jest*'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
       linting:
         patterns:
-          - "*eslint*"
-          - "*prettier*"
-          - "*solhint*"
-          - "*lint*"
+          - '*eslint*'
+          - '*prettier*'
+          - '*solhint*'
+          - '*lint*'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
       ethereum:
         patterns:
-          - "ethers"
-          - "@openzeppelin/*"
-          - "solidity-*"
-          - "web3*"
+          - 'ethers'
+          - '@openzeppelin/*'
+          - 'solidity-*'
+          - 'web3*'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
     # Ignore specific packages that might cause breaking changes
     ignore:
-      - dependency-name: "node"
-        versions: [">= 19.0.0"]
-      - dependency-name: "npm"
-        versions: [">= 9.0.0"]
+      - dependency-name: 'node'
+        versions: ['>= 19.0.0']
+      - dependency-name: 'npm'
+        versions: ['>= 9.0.0']
     # Rebase strategy for conflict resolution
-    rebase-strategy: "auto"
+    rebase-strategy: 'auto'
 
   # Monitor GitHub Actions
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "06:00"
-      timezone: "UTC"
+      interval: 'weekly'
+      day: 'monday'
+      time: '06:00'
+      timezone: 'UTC'
     open-pull-requests-limit: 2
     assignees:
-      - "mjordi"
+      - 'mjordi'
     labels:
-      - "dependencies"
-      - "github-actions"
-      - "ci"
+      - 'dependencies'
+      - 'github-actions'
+      - 'ci'
     commit-message:
-      prefix: "ci"
-      include: "scope"
+      prefix: 'ci'
+      include: 'scope'
     # Group GitHub Actions updates
     groups:
       github-actions:
         patterns:
-          - "*"
+          - '*'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'

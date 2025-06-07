@@ -25,7 +25,9 @@ describe('AssetTracker', function () {
       const uuid = 'test-uuid-123';
       const manufacturer = 'Test Manufacturer';
 
-      await expect(assetTracker.createAsset(name, description, uuid, manufacturer))
+      await expect(
+        assetTracker.createAsset(name, description, uuid, manufacturer)
+      )
         .to.emit(assetTracker, 'AssetCreate')
         .withArgs(owner.address, uuid, manufacturer);
 
@@ -49,7 +51,9 @@ describe('AssetTracker', function () {
       await assetTracker.createAsset(name, description, uuid, manufacturer);
 
       // Try to create duplicate - should emit RejectCreate event
-      await expect(assetTracker.createAsset(name, description, uuid, manufacturer))
+      await expect(
+        assetTracker.createAsset(name, description, uuid, manufacturer)
+      )
         .to.emit(assetTracker, 'RejectCreate')
         .withArgs(owner.address, uuid, 'Asset with this UUID already exists.');
     });
@@ -83,8 +87,10 @@ describe('AssetTracker', function () {
       );
 
       // Verify both assets exist
-      expect(await assetTracker.isOwnerOf(owner.address, asset1.uuid)).to.be.true;
-      expect(await assetTracker.isOwnerOf(owner.address, asset2.uuid)).to.be.true;
+      expect(await assetTracker.isOwnerOf(owner.address, asset1.uuid)).to.be
+        .true;
+      expect(await assetTracker.isOwnerOf(owner.address, asset2.uuid)).to.be
+        .true;
     });
   });
 
@@ -112,8 +118,10 @@ describe('AssetTracker', function () {
         .withArgs(owner.address, addr1.address, testAsset.uuid);
 
       // Verify ownership changed
-      expect(await assetTracker.isOwnerOf(owner.address, testAsset.uuid)).to.be.false;
-      expect(await assetTracker.isOwnerOf(addr1.address, testAsset.uuid)).to.be.true;
+      expect(await assetTracker.isOwnerOf(owner.address, testAsset.uuid)).to.be
+        .false;
+      expect(await assetTracker.isOwnerOf(addr1.address, testAsset.uuid)).to.be
+        .true;
     });
 
     it('Should reject transfer of non-existent asset', async function () {
@@ -121,14 +129,26 @@ describe('AssetTracker', function () {
 
       await expect(assetTracker.transferAsset(addr1.address, nonExistentUuid))
         .to.emit(assetTracker, 'RejectTransfer')
-        .withArgs(owner.address, addr1.address, nonExistentUuid, 'No asset with this UUID exists');
+        .withArgs(
+          owner.address,
+          addr1.address,
+          nonExistentUuid,
+          'No asset with this UUID exists'
+        );
     });
 
     it('Should reject transfer by non-owner', async function () {
       // Try to transfer from addr1 (who doesn't own the asset)
-      await expect(assetTracker.connect(addr1).transferAsset(addr2.address, testAsset.uuid))
+      await expect(
+        assetTracker.connect(addr1).transferAsset(addr2.address, testAsset.uuid)
+      )
         .to.emit(assetTracker, 'RejectTransfer')
-        .withArgs(addr1.address, addr2.address, testAsset.uuid, 'Sender does not own this asset.');
+        .withArgs(
+          addr1.address,
+          addr2.address,
+          testAsset.uuid,
+          'Sender does not own this asset.'
+        );
     });
 
     it('Should allow chained transfers', async function () {
@@ -136,12 +156,17 @@ describe('AssetTracker', function () {
       await assetTracker.transferAsset(addr1.address, testAsset.uuid);
 
       // Transfer from addr1 to addr2
-      await assetTracker.connect(addr1).transferAsset(addr2.address, testAsset.uuid);
+      await assetTracker
+        .connect(addr1)
+        .transferAsset(addr2.address, testAsset.uuid);
 
       // Verify final ownership
-      expect(await assetTracker.isOwnerOf(owner.address, testAsset.uuid)).to.be.false;
-      expect(await assetTracker.isOwnerOf(addr1.address, testAsset.uuid)).to.be.false;
-      expect(await assetTracker.isOwnerOf(addr2.address, testAsset.uuid)).to.be.true;
+      expect(await assetTracker.isOwnerOf(owner.address, testAsset.uuid)).to.be
+        .false;
+      expect(await assetTracker.isOwnerOf(addr1.address, testAsset.uuid)).to.be
+        .false;
+      expect(await assetTracker.isOwnerOf(addr2.address, testAsset.uuid)).to.be
+        .true;
     });
   });
 

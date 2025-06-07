@@ -19,7 +19,8 @@ window.addEventListener('load', async () => {
   }
   // Non-dapp browsers...
   else {
-    var errorMsg = 'Non-Ethereum browser detected. You should consider trying MetaMask!';
+    var errorMsg =
+      'Non-Ethereum browser detected. You should consider trying MetaMask!';
     $('#log').text(errorMsg);
     console.log(errorMsg);
     return;
@@ -38,7 +39,9 @@ window.addEventListener('load', async () => {
   var smartContract = web3.eth.contract(smartContractAbi);
   var smartContractAdress = '0x1614c607e0e36d210196941b954f9e5128f3e0f5';
   var smartContractInstance = smartContract.at(smartContractAdress);
-  console.log('Default Smart Contract Adress: ' + smartContractInstance.address);
+  console.log(
+    'Default Smart Contract Adress: ' + smartContractInstance.address
+  );
 
   //Deploy Smart Contract
   $('#form_deploy').on('submit', function (e) {
@@ -66,7 +69,11 @@ window.addEventListener('load', async () => {
   //Add Asset
   $('#form_asset').on('submit', function (e) {
     e.preventDefault();
-    console.log("Adding Asset to Smart Contract '" + smartContractInstance.address + "'... \n");
+    console.log(
+      "Adding Asset to Smart Contract '" +
+        smartContractInstance.address +
+        "'... \n"
+    );
     smartContractInstance.newAsset(
       $('#assetKey').val(),
       $('#assetDescription').val(),
@@ -101,7 +108,11 @@ window.addEventListener('load', async () => {
   //Add Authorization
   $('#form_assign').on('submit', function (e) {
     e.preventDefault();
-    console.log("Assigning Role in Smart Contract '" + smartContractInstance.address + "'... \n");
+    console.log(
+      "Assigning Role in Smart Contract '" +
+        smartContractInstance.address +
+        "'... \n"
+    );
     smartContractInstance.addAuthorization(
       $('#assetKey_assign').val(),
       $('#address_assign').val(),
@@ -126,7 +137,11 @@ window.addEventListener('load', async () => {
   //Check Role
   $('#form_isAssigned').on('submit', function (e) {
     e.preventDefault();
-    console.log("Checking Role in Smart Contract '" + smartContractInstance.address + "'... \n");
+    console.log(
+      "Checking Role in Smart Contract '" +
+        smartContractInstance.address +
+        "'... \n"
+    );
     smartContractInstance.getAssetAuthorization(
       $('#assetKey_isAssigned').val(),
       $('#address_isAssigned').val(),
@@ -144,8 +159,15 @@ window.addEventListener('load', async () => {
   //Access the Asset
   $('#form_access').on('submit', function (e) {
     e.preventDefault();
-    console.log("Try to access in Smart Contract '" + smartContractInstance.address + "'... \n");
-    smartContractInstance.getAccess($('#assetKey_access').val(), function (error) {});
+    console.log(
+      "Try to access in Smart Contract '" +
+        smartContractInstance.address +
+        "'... \n"
+    );
+    smartContractInstance.getAccess(
+      $('#assetKey_access').val(),
+      function (error) {}
+    );
     //Watch for access verification
     smartContractInstance.AccessLog().watch(function (error, result) {
       // Check if the access result grants permission
@@ -174,7 +196,11 @@ window.addEventListener('load', async () => {
   //Remove Authorization
   $('#form_unassign').on('submit', function (e) {
     e.preventDefault();
-    console.log("Unassigning Role in Smart Contract '" + smartContractInstance.address + "'... \n");
+    console.log(
+      "Unassigning Role in Smart Contract '" +
+        smartContractInstance.address +
+        "'... \n"
+    );
     smartContractInstance.removeAuthorization(
       $('#assetKey_unassign').val(),
       $('#address_unassign').val(),

@@ -122,7 +122,8 @@ The `testUtils.js` helper provides:
 ### Contract Deployment
 
 ```javascript
-const { assetTracker, roleBasedAcl, accessManagement, owner, addrs } = await TestUtils.deployAllContracts();
+const { assetTracker, roleBasedAcl, accessManagement, owner, addrs } =
+  await TestUtils.deployAllContracts();
 ```
 
 ### Asset Creation Helpers
@@ -130,13 +131,13 @@ const { assetTracker, roleBasedAcl, accessManagement, owner, addrs } = await Tes
 ```javascript
 // Create test asset in AssetTracker
 const asset = await TestUtils.createTestAsset(assetTracker, owner, {
-  name: "Custom Name",
-  uuid: "custom-uuid",
+  name: 'Custom Name',
+  uuid: 'custom-uuid',
 });
 
 // Create access management asset
 const accessAsset = await TestUtils.createAccessAsset(accessManagement, owner, {
-  assetKey: "custom-key",
+  assetKey: 'custom-key',
 });
 ```
 
@@ -149,7 +150,7 @@ const roles = await TestUtils.setupRoleHierarchy(roleBasedAcl, creator, users);
 ### Batch Operations
 
 ```javascript
-const assets = TestUtils.generateAssetBatch(10, "test-batch");
+const assets = TestUtils.generateAssetBatch(10, 'test-batch');
 ```
 
 ### Gas Analysis

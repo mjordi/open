@@ -6,11 +6,21 @@
       name="viewport"
       content="width=device-width, initial-scale=1, shrink-to-fit=no"
     />
-    <meta name="description" content="" />
-    <meta name="author" content="" />
+    <meta name="description" content="Solidity Access Management" />
+    <meta name="author" content="Open" />
     <link rel="icon" href="favicon.ico" />
-    <title>OPEN</title>
-    <link href="bootstrap.min.css" rel="stylesheet" />
+
+    <title>Solidity Access Management</title>
+
+    <!-- Bootstrap core CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css"
+      integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+      crossorigin="anonymous"
+    />
+
+    <!-- Custom styles for this template -->
     <link href="aaas.css" rel="stylesheet" />
   </head>
 
@@ -35,221 +45,245 @@
       <div class="card-deck mb-2 text-center">
         <div class="card mb-4 shadow-sm">
           <div class="card-header">
-            <h4 class="my-0 font-weight-normal">1) Deploy Smart Contract</h4>
+            <h4 class="my-0 font-weight-normal">1) Connect</h4>
           </div>
           <div class="card-body">
-            <p>Needs to be done only once.</p>
-            <form id="form_deploy">
-              <button type="submit" class="btn btn-lg btn-block btn-primary">
-                Submit
-              </button>
-            </form>
+            <button
+              id="connect_wallet_btn"
+              class="btn btn-lg btn-block btn-primary"
+            >
+              Connect Wallet
+            </button>
+            <div class="form-group mt-3">
+              <label for="contract_address"
+                >Contract Address (AccessManagement / aaas.sol)</label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="contract_address"
+                name="contract_address"
+                placeholder="0x..."
+              />
+            </div>
+            <button
+              id="connect_contract_btn"
+              class="btn btn-lg btn-block btn-info"
+            >
+              Connect to Contract
+            </button>
           </div>
         </div>
-        <div class="card mb-4 shadow-sm">
-          <div class="card-header">
-            <h4 class="my-0 font-weight-normal">2) Add Asset</h4>
+        <div id="contract_interaction" style="display: none" class="w-100">
+          <div class="card-deck mb-2 text-center">
+            <div class="card mb-4 shadow-sm">
+              <div class="card-header">
+                <h4 class="my-0 font-weight-normal">2) Add Asset</h4>
+              </div>
+              <div class="card-body">
+                <form id="form_asset">
+                  <div class="form-group">
+                    <label for="assetKey">asset serial</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="assetKey"
+                      name="assetKey"
+                      value="123-456"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="assetDescription">Asset Description</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="assetDescription"
+                      name="assetDescription"
+                      value="Front Door (Lock)"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    class="btn btn-lg btn-block btn-primary"
+                  >
+                    Submit
+                  </button>
+                </form>
+              </div>
+            </div>
+            <div class="card mb-4 shadow-sm">
+              <div class="card-header">
+                <h4 class="my-0 font-weight-normal">3) Add Authorization</h4>
+              </div>
+              <div class="card-body">
+                <form id="form_assign">
+                  <div class="form-group">
+                    <label for="assetKey_assign">asset serial</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="assetKey_assign"
+                      name="assetKey_assign"
+                      value="123-456"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="address_assign">address</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="address_assign"
+                      name="address_assign"
+                      value="0x46e2aB674C9a1F5A7846b22AcdBE268B85ce793f"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="role_assign">role</label>
+                    <select
+                      id="role_assign"
+                      name="role_assign"
+                      class="form-control"
+                    >
+                      <option selected>Choose...</option>
+                      <option>admin</option>
+                      <option>permanent</option>
+                      <option>temporary</option>
+                    </select>
+                  </div>
+                  <button
+                    type="submit"
+                    class="btn btn-lg btn-block btn-primary"
+                  >
+                    Submit
+                  </button>
+                </form>
+              </div>
+            </div>
           </div>
-          <div class="card-body">
-            <form id="form_asset">
-              <div class="form-group">
-                <label for="assetKey">asset serial</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="assetKey"
-                  name="assetKey"
-                  value="123-456"
-                />
+          <div class="card-deck mb-3 text-center">
+            <div class="card mb-4 shadow-sm">
+              <div class="card-header">
+                <h4 class="my-0 font-weight-normal">4) Check Role</h4>
               </div>
-              <div class="form-group">
-                <label for="assetDescription">Asset Description</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="assetDescription"
-                  name="assetDescription"
-                  value="Front Door (Lock)"
-                />
+              <div class="card-body">
+                <form id="form_isAssigned">
+                  <div class="form-group">
+                    <label for="assetKey_isAssigned">asset serial</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="assetKey_isAssigned"
+                      name="assetKey_isAssigned"
+                      value="123-456"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="address_isAssigned">address</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="address_isAssigned"
+                      name="address_isAssigned"
+                      value="0x46e2aB674C9a1F5A7846b22AcdBE268B85ce793f"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    class="btn btn-lg btn-block btn-primary"
+                  >
+                    Submit
+                  </button>
+                </form>
               </div>
-              <button type="submit" class="btn btn-lg btn-block btn-primary">
-                Submit
-              </button>
-            </form>
-          </div>
-        </div>
-        <div class="card mb-4 shadow-sm">
-          <div class="card-header">
-            <h4 class="my-0 font-weight-normal">3) Add Authorization</h4>
-          </div>
-          <div class="card-body">
-            <form id="form_assign">
-              <div class="form-group">
-                <label for="assetKey_assing">asset serial</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="assetKey_assign"
-                  name="assetKey_assign"
-                  value="123-456"
-                />
+            </div>
+
+            <div class="card mb-4 shadow-sm">
+              <div class="card-header">
+                <h4 class="my-0 font-weight-normal">5) Access the Asset</h4>
               </div>
-              <div class="form-group">
-                <label for="address">address</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="address_assign"
-                  name="address_assign"
-                  value="0x46e2aB674C9a1F5A7846b22AcdBE268B85ce793f"
-                />
+              <div class="card-body">
+                <form id="form_access">
+                  <div class="form-group">
+                    <label for="assetKey_access">asset serial</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="assetKey_access"
+                      name="assetKey_access"
+                      value="123-456"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    class="btn btn-lg btn-block btn-primary"
+                  >
+                    Submit
+                  </button>
+                </form>
               </div>
-              <div class="form-group">
-                <label for="role_assign">role</label>
-                <select
-                  id="role_assign"
-                  name="role_assign"
-                  class="form-control"
-                >
-                  <option selected>Choose...</option>
-                  <option>admin</option>
-                  <option>permanent</option>
-                  <option>temporary</option>
-                </select>
+            </div>
+
+            <div class="card mb-4 shadow-sm">
+              <div class="card-header">
+                <h4 class="my-0 font-weight-normal">6) Remove Authorization</h4>
               </div>
-              <button type="submit" class="btn btn-lg btn-block btn-primary">
-                Submit
-              </button>
-            </form>
+              <div class="card-body">
+                <form id="form_unassign">
+                  <div class="form-group">
+                    <label for="assetKey_unassign">asset serial</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="assetKey_unassign"
+                      name="assetKey_unassign"
+                      value="123-456"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="address_unassign">address</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="address_unassign"
+                      name="address_unassign"
+                      value="0x46e2aB674C9a1F5A7846b22AcdBE268B85ce793f"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    class="btn btn-lg btn-block btn-primary"
+                  >
+                    Submit
+                  </button>
+                </form>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      <div class="card-deck mb-3 text-center">
-        <div class="card mb-4 shadow-sm">
-          <div class="card-header">
-            <h4 class="my-0 font-weight-normal">4) Check Role</h4>
-          </div>
-          <div class="card-body">
-            <form id="form_isAssigned">
-              <div class="form-group">
-                <label for="assetKey_isAssigned">asset serial</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="assetKey_isAssigned"
-                  name="assetKey"
-                  value="123-456"
-                />
-              </div>
-              <div class="form-group">
-                <label for="address_isAssigned">address</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="address_isAssigned"
-                  name="address"
-                  value="0x46e2aB674C9a1F5A7846b22AcdBE268B85ce793f"
-                />
-              </div>
-              <button type="submit" class="btn btn-lg btn-block btn-primary">
-                Submit
-              </button>
-            </form>
-          </div>
-        </div>
-
-        <div class="card mb-4 shadow-sm">
-          <div class="card-header">
-            <h4 class="my-0 font-weight-normal">5) Access the Asset</h4>
-          </div>
-          <div class="card-body">
-            <form id="form_access">
-              <div class="form-group">
-                <label for="assetKey_access">asset serial</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="assetKey_access"
-                  name="assetKey_access"
-                  value="123-456"
-                />
-              </div>
-              <button type="submit" class="btn btn-lg btn-block btn-primary">
-                Submit
-              </button>
-            </form>
-          </div>
-        </div>
-
-        <div class="card mb-4 shadow-sm">
-          <div class="card-header">
-            <h4 class="my-0 font-weight-normal">6) Remove Authorization</h4>
-          </div>
-          <div class="card-body">
-            <form id="form_unassign">
-              <div class="form-group">
-                <label for="assetKey_unassign">asset serial</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="assetKey_unassign"
-                  name="assetKey_unassign"
-                  value="123-456"
-                />
-              </div>
-              <div class="form-group">
-                <label for="address_unassign">address</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="address_unassign"
-                  name="address_unassign"
-                  value="0x46e2aB674C9a1F5A7846b22AcdBE268B85ce793f"
-                />
-              </div>
-              <button type="submit" class="btn btn-lg btn-block btn-primary">
-                Submit
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
+      <div id="log"></div>
     </div>
-    <div id="log"></div>
 
     <!-- Bootstrap core JavaScript
-        ================================================== -->
+    ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.5/ethers.umd.min.js"></script>
     <script
       src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
       integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
       crossorigin="anonymous"
     ></script>
-    <script>
-      window.jQuery ||
-        document.write(
-          '<script src="../../assets/js/vendor/jquery-slim.min.js"><\/script>'
-        );
-    </script>
     <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
-      integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+      src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js"
+      integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
       crossorigin="anonymous"
     ></script>
     <script
-      src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"
-      integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
+      src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js"
+      integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
       crossorigin="anonymous"
     ></script>
-    <script src="holder.min.js"></script>
-    <script>
-      Holder.addTheme('thumb', {
-        bg: '#55595c',
-        fg: '#eceeef',
-        text: 'Thumbnail',
-      });
-    </script>
-    <script src="user2.js"></script>
     <script src="abi_aaas.js"></script>
+    <script src="user2.js"></script>
   </body>
 </html>

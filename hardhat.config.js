@@ -1,3 +1,4 @@
+require('dotenv').config();
 require('@nomicfoundation/hardhat-toolbox');
 require('hardhat-contract-sizer');
 
@@ -57,17 +58,26 @@ module.exports = {
     },
     sepolia: {
       url: process.env.SEPOLIA_URL || '',
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts:
+        process.env.PRIVATE_KEY && process.env.PRIVATE_KEY.length === 66
+          ? [process.env.PRIVATE_KEY]
+          : [],
       chainId: 11155111,
     },
     mainnet: {
       url: process.env.MAINNET_URL || '',
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts:
+        process.env.PRIVATE_KEY && process.env.PRIVATE_KEY.length === 66
+          ? [process.env.PRIVATE_KEY]
+          : [],
       chainId: 1,
       gasPrice: 'auto',
     },
   },
   mocha: {
     timeout: 60000,
+  },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY || '',
   },
 };

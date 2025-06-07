@@ -9,6 +9,11 @@ async function main() {
 
   // Get the deployer account
   const [deployer] = await ethers.getSigners();
+  if (!deployer) {
+    throw new Error(
+      '❌ No deployer account found. Please check your Hardhat configuration and ensure a private key is provided.'
+    );
+  }
   console.log(`👤 Deploying with account: ${deployer.address}`);
 
   // Check deployer balance
@@ -73,8 +78,9 @@ async function main() {
       txHash: accessManagement.deploymentTransaction()?.hash,
     };
 
-    // Calculate total gas used
+    // Calculate total gas used and cost
     let totalGasUsed = 0n;
+    let totalDeploymentCost = 0n;
     for (const contract of Object.values(deploymentInfo.contracts)) {
       if (contract.txHash) {
         const receipt = await ethers.provider.getTransactionReceipt(
@@ -82,19 +88,25 @@ async function main() {
         );
         if (receipt) {
           totalGasUsed += receipt.gasUsed;
+          // In ethers v6, the receipt contains the effective gas price
+          if (receipt.gasPrice) {
+            totalDeploymentCost += receipt.gasUsed * receipt.gasPrice;
+          }
         }
       }
     }
 
     console.log(`\n⛽ Total gas used: ${totalGasUsed.toString()}`);
-    const gasPrice = await ethers.provider.getGasPrice();
-    const totalCost = totalGasUsed * gasPrice;
-    console.log(
-      `💸 Total deployment cost: ${ethers.formatEther(totalCost)} ETH`
-    );
+    if (totalDeploymentCost > 0n) {
+      console.log(
+        `💸 Total deployment cost: ${ethers.formatEther(
+          totalDeploymentCost
+        )} ETH`
+      );
+    }
 
     deploymentInfo.gasUsed = totalGasUsed.toString();
-    deploymentInfo.deploymentCost = ethers.formatEther(totalCost);
+    deploymentInfo.deploymentCost = ethers.formatEther(totalDeploymentCost);
 
     // Save deployment info
     const deploymentsDir = path.join(__dirname, '..', 'deployments');

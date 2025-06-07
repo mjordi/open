@@ -10,6 +10,7 @@ import { Unauthorized } from "./CustomErrors.sol";
 
 contract RoleBasedAcl {
   
+  // solhint-disable-next-line private-vars-leading-underscore, var-name-mixedcase
   address private immutable _creator;
 
     mapping(address => mapping(string => bool)) private _roles;

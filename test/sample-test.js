@@ -1,7 +1,7 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
+const { expect } = require('chai');
+const { ethers } = require('hardhat');
 
-describe("Contract Integration Tests", function () {
+describe('Contract Integration Tests', function () {
   let assetTracker;
   let roleBasedAcl;
   let accessManagement;
@@ -14,9 +14,9 @@ describe("Contract Integration Tests", function () {
     [owner, admin, user1, user2] = await ethers.getSigners();
 
     // Deploy all contracts
-    const AssetTracker = await ethers.getContractFactory("AssetTracker");
-    const RoleBasedAcl = await ethers.getContractFactory("RoleBasedAcl");
-    const AccessManagement = await ethers.getContractFactory("AccessManagement");
+    const AssetTracker = await ethers.getContractFactory('AssetTracker');
+    const RoleBasedAcl = await ethers.getContractFactory('RoleBasedAcl');
+    const AccessManagement = await ethers.getContractFactory('AccessManagement');
 
     assetTracker = await AssetTracker.deploy();
     roleBasedAcl = await RoleBasedAcl.deploy();
@@ -27,33 +27,43 @@ describe("Contract Integration Tests", function () {
     await accessManagement.waitForDeployment();
   });
 
-  describe("Cross-Contract Functionality", function () {
-    it("Should demonstrate complete asset management workflow", async function () {
+  describe('Cross-Contract Functionality', function () {
+    it('Should demonstrate complete asset management workflow', async function () {
       // 1. Setup roles in RoleBasedAcl
-      await roleBasedAcl.assignRole(admin.address, "admin");
-      expect(await roleBasedAcl.isAssignedRole.staticCall(admin.address, "admin")).to.be.true;
+      await roleBasedAcl.assignRole(admin.address, 'admin');
+      expect(await roleBasedAcl.isAssignedRole.staticCall(admin.address, 'admin')).to.be.true;
 
       // 2. Create assets in AssetTracker
-      const assetUuid = "integration-test-asset";
-      await assetTracker.createAsset("Integration Asset", "Test asset for integration", assetUuid, "Test Manufacturer");
+      const assetUuid = 'integration-test-asset';
+      await assetTracker.createAsset(
+        'Integration Asset',
+        'Test asset for integration',
+        assetUuid,
+        'Test Manufacturer'
+      );
       expect(await assetTracker.isOwnerOf(owner.address, assetUuid)).to.be.true;
 
       // 3. Create corresponding asset in AccessManagement
-      const accessAssetKey = "access-integration-asset";
-      await accessManagement.newAsset(accessAssetKey, "Access management integration test");
-      
+      const accessAssetKey = 'access-integration-asset';
+      await accessManagement.newAsset(accessAssetKey, 'Access management integration test');
+
       const asset = await accessManagement.getAsset(accessAssetKey);
       expect(asset.assetOwner).to.equal(owner.address);
     });
 
-    it("Should handle asset transfers and access management together", async function () {
+    it('Should handle asset transfers and access management together', async function () {
       // Create asset in AssetTracker
-      const assetUuid = "transfer-test-asset";
-      await assetTracker.createAsset("Transfer Test", "Asset for transfer testing", assetUuid, "Test Mfg");
+      const assetUuid = 'transfer-test-asset';
+      await assetTracker.createAsset(
+        'Transfer Test',
+        'Asset for transfer testing',
+        assetUuid,
+        'Test Mfg'
+      );
 
       // Create corresponding access-managed asset
-      const accessKey = "transfer-access-asset";
-      await accessManagement.newAsset(accessKey, "Transfer access test");
+      const accessKey = 'transfer-access-asset';
+      await accessManagement.newAsset(accessKey, 'Transfer access test');
 
       // Transfer asset ownership
       await assetTracker.transferAsset(user1.address, assetUuid);
@@ -65,63 +75,66 @@ describe("Contract Integration Tests", function () {
       expect(await accessManagement.connect(user1).getAccess.staticCall(accessKey)).to.be.false; // user1 doesn't have access yet
 
       // Grant access to user1
-      await accessManagement.addAuthorization(accessKey, user1.address, "user");
+      await accessManagement.addAuthorization(accessKey, user1.address, 'user');
       expect(await accessManagement.connect(user1).getAccess.staticCall(accessKey)).to.be.true;
     });
 
-    it("Should demonstrate role-based asset management", async function () {
+    it('Should demonstrate role-based asset management', async function () {
       // Setup role hierarchy
-      await roleBasedAcl.assignRole(admin.address, "superadmin");
-      await roleBasedAcl.connect(admin).assignRole(user1.address, "manager");
-      await roleBasedAcl.connect(admin).assignRole(user2.address, "user");
+      await roleBasedAcl.assignRole(admin.address, 'superadmin');
+      await roleBasedAcl.connect(admin).assignRole(user1.address, 'manager');
+      await roleBasedAcl.connect(admin).assignRole(user2.address, 'user');
 
       // Verify role hierarchy
-      expect(await roleBasedAcl.isAssignedRole.staticCall(admin.address, "superadmin")).to.be.true;
-      expect(await roleBasedAcl.isAssignedRole.staticCall(user1.address, "manager")).to.be.true;
-      expect(await roleBasedAcl.isAssignedRole.staticCall(user2.address, "user")).to.be.true;
+      expect(await roleBasedAcl.isAssignedRole.staticCall(admin.address, 'superadmin')).to.be.true;
+      expect(await roleBasedAcl.isAssignedRole.staticCall(user1.address, 'manager')).to.be.true;
+      expect(await roleBasedAcl.isAssignedRole.staticCall(user2.address, 'user')).to.be.true;
 
       // Create assets with different access levels
-      await accessManagement.newAsset("public-asset", "Public access asset");
-      await accessManagement.newAsset("manager-asset", "Manager access asset");
-      await accessManagement.newAsset("admin-asset", "Admin access asset");
+      await accessManagement.newAsset('public-asset', 'Public access asset');
+      await accessManagement.newAsset('manager-asset', 'Manager access asset');
+      await accessManagement.newAsset('admin-asset', 'Admin access asset');
 
       // Set up access authorizations based on roles
-      await accessManagement.addAuthorization("public-asset", user1.address, "manager");
-      await accessManagement.addAuthorization("public-asset", user2.address, "user");
-      await accessManagement.addAuthorization("manager-asset", user1.address, "manager");
-      await accessManagement.addAuthorization("admin-asset", admin.address, "admin");
+      await accessManagement.addAuthorization('public-asset', user1.address, 'manager');
+      await accessManagement.addAuthorization('public-asset', user2.address, 'user');
+      await accessManagement.addAuthorization('manager-asset', user1.address, 'manager');
+      await accessManagement.addAuthorization('admin-asset', admin.address, 'admin');
 
       // Test access patterns match roles
-      expect(await accessManagement.connect(user2).getAccess.staticCall("public-asset")).to.be.true;
-      expect(await accessManagement.connect(user1).getAccess.staticCall("manager-asset")).to.be.true;
-      expect(await accessManagement.connect(admin).getAccess.staticCall("admin-asset")).to.be.true;
-      
+      expect(await accessManagement.connect(user2).getAccess.staticCall('public-asset')).to.be.true;
+      expect(await accessManagement.connect(user1).getAccess.staticCall('manager-asset')).to.be
+        .true;
+      expect(await accessManagement.connect(admin).getAccess.staticCall('admin-asset')).to.be.true;
+
       // Test restricted access
-      expect(await accessManagement.connect(user2).getAccess.staticCall("manager-asset")).to.be.false;
-      expect(await accessManagement.connect(user2).getAccess.staticCall("admin-asset")).to.be.false;
+      expect(await accessManagement.connect(user2).getAccess.staticCall('manager-asset')).to.be
+        .false;
+      expect(await accessManagement.connect(user2).getAccess.staticCall('admin-asset')).to.be.false;
     });
   });
 
-  describe("Error Handling Integration", function () {
-    it("Should handle consistent error states across contracts", async function () {
+  describe('Error Handling Integration', function () {
+    it('Should handle consistent error states across contracts', async function () {
       // Test non-existent asset scenarios
-      expect(await assetTracker.isOwnerOf(user1.address, "non-existent")).to.be.false;
-      expect(await accessManagement.connect(user1).getAccess.staticCall("non-existent")).to.be.false;
+      expect(await assetTracker.isOwnerOf(user1.address, 'non-existent')).to.be.false;
+      expect(await accessManagement.connect(user1).getAccess.staticCall('non-existent')).to.be
+        .false;
 
       // Test unauthorized access attempts
-      await expect(roleBasedAcl.connect(user1).assignRole(user2.address, "admin"))
-        .to.be.reverted;
+      await expect(roleBasedAcl.connect(user1).assignRole(user2.address, 'admin')).to.be.reverted;
 
-      const testAsset = "error-test-asset";
-      await accessManagement.newAsset(testAsset, "Error testing");
-      
-      await expect(accessManagement.connect(user1).addAuthorization(testAsset, user2.address, "admin"))
-        .to.be.revertedWith("Only the owner or admins can add authorizations.");
+      const testAsset = 'error-test-asset';
+      await accessManagement.newAsset(testAsset, 'Error testing');
+
+      await expect(
+        accessManagement.connect(user1).addAuthorization(testAsset, user2.address, 'admin')
+      ).to.be.revertedWith('Only the owner or admins can add authorizations.');
     });
   });
 
-  describe("Performance and Gas Optimization", function () {
-    it("Should handle bulk operations efficiently", async function () {
+  describe('Performance and Gas Optimization', function () {
+    it('Should handle bulk operations efficiently', async function () {
       const assetCount = 5;
       const assets = [];
 
@@ -135,11 +148,11 @@ describe("Contract Integration Tests", function () {
       // Verify all assets were created
       expect(await accessManagement.getAssetCount()).to.be.at.least(assetCount);
 
-              // Add multiple authorizations
-        for (let i = 0; i < assetCount; i++) {
-          await accessManagement.addAuthorization(assets[i], user1.address, "user");
-          expect(await accessManagement.connect(user1).getAccess.staticCall(assets[i])).to.be.true;
-        }
+      // Add multiple authorizations
+      for (let i = 0; i < assetCount; i++) {
+        await accessManagement.addAuthorization(assets[i], user1.address, 'user');
+        expect(await accessManagement.connect(user1).getAccess.staticCall(assets[i])).to.be.true;
+      }
     });
   });
 });

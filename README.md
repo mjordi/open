@@ -36,22 +36,26 @@ This project implements a modular smart contract architecture with three core co
 ## 📦 Smart Contracts
 
 ### AssetTracker.sol
+
 - **Purpose**: Core asset management and ownership tracking
 - **Version**: Solidity ^0.4.24
 - **Features**: Asset creation, transfer, ownership verification
 - **Gas Optimized**: ✅ (See AssetTrackerOptimized.sol)
 
 ### RoleBasedAcl.sol
+
 - **Purpose**: Hierarchical role-based access control
 - **Version**: Solidity ^0.4.24
 - **Features**: Role assignment, permission management, creator privileges
 
 ### AccessManagement.sol (aaas.sol)
+
 - **Purpose**: Comprehensive asset access and authorization
 - **Version**: Solidity ^0.4.24
 - **Features**: Asset authorization, access control, bulk operations
 
 ### AssetTrackerOptimized.sol
+
 - **Purpose**: Gas-optimized version with modern Solidity features
 - **Version**: Solidity ^0.8.20
 - **Optimizations**: Custom errors, struct packing, calldata parameters, enhanced events
@@ -59,6 +63,7 @@ This project implements a modular smart contract architecture with three core co
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js ≥ 16.0.0
 - npm ≥ 8.0.0
 - Git
@@ -100,6 +105,7 @@ npm run test:fuzz         # Property-based/fuzz tests
 Our comprehensive testing suite includes multiple testing strategies:
 
 ### Test Coverage
+
 - **63 Total Tests** with 100% pass rate
 - **Unit Tests**: 46 tests covering individual contract functionality
 - **Integration Tests**: 5 tests for cross-contract interactions
@@ -129,6 +135,7 @@ npm run test:ci
 ```
 
 ### Testing Features
+
 - **Automated Test Discovery**: All `.test.js` files
 - **Gas Reporting**: Detailed gas usage analysis
 - **Property-Based Testing**: Random input fuzzing
@@ -145,12 +152,14 @@ npm run analyze:performance
 ```
 
 **Optimization Comparison:**
+
 - **Deployment**: Original vs Optimized gas usage
 - **Operations**: Create/Transfer/Bulk operation costs
 - **Storage**: Contract size and efficiency metrics
 - **Recommendations**: Automated optimization suggestions
 
 ### Performance Reports
+
 - Automated JSON reports in `reports/` directory
 - Gas usage comparisons
 - Optimization recommendations
@@ -175,6 +184,7 @@ npm run audit
 ```
 
 ### Security Features
+
 - **Slither Integration**: Automated vulnerability detection
 - **Mythril Support**: Symbolic execution analysis
 - **Input Validation**: Comprehensive parameter checking
@@ -182,6 +192,7 @@ npm run audit
 - **Event Logging**: Complete audit trail
 
 ### Security Checklist
+
 - ✅ Reentrancy protection
 - ✅ Integer overflow/underflow protection (0.8.x)
 - ✅ Access control implementation
@@ -213,12 +224,14 @@ npm run optimize       # Full optimization suite
 ```
 
 ### Code Quality Tools
+
 - **Prettier**: Code formatting (`.prettierrc.json`)
 - **ESLint**: JavaScript linting (`.eslintrc.json`)
 - **Solhint**: Solidity linting (`.solhint.json`)
 - **Pre-commit Hooks**: Automated quality checks
 
 ### Development Workflow
+
 1. **Write Code**: Follow established patterns and conventions
 2. **Test**: Comprehensive testing before commits
 3. **Lint**: Automated code quality checks
@@ -240,6 +253,7 @@ Our automated pipeline includes:
 - **Documentation**: Auto-generated API docs
 
 ### Pipeline Stages
+
 1. **Setup**: Node.js environment and dependencies
 2. **Build**: Contract compilation and validation
 3. **Test**: All test suites with coverage reporting
@@ -248,6 +262,7 @@ Our automated pipeline includes:
 6. **Deploy**: Conditional deployment to testnets
 
 ### Dependency Management
+
 - **Dependabot**: Automated dependency updates every Monday
 - **Grouped Updates**: Related packages updated together (Hardhat, testing, linting, Ethereum)
 - **Security Priority**: Automatic security updates for vulnerabilities
@@ -265,6 +280,7 @@ Our automated pipeline includes:
 - **Assembly Usage**: Critical performance sections
 
 ### Optimization Results
+
 - **AssetTrackerOptimized.sol**: Modern Solidity features
 - **Gas Reports**: Detailed usage analysis
 - **Storage Efficiency**: Optimized data structures
@@ -273,6 +289,7 @@ Our automated pipeline includes:
 ## 🤝 Contributing
 
 ### Getting Started
+
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
@@ -282,6 +299,7 @@ Our automated pipeline includes:
 7. Open a Pull Request
 
 ### Development Guidelines
+
 - Follow existing code style and patterns
 - Write comprehensive tests for new features
 - Update documentation for API changes
@@ -289,6 +307,7 @@ Our automated pipeline includes:
 - Include gas optimization considerations
 
 ### Code Review Process
+
 - All PRs require review approval
 - Automated CI/CD pipeline must pass
 - Security analysis must complete successfully

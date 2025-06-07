@@ -18,7 +18,7 @@ The project uses **Hardhat** as the primary testing framework with the following
 ```
 test/
 ├── AssetTracker.test.js       # Unit tests for AssetTracker contract
-├── RoleBasedAcl.test.js       # Unit tests for RoleBasedAcl contract  
+├── RoleBasedAcl.test.js       # Unit tests for RoleBasedAcl contract
 ├── AccessManagement.test.js   # Unit tests for AccessManagement contract
 ├── sample-test.js             # Integration tests across all contracts
 └── helpers/
@@ -79,6 +79,7 @@ npm run test:watch
 Each contract has comprehensive unit tests covering:
 
 #### AssetTracker Contract
+
 - ✅ Asset creation with duplicate prevention
 - ✅ Asset transfer between addresses
 - ✅ Ownership verification
@@ -87,6 +88,7 @@ Each contract has comprehensive unit tests covering:
 - ✅ Error handling for invalid operations
 
 #### RoleBasedAcl Contract
+
 - ✅ Role assignment and removal
 - ✅ Permission verification
 - ✅ Creator privileges
@@ -95,6 +97,7 @@ Each contract has comprehensive unit tests covering:
 - ✅ Role hierarchy management
 
 #### AccessManagement Contract
+
 - ✅ Asset creation and management
 - ✅ Authorization system (add/remove)
 - ✅ Access control verification
@@ -105,6 +108,7 @@ Each contract has comprehensive unit tests covering:
 ### Integration Tests
 
 The integration tests (`sample-test.js`) verify:
+
 - ✅ Cross-contract functionality
 - ✅ Role-based asset management workflows
 - ✅ Error handling consistency
@@ -116,36 +120,40 @@ The integration tests (`sample-test.js`) verify:
 The `testUtils.js` helper provides:
 
 ### Contract Deployment
+
 ```javascript
-const { assetTracker, roleBasedAcl, accessManagement, owner, addrs } = 
-  await TestUtils.deployAllContracts();
+const { assetTracker, roleBasedAcl, accessManagement, owner, addrs } = await TestUtils.deployAllContracts();
 ```
 
 ### Asset Creation Helpers
+
 ```javascript
 // Create test asset in AssetTracker
 const asset = await TestUtils.createTestAsset(assetTracker, owner, {
   name: "Custom Name",
-  uuid: "custom-uuid"
+  uuid: "custom-uuid",
 });
 
 // Create access management asset
 const accessAsset = await TestUtils.createAccessAsset(accessManagement, owner, {
-  assetKey: "custom-key"
+  assetKey: "custom-key",
 });
 ```
 
 ### Role Management
+
 ```javascript
 const roles = await TestUtils.setupRoleHierarchy(roleBasedAcl, creator, users);
 ```
 
 ### Batch Operations
+
 ```javascript
 const assets = TestUtils.generateAssetBatch(10, "test-batch");
 ```
 
 ### Gas Analysis
+
 ```javascript
 const gasCost = await TestUtils.estimateGasCost(transactionPromise);
 const gasUsed = TestUtils.getGasUsed(receipt);
@@ -154,6 +162,7 @@ const gasUsed = TestUtils.getGasUsed(receipt);
 ## Running Specific Tests
 
 ### By File
+
 ```bash
 npx hardhat test test/AssetTracker.test.js
 npx hardhat test test/RoleBasedAcl.test.js
@@ -161,6 +170,7 @@ npx hardhat test test/AccessManagement.test.js
 ```
 
 ### By Test Pattern
+
 ```bash
 npx hardhat test --grep "Asset Creation"
 npx hardhat test --grep "Role Assignment"
@@ -176,6 +186,7 @@ npm run test:coverage
 ```
 
 This will create a `coverage/` directory with detailed HTML reports showing:
+
 - Line coverage
 - Branch coverage
 - Function coverage
@@ -196,6 +207,7 @@ This provides detailed gas usage statistics for each function call.
 ### Hardhat Configuration
 
 The project is configured to support multiple Solidity versions:
+
 - Solidity 0.4.24 (for older contracts)
 - Solidity 0.8.20 (for newer contracts)
 
@@ -243,18 +255,22 @@ The test suite is designed to be run in CI/CD environments:
 ## Common Issues and Solutions
 
 ### Solidity Version Conflicts
+
 - **Issue**: Contract compilation fails
 - **Solution**: Check that contract pragma matches hardhat.config.js compilers
 
 ### Test Timeouts
+
 - **Issue**: Tests hang or timeout
 - **Solution**: Ensure all async operations use proper await/promises
 
 ### Gas Limit Errors
+
 - **Issue**: Transactions fail with out-of-gas errors
 - **Solution**: Check contract logic for infinite loops or expensive operations
 
 ### Event Assertion Failures
+
 - **Issue**: Event tests fail unexpectedly
 - **Solution**: Verify event names and parameter types match contract definitions
 
@@ -270,4 +286,4 @@ Potential improvements to the testing setup:
 
 ---
 
-For questions or issues with the testing setup, please refer to the [Hardhat documentation](https://hardhat.org/docs) or create an issue in the project repository. 
+For questions or issues with the testing setup, please refer to the [Hardhat documentation](https://hardhat.org/docs) or create an issue in the project repository.

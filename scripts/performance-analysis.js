@@ -1,19 +1,19 @@
-const { ethers } = require("hardhat");
+const { ethers } = require('hardhat');
 
 /**
  * Performance Analysis Script
  * Compares gas usage between original and optimized contracts
  */
 async function main() {
-  console.log("🔍 Starting Performance Analysis...\n");
+  console.log('🔍 Starting Performance Analysis...\n');
 
   const [deployer, user1, user2] = await ethers.getSigners();
 
   // Deploy original contracts
-  console.log("📦 Deploying Original Contracts...");
-  const AssetTracker = await ethers.getContractFactory("AssetTracker");
-  const RoleBasedAcl = await ethers.getContractFactory("RoleBasedAcl");
-  const AccessManagement = await ethers.getContractFactory("AccessManagement");
+  console.log('📦 Deploying Original Contracts...');
+  const AssetTracker = await ethers.getContractFactory('AssetTracker');
+  const RoleBasedAcl = await ethers.getContractFactory('RoleBasedAcl');
+  const AccessManagement = await ethers.getContractFactory('AccessManagement');
 
   const assetTracker = await AssetTracker.deploy();
   const roleBasedAcl = await RoleBasedAcl.deploy();
@@ -24,51 +24,57 @@ async function main() {
   await accessManagement.waitForDeployment();
 
   // Deploy optimized contracts
-  console.log("📦 Deploying Optimized Contracts...");
-  const AssetTrackerOptimized = await ethers.getContractFactory("AssetTrackerOptimized");
+  console.log('📦 Deploying Optimized Contracts...');
+  const AssetTrackerOptimized = await ethers.getContractFactory('AssetTrackerOptimized');
   const assetTrackerOpt = await AssetTrackerOptimized.deploy();
   await assetTrackerOpt.waitForDeployment();
 
-  console.log("✅ All contracts deployed\n");
+  console.log('✅ All contracts deployed\n');
 
   // Performance comparison object
   const performance = {
     deployment: {},
     operations: {},
-    storage: {}
+    storage: {},
   };
 
   // 1. Deployment Gas Comparison
-  console.log("📊 Deployment Gas Analysis:");
-  
+  console.log('📊 Deployment Gas Analysis:');
+
   const originalDeployTx = assetTracker.deploymentTransaction();
   const optimizedDeployTx = assetTrackerOpt.deploymentTransaction();
-  
+
   if (originalDeployTx && optimizedDeployTx) {
     const originalReceipt = await ethers.provider.getTransactionReceipt(originalDeployTx.hash);
     const optimizedReceipt = await ethers.provider.getTransactionReceipt(optimizedDeployTx.hash);
-    
+
     performance.deployment.original = originalReceipt.gasUsed;
     performance.deployment.optimized = optimizedReceipt.gasUsed;
     performance.deployment.savings = originalReceipt.gasUsed - optimizedReceipt.gasUsed;
-    performance.deployment.percentSavings = 
-      (Number(performance.deployment.savings) / Number(performance.deployment.original) * 100).toFixed(2);
+    performance.deployment.percentSavings = (
+      (Number(performance.deployment.savings) / Number(performance.deployment.original)) *
+      100
+    ).toFixed(2);
 
     console.log(`Original AssetTracker: ${performance.deployment.original.toString()} gas`);
     console.log(`Optimized AssetTracker: ${performance.deployment.optimized.toString()} gas`);
-    console.log(`Deployment Savings: ${performance.deployment.savings.toString()} gas (${performance.deployment.percentSavings}%)\n`);
+    console.log(
+      `Deployment Savings: ${performance.deployment.savings.toString()} gas (${
+        performance.deployment.percentSavings
+      }%)\n`
+    );
   }
 
   // 2. Operation Gas Comparison
-  console.log("⚡ Operation Gas Analysis:");
+  console.log('⚡ Operation Gas Analysis:');
 
   // Asset creation comparison
-  console.log("Testing asset creation...");
+  console.log('Testing asset creation...');
   const assetData = {
-    name: "Performance Test Asset",
-    description: "Asset for performance testing",
-    uuid: "perf-test-001",
-    manufacturer: "Test Manufacturer"
+    name: 'Performance Test Asset',
+    description: 'Asset for performance testing',
+    uuid: 'perf-test-001',
+    manufacturer: 'Test Manufacturer',
   };
 
   try {
@@ -85,7 +91,7 @@ async function main() {
     const optimizedCreateTx = await assetTrackerOpt.createAsset(
       assetData.name,
       assetData.description,
-      assetData.uuid + "-opt",
+      assetData.uuid + '-opt',
       assetData.manufacturer
     );
     const optimizedCreateReceipt = await optimizedCreateTx.wait();
@@ -93,48 +99,71 @@ async function main() {
     performance.operations.createAsset = {
       original: originalCreateReceipt.gasUsed,
       optimized: optimizedCreateReceipt.gasUsed,
-      savings: originalCreateReceipt.gasUsed - optimizedCreateReceipt.gasUsed
+      savings: originalCreateReceipt.gasUsed - optimizedCreateReceipt.gasUsed,
     };
-    performance.operations.createAsset.percentSavings = 
-      (Number(performance.operations.createAsset.savings) / Number(performance.operations.createAsset.original) * 100).toFixed(2);
+    performance.operations.createAsset.percentSavings = (
+      (Number(performance.operations.createAsset.savings) /
+        Number(performance.operations.createAsset.original)) *
+      100
+    ).toFixed(2);
 
-    console.log(`Create Asset - Original: ${performance.operations.createAsset.original.toString()} gas`);
-    console.log(`Create Asset - Optimized: ${performance.operations.createAsset.optimized.toString()} gas`);
-    console.log(`Create Asset Savings: ${performance.operations.createAsset.savings.toString()} gas (${performance.operations.createAsset.percentSavings}%)`);
-
+    console.log(
+      `Create Asset - Original: ${performance.operations.createAsset.original.toString()} gas`
+    );
+    console.log(
+      `Create Asset - Optimized: ${performance.operations.createAsset.optimized.toString()} gas`
+    );
+    console.log(
+      `Create Asset Savings: ${performance.operations.createAsset.savings.toString()} gas (${
+        performance.operations.createAsset.percentSavings
+      }%)`
+    );
   } catch (error) {
-    console.log("⚠️  Asset creation test failed:", error.message);
+    console.log('⚠️  Asset creation test failed:', error.message);
   }
 
   // Asset transfer comparison
-  console.log("\nTesting asset transfer...");
+  console.log('\nTesting asset transfer...');
   try {
     // Original contract transfer
     const originalTransferTx = await assetTracker.transferAsset(user1.address, assetData.uuid);
     const originalTransferReceipt = await originalTransferTx.wait();
 
     // Optimized contract transfer
-    const optimizedTransferTx = await assetTrackerOpt.transferAsset(user1.address, assetData.uuid + "-opt");
+    const optimizedTransferTx = await assetTrackerOpt.transferAsset(
+      user1.address,
+      assetData.uuid + '-opt'
+    );
     const optimizedTransferReceipt = await optimizedTransferTx.wait();
 
     performance.operations.transferAsset = {
       original: originalTransferReceipt.gasUsed,
       optimized: optimizedTransferReceipt.gasUsed,
-      savings: originalTransferReceipt.gasUsed - optimizedTransferReceipt.gasUsed
+      savings: originalTransferReceipt.gasUsed - optimizedTransferReceipt.gasUsed,
     };
-    performance.operations.transferAsset.percentSavings = 
-      (Number(performance.operations.transferAsset.savings) / Number(performance.operations.transferAsset.original) * 100).toFixed(2);
+    performance.operations.transferAsset.percentSavings = (
+      (Number(performance.operations.transferAsset.savings) /
+        Number(performance.operations.transferAsset.original)) *
+      100
+    ).toFixed(2);
 
-    console.log(`Transfer Asset - Original: ${performance.operations.transferAsset.original.toString()} gas`);
-    console.log(`Transfer Asset - Optimized: ${performance.operations.transferAsset.optimized.toString()} gas`);
-    console.log(`Transfer Asset Savings: ${performance.operations.transferAsset.savings.toString()} gas (${performance.operations.transferAsset.percentSavings}%)`);
-
+    console.log(
+      `Transfer Asset - Original: ${performance.operations.transferAsset.original.toString()} gas`
+    );
+    console.log(
+      `Transfer Asset - Optimized: ${performance.operations.transferAsset.optimized.toString()} gas`
+    );
+    console.log(
+      `Transfer Asset Savings: ${performance.operations.transferAsset.savings.toString()} gas (${
+        performance.operations.transferAsset.percentSavings
+      }%)`
+    );
   } catch (error) {
-    console.log("⚠️  Asset transfer test failed:", error.message);
+    console.log('⚠️  Asset transfer test failed:', error.message);
   }
 
   // 3. Bulk Operations Test
-  console.log("\n🔄 Bulk Operations Test:");
+  console.log('\n🔄 Bulk Operations Test:');
   const bulkTestSize = 5;
   let originalBulkGas = 0n;
   let optimizedBulkGas = 0n;
@@ -165,7 +194,7 @@ async function main() {
     }
 
     const bulkSavings = originalBulkGas - optimizedBulkGas;
-    const bulkPercentSavings = (Number(bulkSavings) / Number(originalBulkGas) * 100).toFixed(2);
+    const bulkPercentSavings = ((Number(bulkSavings) / Number(originalBulkGas)) * 100).toFixed(2);
 
     console.log(`Bulk ${bulkTestSize} assets - Original: ${originalBulkGas.toString()} gas`);
     console.log(`Bulk ${bulkTestSize} assets - Optimized: ${optimizedBulkGas.toString()} gas`);
@@ -175,74 +204,81 @@ async function main() {
       original: originalBulkGas,
       optimized: optimizedBulkGas,
       savings: bulkSavings,
-      percentSavings: bulkPercentSavings
+      percentSavings: bulkPercentSavings,
     };
-
   } catch (error) {
-    console.log("⚠️  Bulk operations test failed:", error.message);
+    console.log('⚠️  Bulk operations test failed:', error.message);
   }
 
   // 4. Storage Efficiency Analysis
-  console.log("\n💾 Storage Efficiency Analysis:");
-  
+  console.log('\n💾 Storage Efficiency Analysis:');
+
   // Get contract sizes
   const originalSize = await ethers.provider.getCode(await assetTracker.getAddress());
   const optimizedSize = await ethers.provider.getCode(await assetTrackerOpt.getAddress());
-  
+
   performance.storage.originalSize = originalSize.length;
   performance.storage.optimizedSize = optimizedSize.length;
   performance.storage.sizeDifference = originalSize.length - optimizedSize.length;
-  performance.storage.percentSavings = 
-    (performance.storage.sizeDifference / performance.storage.originalSize * 100).toFixed(2);
+  performance.storage.percentSavings = (
+    (performance.storage.sizeDifference / performance.storage.originalSize) *
+    100
+  ).toFixed(2);
 
   console.log(`Original contract size: ${performance.storage.originalSize} bytes`);
   console.log(`Optimized contract size: ${performance.storage.optimizedSize} bytes`);
-  console.log(`Size difference: ${performance.storage.sizeDifference} bytes (${performance.storage.percentSavings}%)`);
+  console.log(
+    `Size difference: ${performance.storage.sizeDifference} bytes (${performance.storage.percentSavings}%)`
+  );
 
   // 5. Summary Report
-  console.log("\n📋 Performance Summary Report:");
-  console.log("=" .repeat(50));
-  
+  console.log('\n📋 Performance Summary Report:');
+  console.log('='.repeat(50));
+
   if (performance.deployment.savings) {
     console.log(`💰 Deployment gas savings: ${performance.deployment.percentSavings}%`);
   }
-  
+
   if (performance.operations.createAsset) {
-    console.log(`🏗️  Asset creation savings: ${performance.operations.createAsset.percentSavings}%`);
+    console.log(
+      `🏗️  Asset creation savings: ${performance.operations.createAsset.percentSavings}%`
+    );
   }
-  
+
   if (performance.operations.transferAsset) {
-    console.log(`🔄 Asset transfer savings: ${performance.operations.transferAsset.percentSavings}%`);
+    console.log(
+      `🔄 Asset transfer savings: ${performance.operations.transferAsset.percentSavings}%`
+    );
   }
-  
+
   if (performance.operations.bulk) {
     console.log(`📦 Bulk operations savings: ${performance.operations.bulk.percentSavings}%`);
   }
-  
+
   console.log(`💾 Contract size savings: ${performance.storage.percentSavings}%`);
 
   // 6. Recommendations
-  console.log("\n💡 Optimization Recommendations:");
-  console.log("=" .repeat(50));
-  console.log("✅ Use custom errors instead of require statements");
-  console.log("✅ Pack struct variables to optimize storage");
-  console.log("✅ Use calldata instead of memory for external function parameters");
-  console.log("✅ Implement proper access modifiers");
-  console.log("✅ Add comprehensive event logging");
-  console.log("✅ Use immutable variables where possible");
-  console.log("✅ Optimize mapping structures for gas efficiency");
+  console.log('\n💡 Optimization Recommendations:');
+  console.log('='.repeat(50));
+  console.log('✅ Use custom errors instead of require statements');
+  console.log('✅ Pack struct variables to optimize storage');
+  console.log('✅ Use calldata instead of memory for external function parameters');
+  console.log('✅ Implement proper access modifiers');
+  console.log('✅ Add comprehensive event logging');
+  console.log('✅ Use immutable variables where possible');
+  console.log('✅ Optimize mapping structures for gas efficiency');
 
   // Save performance data
-  const fs = require("fs");
-  const path = require("path");
-  
-  const reportsDir = path.join(__dirname, "..", "reports");
+  const fs = require('fs');
+  const path = require('path');
+
+  const reportsDir = path.join(__dirname, '..', 'reports');
   if (!fs.existsSync(reportsDir)) {
     fs.mkdirSync(reportsDir, { recursive: true });
   }
-  
+
   const reportFile = path.join(reportsDir, `performance-analysis-${Date.now()}.json`);
-  
+
   // Custom replacer function to handle BigInt serialization
   const jsonReplacer = (key, value) => {
     if (typeof value === 'bigint') {
@@ -250,20 +286,20 @@ async function main() {
     }
     return value;
   };
-  
+
   fs.writeFileSync(reportFile, JSON.stringify(performance, jsonReplacer, 2));
   console.log(`\n📄 Performance report saved to: ${reportFile}`);
 
-  console.log("\n🎉 Performance analysis completed!");
+  console.log('\n🎉 Performance analysis completed!');
 }
 
 if (require.main === module) {
   main()
     .then(() => process.exit(0))
     .catch((error) => {
-      console.error("❌ Performance analysis failed:", error);
+      console.error('❌ Performance analysis failed:', error);
       process.exit(1);
     });
 }
 
-module.exports = { main }; 
+module.exports = { main };

@@ -1,4 +1,4 @@
-const { ethers } = require("hardhat");
+const { ethers } = require('hardhat');
 
 /**
  * Test utilities for smart contract testing
@@ -10,9 +10,9 @@ class TestUtils {
   static async deployAllContracts() {
     const [owner, ...addrs] = await ethers.getSigners();
 
-    const AssetTracker = await ethers.getContractFactory("AssetTracker");
-    const RoleBasedAcl = await ethers.getContractFactory("RoleBasedAcl");
-    const AccessManagement = await ethers.getContractFactory("AccessManagement");
+    const AssetTracker = await ethers.getContractFactory('AssetTracker');
+    const RoleBasedAcl = await ethers.getContractFactory('RoleBasedAcl');
+    const AccessManagement = await ethers.getContractFactory('AccessManagement');
 
     const assetTracker = await AssetTracker.deploy();
     const roleBasedAcl = await RoleBasedAcl.deploy();
@@ -27,7 +27,7 @@ class TestUtils {
       roleBasedAcl,
       accessManagement,
       owner,
-      addrs
+      addrs,
     };
   }
 
@@ -36,21 +36,18 @@ class TestUtils {
    */
   static async createTestAsset(contract, signer, overrides = {}) {
     const defaults = {
-      name: "Test Asset",
-      description: "Test Description",
+      name: 'Test Asset',
+      description: 'Test Description',
       uuid: `test-uuid-${Date.now()}`,
-      manufacturer: "Test Manufacturer"
+      manufacturer: 'Test Manufacturer',
     };
 
     const params = { ...defaults, ...overrides };
-    
-    const tx = await contract.connect(signer).createAsset(
-      params.name,
-      params.description,
-      params.uuid,
-      params.manufacturer
-    );
-    
+
+    const tx = await contract
+      .connect(signer)
+      .createAsset(params.name, params.description, params.uuid, params.manufacturer);
+
     await tx.wait();
     return params;
   }
@@ -61,16 +58,13 @@ class TestUtils {
   static async createAccessAsset(contract, signer, overrides = {}) {
     const defaults = {
       assetKey: `access-asset-${Date.now()}`,
-      description: "Test Access Asset"
+      description: 'Test Access Asset',
     };
 
     const params = { ...defaults, ...overrides };
-    
-    const tx = await contract.connect(signer).newAsset(
-      params.assetKey,
-      params.description
-    );
-    
+
+    const tx = await contract.connect(signer).newAsset(params.assetKey, params.description);
+
     await tx.wait();
     return params;
   }
@@ -83,27 +77,27 @@ class TestUtils {
       superadmin: users[0],
       admin: users[1],
       manager: users[2],
-      user: users[3]
+      user: users[3],
     };
 
     // Creator assigns superadmin
     if (roles.superadmin) {
-      await roleContract.connect(creator).assignRole(roles.superadmin.address, "superadmin");
+      await roleContract.connect(creator).assignRole(roles.superadmin.address, 'superadmin');
     }
 
     // Superadmin assigns admin
     if (roles.superadmin && roles.admin) {
-      await roleContract.connect(roles.superadmin).assignRole(roles.admin.address, "admin");
+      await roleContract.connect(roles.superadmin).assignRole(roles.admin.address, 'admin');
     }
 
     // Admin assigns manager
     if (roles.superadmin && roles.manager) {
-      await roleContract.connect(roles.superadmin).assignRole(roles.manager.address, "manager");
+      await roleContract.connect(roles.superadmin).assignRole(roles.manager.address, 'manager');
     }
 
     // Admin assigns user
     if (roles.superadmin && roles.user) {
-      await roleContract.connect(roles.superadmin).assignRole(roles.user.address, "user");
+      await roleContract.connect(roles.superadmin).assignRole(roles.user.address, 'user');
     }
 
     return roles;
@@ -112,14 +106,14 @@ class TestUtils {
   /**
    * Generate multiple test assets
    */
-  static generateAssetBatch(count, prefix = "batch-asset") {
+  static generateAssetBatch(count, prefix = 'batch-asset') {
     const assets = [];
     for (let i = 0; i < count; i++) {
       assets.push({
         name: `${prefix} ${i + 1}`,
         description: `Description for ${prefix} ${i + 1}`,
         uuid: `${prefix}-uuid-${i + 1}`,
-        manufacturer: `Manufacturer ${i + 1}`
+        manufacturer: `Manufacturer ${i + 1}`,
       });
     }
     return assets;
@@ -144,15 +138,15 @@ class TestUtils {
    * Advance time in hardhat network
    */
   static async advanceTime(seconds) {
-    await ethers.provider.send("evm_increaseTime", [seconds]);
-    await ethers.provider.send("evm_mine");
+    await ethers.provider.send('evm_increaseTime', [seconds]);
+    await ethers.provider.send('evm_mine');
   }
 
   /**
    * Get current block timestamp
    */
   static async getCurrentTimestamp() {
-    const block = await ethers.provider.getBlock("latest");
+    const block = await ethers.provider.getBlock('latest');
     return block.timestamp;
   }
 
@@ -162,8 +156,8 @@ class TestUtils {
   static async expectEvent(txPromise, contract, eventName, args = []) {
     const tx = await txPromise;
     const receipt = await tx.wait();
-    
-    const event = receipt.events?.find(e => e.event === eventName);
+
+    const event = receipt.events?.find((e) => e.event === eventName);
     if (!event) {
       throw new Error(`Event ${eventName} not found in transaction`);
     }
@@ -171,7 +165,9 @@ class TestUtils {
     if (args.length > 0) {
       for (let i = 0; i < args.length; i++) {
         if (event.args[i] !== args[i]) {
-          throw new Error(`Event argument ${i} mismatch: expected ${args[i]}, got ${event.args[i]}`);
+          throw new Error(
+            `Event argument ${i} mismatch: expected ${args[i]}, got ${event.args[i]}`
+          );
         }
       }
     }
@@ -185,11 +181,11 @@ class TestUtils {
   static async estimateGasCost(txPromise, gasPrice = null) {
     const tx = await txPromise;
     const receipt = await tx.wait();
-    
+
     if (!gasPrice) {
       gasPrice = await ethers.provider.getGasPrice();
     }
-    
+
     const gasCost = receipt.gasUsed.mul(gasPrice);
     return ethers.utils.formatEther(gasCost);
   }
@@ -216,4 +212,4 @@ class TestUtils {
   }
 }
 
-module.exports = TestUtils; 
+module.exports = TestUtils;

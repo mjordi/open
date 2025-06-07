@@ -10,19 +10,19 @@ import { Unauthorized } from "./CustomErrors.sol";
 
 contract RoleBasedAcl {
   
-  address private immutable _CREATOR;
+  address private immutable _creator;
 
     mapping(address => mapping(string => bool)) private _roles;
 
     event RoleChange(address indexed client, string indexed role, bool assigned);
 
     constructor() {
-    _CREATOR = msg.sender;
+    _creator = msg.sender;
     _roles[msg.sender]["superadmin"] = true;
     }
 
     modifier hasRole(string memory role) {
-    if (!_roles[msg.sender][role] && msg.sender != _CREATOR) {
+    if (!_roles[msg.sender][role] && msg.sender != _creator) {
       revert Unauthorized(msg.sender);
     }
         _;

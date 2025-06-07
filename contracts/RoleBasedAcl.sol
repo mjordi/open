@@ -9,7 +9,7 @@ contract RoleBasedAcl {
   
   address creator;
   
-  mapping(address => string) roles;
+  mapping(address => mapping(string => bool)) roles;
  
   event RoleChange(address _client, string _role);
 
@@ -18,21 +18,21 @@ contract RoleBasedAcl {
   }
   
   function assignRole(address entity, string role) public hasRole('superadmin') {
-    roles[entity] = role;
+    roles[entity][role] = true;
     emit RoleChange(entity, role);
   }
   
   function unassignRole(address entity, string role) public hasRole('superadmin') {
-    roles[entity] = '';
+    roles[entity][role] = false;
     emit RoleChange(entity, role);
   }
   
   function isAssignedRole(address entity, string role) public view returns (bool) {
-    return keccak256(abi.encodePacked(roles[entity])) == keccak256(abi.encodePacked(role));
+    return roles[entity][role];
   }
   
   modifier hasRole(string role) {
-    if (keccak256(abi.encodePacked(roles[msg.sender])) != keccak256(abi.encodePacked(role)) && msg.sender != creator) {
+    if (!roles[msg.sender][role] && msg.sender != creator) {
       revert("Unauthorized");
     }
     _;

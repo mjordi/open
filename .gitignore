@@ -216,6 +216,7 @@ performance-report*.json
 security-reports/
 slither-reports/
 mythril-reports/
+slither-report.json
 
 # Build artifacts
 build/
@@ -224,7 +225,6 @@ dist/
 # Solidity compiler output
 *.abi
 *.bin
-*.json
 
 # Local blockchain data
 blockchain-data/

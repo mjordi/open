@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: UNLICENSED
 // https://blog.codecentric.de/en/2018/01/implementing-smart-contracts/
 // Demo: https://asset-tracker.codecentric.de/
 

@@ -2,64 +2,52 @@
 
 A production-ready smart contract suite featuring asset tracking, role-based access control, and comprehensive access management with enterprise-grade testing, security analysis, and performance optimization.
 
-## Smart Contracts
-
-- **`AccessManagement` (`aaas.sol`)**: Manages asset authorization and access control, with support for bulk operations.
-- **`AssetTracker`**: Handles asset creation, ownership, and transfers. An optimized version (`AssetTrackerOptimized.sol`) is available for reduced gas costs.
-- **`RoleBasedAcl`**: Implements hierarchical role-based access control for managing permissions.
-
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (>=16.0.0)
-- npm (>=8.0.0)
-- Git
+- [Node.js](https://nodejs.org/) (>= 16.0.0)
+- [npm](https://www.npmjs.com/) (>= 8.0.0)
+- [Git](https://git-scm.com/)
 
 ### Installation
 
 1.  Clone the repository:
+
     ```sh
     git clone https://github.com/your-username/open.git
     cd open
     ```
+
 2.  Install dependencies:
     ```sh
     npm install
     ```
 
-## Available Scripts
+## Usage
 
-### Core Commands
+This project uses `npm` scripts for common tasks. See `package.json` for a full list of available scripts.
+
+### Core Scripts
 
 - `npm run compile`: Compiles the smart contracts.
-- `npm run deploy`: Deploys contracts to a specified network (e.g., `npm run deploy -- --network sepolia`).
-- `npm run node`: Starts a local Hardhat Network node.
-
-### Testing & Coverage
-
-- `npm test`: Runs all unit tests.
-- `npm run test:gas`: Runs tests and reports gas usage.
-- `npm run coverage`: Generates a test coverage report.
-
-### Code Quality & Formatting
-
+- `npm test`: Runs the full test suite.
+- `npm run deploy`: Deploys the contracts (see `package.json` for network-specific deployment).
 - `npm run lint`: Lints both Solidity and JavaScript files.
-- `npm run format`: Formats the codebase using Prettier.
+- `npm run validate`: Runs a comprehensive validation suite including compilation, linting, and testing.
 
-### Auditing & Analysis
+## Smart Contracts
 
-- `npm run audit`: Audits project dependencies for security vulnerabilities.
-- `npm run size`: Displays the size of the compiled contracts.
+The core contracts of this project include:
 
-### Validation
+- `AssetTracker.sol`: The original asset management and ownership tracking contract (Solidity `^0.4.24`).
+- `AssetTrackerOptimized.sol`: A gas-optimized version of `AssetTracker` using modern Solidity features (`^0.8.24`).
+- `RoleBasedAcl.sol`: Hierarchical role-based access control (Solidity `^0.4.24`).
+- `aaas.sol` (AccessManagement): A contract for comprehensive asset access and authorization, upgraded to Solidity `^0.8.24`.
 
-- `npm run validate`: Runs a comprehensive suite of checks, including compilation, linting, and testing.
+## Security
 
-## Contributing
+The project is configured with security analysis tools:
 
-Contributions are welcome! Please open an issue or submit a pull request.
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+- `npm run audit`: Runs `npm audit` to check for vulnerabilities in dependencies.
+- **Slither** and **Mythril** can be used for deeper static analysis.

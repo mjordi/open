@@ -2,7 +2,7 @@
 // https://blog.codecentric.de/en/2018/01/implementing-smart-contracts/
 // Demo: https://asset-tracker.codecentric.de/
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
 contract AssetTracker {
     struct Asset {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
 /**
  * @title AssetTracker Optimized
@@ -95,6 +95,7 @@ contract AssetTrackerOptimized {
         }
 
         // Create asset with optimized storage
+        /* solhint-disable not-rely-on-time */
         _assets[uuid] = Asset({
             owner: msg.sender,
             timestamp: uint96(block.timestamp),
@@ -109,6 +110,7 @@ contract AssetTrackerOptimized {
         _totalAssets++;
 
         emit AssetCreated(msg.sender, uuid, name, manufacturer, block.timestamp);
+        /* solhint-enable not-rely-on-time */
     }
 
     /**
@@ -125,6 +127,7 @@ contract AssetTrackerOptimized {
         address from = msg.sender;
         
         // Update ownership
+        /* solhint-disable not-rely-on-time */
         _assets[uuid].owner = to;
         _assets[uuid].timestamp = uint96(block.timestamp);
         
@@ -137,6 +140,7 @@ contract AssetTrackerOptimized {
         _assetCounts[to]++;
 
         emit AssetTransferred(from, to, uuid, block.timestamp);
+        /* solhint-enable not-rely-on-time */
     }
 
     /**
@@ -204,8 +208,9 @@ contract AssetTrackerOptimized {
     /**
      * @dev Checks if an asset exists
      * @param uuid Asset UUID
-     * @return exists True if asset exists
+     * @return exists Boolean indicating if the asset exists.
      */
+    // slither-disable-next-line block-timestamp
     function checkAssetExists(string calldata uuid) external view returns (bool exists) {
         return _assets[uuid].owner != address(0);
     }

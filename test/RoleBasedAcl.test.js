@@ -9,7 +9,7 @@ describe('RoleBasedAcl', function () {
 
   beforeEach(async function () {
     const RoleBasedAcl = await ethers.getContractFactory('RoleBasedAcl');
-    const [creator, u1, u2, u3] = await ethers.getSigners();
+    const [, u1, u2, u3] = await ethers.getSigners();
     user1 = u1;
     user2 = u2;
     user3 = u3;
@@ -24,7 +24,7 @@ describe('RoleBasedAcl', function () {
       // We can test this by trying to assign a role (only superadmins can do this)
       await expect(roleBasedAcl.assignRole(user1.address, 'admin'))
         .to.emit(roleBasedAcl, 'RoleChange')
-        .withArgs(user1.address, 'admin');
+        .withArgs(user1.address, 'admin', true);
     });
 
     it('Should not allow non-creators to assign roles initially', async function () {
@@ -39,7 +39,7 @@ describe('RoleBasedAcl', function () {
     it('Should allow creator to assign roles', async function () {
       await expect(roleBasedAcl.assignRole(user1.address, 'admin'))
         .to.emit(roleBasedAcl, 'RoleChange')
-        .withArgs(user1.address, 'admin');
+        .withArgs(user1.address, 'admin', true);
 
       expect(
         await roleBasedAcl.isAssignedRole.staticCall(user1.address, 'admin')
@@ -49,7 +49,7 @@ describe('RoleBasedAcl', function () {
     it('Should allow creator to assign superadmin role', async function () {
       await expect(roleBasedAcl.assignRole(user1.address, 'superadmin'))
         .to.emit(roleBasedAcl, 'RoleChange')
-        .withArgs(user1.address, 'superadmin');
+        .withArgs(user1.address, 'superadmin', true);
 
       expect(
         await roleBasedAcl.isAssignedRole.staticCall(
@@ -68,7 +68,7 @@ describe('RoleBasedAcl', function () {
         roleBasedAcl.connect(user1).assignRole(user2.address, 'moderator')
       )
         .to.emit(roleBasedAcl, 'RoleChange')
-        .withArgs(user2.address, 'moderator');
+        .withArgs(user2.address, 'moderator', true);
 
       expect(
         await roleBasedAcl.isAssignedRole.staticCall(user2.address, 'moderator')
@@ -108,7 +108,7 @@ describe('RoleBasedAcl', function () {
     it('Should allow creator to unassign roles', async function () {
       await expect(roleBasedAcl.unassignRole(user1.address, 'admin'))
         .to.emit(roleBasedAcl, 'RoleChange')
-        .withArgs(user1.address, 'admin');
+        .withArgs(user1.address, 'admin', false);
 
       expect(
         await roleBasedAcl.isAssignedRole.staticCall(user1.address, 'admin')
@@ -124,7 +124,7 @@ describe('RoleBasedAcl', function () {
         roleBasedAcl.connect(user1).unassignRole(user2.address, 'moderator')
       )
         .to.emit(roleBasedAcl, 'RoleChange')
-        .withArgs(user2.address, 'moderator');
+        .withArgs(user2.address, 'moderator', false);
 
       expect(
         await roleBasedAcl.isAssignedRole.staticCall(user2.address, 'moderator')
@@ -142,7 +142,7 @@ describe('RoleBasedAcl', function () {
       // Try to unassign a role that user1 doesn't have
       await expect(roleBasedAcl.unassignRole(user1.address, 'nonexistent'))
         .to.emit(roleBasedAcl, 'RoleChange')
-        .withArgs(user1.address, 'nonexistent');
+        .withArgs(user1.address, 'nonexistent', false);
 
       expect(
         await roleBasedAcl.isAssignedRole.staticCall(
@@ -220,7 +220,7 @@ describe('RoleBasedAcl', function () {
       // Creator should still be able to assign new roles
       await expect(roleBasedAcl.assignRole(user2.address, 'moderator'))
         .to.emit(roleBasedAcl, 'RoleChange')
-        .withArgs(user2.address, 'moderator');
+        .withArgs(user2.address, 'moderator', true);
     });
 
     it('Should handle multiple superadmins correctly', async function () {

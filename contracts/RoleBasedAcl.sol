@@ -3,38 +3,52 @@
 //https://github.com/jpmcruz/RBAC-SC
 //https://github.com/eugenp/tutorials/tree/master/ethereum/src/main/java/com/baeldung/web3j
 
-pragma solidity ^0.4.10;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import { Unauthorized } from "./CustomErrors.sol";
 
 contract RoleBasedAcl {
   
-  address creator;
+  address private _creator;
   
-  mapping(address => mapping(string => bool)) roles;
+  mapping(address => mapping(string => bool)) private _roles;
  
-  event RoleChange(address _client, string _role);
+  event RoleChange(address indexed client, string indexed role, bool assigned);
 
-  constructor() {
-    creator = msg.sender;
+  constructor() public {
+    _creator = msg.sender;
+    _roles[msg.sender]["superadmin"] = true;
   }
   
-  function assignRole(address entity, string role) public hasRole('superadmin') {
-    roles[entity][role] = true;
-    emit RoleChange(entity, role);
-  }
-  
-  function unassignRole(address entity, string role) public hasRole('superadmin') {
-    roles[entity][role] = false;
-    emit RoleChange(entity, role);
-  }
-  
-  function isAssignedRole(address entity, string role) public view returns (bool) {
-    return roles[entity][role];
-  }
-  
-  modifier hasRole(string role) {
-    if (!roles[msg.sender][role] && msg.sender != creator) {
-      revert("Unauthorized");
+  modifier hasRole(string memory role) {
+    if (!_roles[msg.sender][role] && msg.sender != _creator) {
+      revert Unauthorized(msg.sender);
     }
     _;
+  }
+
+  function assignRole(address entity, string memory role)
+    external
+    hasRole("superadmin")
+  {
+    _roles[entity][role] = true;
+    emit RoleChange(entity, role, true);
+  }
+  
+  function unassignRole(address entity, string memory role)
+    external
+    hasRole("superadmin")
+  {
+    _roles[entity][role] = false;
+    emit RoleChange(entity, role, false);
+  }
+  
+  function isAssignedRole(address entity, string memory role)
+    external
+    view
+    returns (bool)
+  {
+    return _roles[entity][role];
   }
 }

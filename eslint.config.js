@@ -11,6 +11,7 @@ module.exports = [
       globals: {
         ...globals.node,
         ...globals.mocha,
+        ...globals.browser,
       },
     },
     rules: {
@@ -20,16 +21,12 @@ module.exports = [
     },
   },
   {
-    ignores: ['holder.min.js', 'jquery-3.2.1.js', 'user2.js', 'abi_aaas.js'],
-  },
-  {
-    ignores: ['coverage/'],
-    languageOptions: {
-      globals: {
-        ...globals.browser,
-        ...globals.node,
-        ...globals.mocha,
-      },
-    },
+    ignores: [
+      'holder.min.js',
+      'jquery-3.2.1.js',
+      'user2.js',
+      'abi_aaas.js',
+      'coverage/',
+    ],
   },
 ];

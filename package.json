@@ -21,7 +21,7 @@
     "deploy:local": "npx hardhat run scripts/deploy.js --network localhost",
     "deploy:sepolia": "npx hardhat run scripts/deploy.js --network sepolia",
     "lint:sol": "npx solhint 'contracts/**/*.sol' || true",
-    "lint:js": "npx eslint . --ext .js --ignore-path .eslintignore || true",
+    "lint:js": "npx eslint . --ext .js || true",
     "lint": "npm run lint:sol && npm run lint:js",
     "format": "npx prettier --write .",
     "format:check": "npx prettier --check .",

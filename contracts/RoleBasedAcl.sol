@@ -9,31 +9,31 @@ contract RoleBasedAcl {
   
   address creator;
   
-  mapping(address => mapping(string => bool)) roles;
+  mapping(address => string) roles;
  
   event RoleChange(address _client, string _role);
 
-  function RoleBasedAcl () {
+  constructor() {
     creator = msg.sender;
   }
   
-  function assignRole (address entity, string role) hasRole('superadmin') {
-    roles[entity][role] = true;
-    RoleChange(entity, role);
+  function assignRole(address entity, string role) public hasRole('superadmin') {
+    roles[entity] = role;
+    emit RoleChange(entity, role);
   }
   
-  function unassignRole (address entity, string role) hasRole('superadmin') {
-    roles[entity][role] = false;
-    RoleChange(entity, role);
+  function unassignRole(address entity, string role) public hasRole('superadmin') {
+    roles[entity] = '';
+    emit RoleChange(entity, role);
   }
   
-  function isAssignedRole (address entity, string role) returns (bool) {
-    return roles[entity][role];
+  function isAssignedRole(address entity, string role) public view returns (bool) {
+    return keccak256(abi.encodePacked(roles[entity])) == keccak256(abi.encodePacked(role));
   }
   
-  modifier hasRole (string role) {
-    if (!roles[msg.sender][role] && msg.sender != creator) {
-      throw;
+  modifier hasRole(string role) {
+    if (keccak256(abi.encodePacked(roles[msg.sender])) != keccak256(abi.encodePacked(role)) && msg.sender != creator) {
+      revert("Unauthorized");
     }
     _;
   }

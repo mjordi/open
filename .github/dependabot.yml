@@ -9,8 +9,6 @@ updates:
       time: "06:00"
       timezone: "UTC"
     open-pull-requests-limit: 5
-    reviewers:
-      - "mjordi"
     assignees:
       - "mjordi"
     labels:
@@ -76,8 +74,6 @@ updates:
       time: "06:00"
       timezone: "UTC"
     open-pull-requests-limit: 2
-    reviewers:
-      - "mjordi"
     assignees:
       - "mjordi"
     labels:

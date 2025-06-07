@@ -10,13 +10,13 @@ import { Unauthorized } from "./CustomErrors.sol";
 
 contract RoleBasedAcl {
   
-  address private _creator;
+  address private immutable _creator;
   
   mapping(address => mapping(string => bool)) private _roles;
  
   event RoleChange(address indexed client, string indexed role, bool assigned);
 
-  constructor() public {
+  constructor() {
     _creator = msg.sender;
     _roles[msg.sender]["superadmin"] = true;
   }

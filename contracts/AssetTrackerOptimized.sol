@@ -210,7 +210,7 @@ contract AssetTrackerOptimized {
      * @param uuid Asset UUID
      * @return exists Boolean indicating if the asset exists.
      */
-    // slither-disable-next-line block-timestamp
+    // slither-disable-next-line uninitialized-state
     function checkAssetExists(string calldata uuid) external view returns (bool exists) {
         return _assets[uuid].owner != address(0);
     }

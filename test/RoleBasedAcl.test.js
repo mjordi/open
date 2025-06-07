@@ -3,15 +3,16 @@ const { ethers } = require('hardhat');
 
 describe('RoleBasedAcl', function () {
   let roleBasedAcl;
-  let creator;
   let user1;
   let user2;
   let user3;
-  let addrs;
 
   beforeEach(async function () {
     const RoleBasedAcl = await ethers.getContractFactory('RoleBasedAcl');
-    [creator, user1, user2, user3, ...addrs] = await ethers.getSigners();
+    const [creator, u1, u2, u3] = await ethers.getSigners();
+    user1 = u1;
+    user2 = u2;
+    user3 = u3;
 
     roleBasedAcl = await RoleBasedAcl.deploy();
     await roleBasedAcl.waitForDeployment();

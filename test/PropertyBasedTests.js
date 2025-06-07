@@ -247,7 +247,7 @@ describe('Property-Based Tests (Fuzzing)', function () {
           await roleBasedAcl
             .connect(creator)
             .unassignRole(nonSuperadmin.address, 'superadmin');
-        } catch (e) {
+        } catch {
           // Ignore if role wasn't assigned
         }
 

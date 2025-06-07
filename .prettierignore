@@ -1,2 +1,4 @@
 artifacts/
-cache/ 
+cache/
+node_modules
+coverage/ 

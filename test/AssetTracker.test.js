@@ -6,12 +6,11 @@ describe('AssetTracker', function () {
   let owner;
   let addr1;
   let addr2;
-  let addrs;
 
   beforeEach(async function () {
     // Get the ContractFactory and Signers here.
     const AssetTracker = await ethers.getContractFactory('AssetTracker');
-    [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+    [owner, addr1, addr2] = await ethers.getSigners();
 
     // Deploy a new AssetTracker contract for each test
     assetTracker = await AssetTracker.deploy();

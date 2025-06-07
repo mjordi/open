@@ -7,7 +7,7 @@ const { ethers } = require('hardhat');
 async function main() {
   console.log('🔍 Starting Performance Analysis...\n');
 
-  const [deployer, user1, user2] = await ethers.getSigners();
+  const [, /* deployer */ user1 /* user2 */] = await ethers.getSigners();
 
   // Deploy original contracts
   console.log('📦 Deploying Original Contracts...');

@@ -192,7 +192,7 @@ describe('Contract Integration Tests', function () {
         accessManagement
           .connect(user1)
           .addAuthorization(testAsset, user2.address, 'admin')
-      ).to.be.revertedWith('Only the owner or admins can add authorizations.');
+      ).to.be.revertedWithCustomError(accessManagement, 'NotOwnerOrAdmin');
     });
   });
 

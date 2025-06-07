@@ -8,9 +8,7 @@ describe('AssetTrackerOptimized', function () {
   let addr2;
 
   beforeEach(async function () {
-    const AssetTrackerOptimized = await ethers.getContractFactory(
-      'AssetTrackerOptimized'
-    );
+    const AssetTrackerOptimized = await ethers.getContractFactory('AssetTrackerOptimized');
     [owner, addr1, addr2] = await ethers.getSigners();
     assetTrackerOptimized = await AssetTrackerOptimized.deploy();
     await assetTrackerOptimized.waitForDeployment();
@@ -23,9 +21,7 @@ describe('AssetTrackerOptimized', function () {
       const uuid = 'test-uuid-123';
       const manufacturer = 'Test Manufacturer';
 
-      await expect(
-        assetTrackerOptimized.createAsset(name, description, uuid, manufacturer)
-      )
+      await expect(assetTrackerOptimized.createAsset(name, description, uuid, manufacturer))
         .to.emit(assetTrackerOptimized, 'AssetCreated')
         .withArgs(owner.address, uuid, name, manufacturer, (value) => {
           expect(typeof value).to.equal('bigint');
@@ -38,8 +34,7 @@ describe('AssetTrackerOptimized', function () {
       expect(asset.description).to.equal(description);
       expect(asset.manufacturer).to.equal(manufacturer);
 
-      expect(await assetTrackerOptimized.isOwnerOf(owner.address, uuid)).to.be
-        .true;
+      expect(await assetTrackerOptimized.isOwnerOf(owner.address, uuid)).to.be.true;
     });
 
     it('Should reject creation of duplicate assets', async function () {
@@ -48,19 +43,11 @@ describe('AssetTrackerOptimized', function () {
       const uuid = 'duplicate-uuid';
       const manufacturer = 'Test Manufacturer';
 
-      await assetTrackerOptimized.createAsset(
-        name,
-        description,
-        uuid,
-        manufacturer
-      );
+      await assetTrackerOptimized.createAsset(name, description, uuid, manufacturer);
 
       await expect(
         assetTrackerOptimized.createAsset(name, description, uuid, manufacturer)
-      ).to.be.revertedWithCustomError(
-        assetTrackerOptimized,
-        'AssetAlreadyExists'
-      );
+      ).to.be.revertedWithCustomError(assetTrackerOptimized, 'AssetAlreadyExists');
     });
 
     it('Should handle empty strings in creation', async function () {
@@ -89,21 +76,15 @@ describe('AssetTrackerOptimized', function () {
     });
 
     it('Should transfer asset successfully', async function () {
-      await expect(
-        assetTrackerOptimized.transferAsset(addr1.address, testAsset.uuid)
-      )
+      await expect(assetTrackerOptimized.transferAsset(addr1.address, testAsset.uuid))
         .to.emit(assetTrackerOptimized, 'AssetTransferred')
         .withArgs(owner.address, addr1.address, testAsset.uuid, (value) => {
           expect(typeof value).to.equal('bigint');
           return true;
         });
 
-      expect(
-        await assetTrackerOptimized.isOwnerOf(owner.address, testAsset.uuid)
-      ).to.be.false;
-      expect(
-        await assetTrackerOptimized.isOwnerOf(addr1.address, testAsset.uuid)
-      ).to.be.true;
+      expect(await assetTrackerOptimized.isOwnerOf(owner.address, testAsset.uuid)).to.be.false;
+      expect(await assetTrackerOptimized.isOwnerOf(addr1.address, testAsset.uuid)).to.be.true;
     });
 
     it('Should reject transfer of non-existent asset', async function () {
@@ -115,9 +96,7 @@ describe('AssetTrackerOptimized', function () {
 
     it('Should reject transfer by non-owner', async function () {
       await expect(
-        assetTrackerOptimized
-          .connect(addr1)
-          .transferAsset(addr2.address, testAsset.uuid)
+        assetTrackerOptimized.connect(addr1).transferAsset(addr2.address, testAsset.uuid)
       ).to.be.revertedWithCustomError(assetTrackerOptimized, 'NotAssetOwner');
     });
   });

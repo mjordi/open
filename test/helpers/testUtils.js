@@ -12,9 +12,7 @@ class TestUtils {
 
     const AssetTracker = await ethers.getContractFactory('AssetTracker');
     const RoleBasedAcl = await ethers.getContractFactory('RoleBasedAcl');
-    const AccessManagement = await ethers.getContractFactory(
-      'AccessManagement'
-    );
+    const AccessManagement = await ethers.getContractFactory('AccessManagement');
 
     const assetTracker = await AssetTracker.deploy();
     const roleBasedAcl = await RoleBasedAcl.deploy();
@@ -48,12 +46,7 @@ class TestUtils {
 
     const tx = await contract
       .connect(signer)
-      .createAsset(
-        params.name,
-        params.description,
-        params.uuid,
-        params.manufacturer
-      );
+      .createAsset(params.name, params.description, params.uuid, params.manufacturer);
 
     await tx.wait();
     return params;
@@ -70,9 +63,7 @@ class TestUtils {
 
     const params = { ...defaults, ...overrides };
 
-    const tx = await contract
-      .connect(signer)
-      .newAsset(params.assetKey, params.description);
+    const tx = await contract.connect(signer).newAsset(params.assetKey, params.description);
 
     await tx.wait();
     return params;
@@ -91,30 +82,22 @@ class TestUtils {
 
     // Creator assigns superadmin
     if (roles.superadmin) {
-      await roleContract
-        .connect(creator)
-        .assignRole(roles.superadmin.address, 'superadmin');
+      await roleContract.connect(creator).assignRole(roles.superadmin.address, 'superadmin');
     }
 
     // Superadmin assigns admin
     if (roles.superadmin && roles.admin) {
-      await roleContract
-        .connect(roles.superadmin)
-        .assignRole(roles.admin.address, 'admin');
+      await roleContract.connect(roles.superadmin).assignRole(roles.admin.address, 'admin');
     }
 
     // Admin assigns manager
     if (roles.superadmin && roles.manager) {
-      await roleContract
-        .connect(roles.superadmin)
-        .assignRole(roles.manager.address, 'manager');
+      await roleContract.connect(roles.superadmin).assignRole(roles.manager.address, 'manager');
     }
 
     // Admin assigns user
     if (roles.superadmin && roles.user) {
-      await roleContract
-        .connect(roles.superadmin)
-        .assignRole(roles.user.address, 'user');
+      await roleContract.connect(roles.superadmin).assignRole(roles.user.address, 'user');
     }
 
     return roles;

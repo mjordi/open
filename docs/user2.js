@@ -44,8 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
           connectWallet(); // Re-connect with the new account
         } else {
           log('Wallet disconnected.', true);
-          document.getElementById('contract_interaction').style.display =
-            'none';
+          document.getElementById('contract_interaction').style.display = 'none';
         }
       });
 
@@ -55,16 +54,11 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.reload();
       });
     } else {
-      log(
-        'MetaMask is not installed. Please install it to use this app.',
-        true
-      );
+      log('MetaMask is not installed. Please install it to use this app.', true);
       connectButton.disabled = true;
     }
 
-    document
-      .getElementById('connect_contract_btn')
-      .addEventListener('click', connectContract);
+    document.getElementById('connect_contract_btn').addEventListener('click', connectContract);
   };
 
   const connectWallet = async () => {
@@ -118,28 +112,18 @@ document.addEventListener('DOMContentLoaded', () => {
     contract.removeAllListeners();
 
     contract.on('AssetCreated', (owner, assetKey, description, event) => {
+      log(`EVENT: AssetCreated - Owner: ${owner}, Key: ${assetKey}, Desc: ${description}`);
+    });
+
+    contract.on('AuthorizationAdded', (authorizer, authorized, assetKey, role, event) => {
       log(
-        `EVENT: AssetCreated - Owner: ${owner}, Key: ${assetKey}, Desc: ${description}`
+        `EVENT: AuthorizationAdded - By: ${authorizer}, For: ${authorized}, Key: ${assetKey}, Role: ${role}`
       );
     });
 
-    contract.on(
-      'AuthorizationAdded',
-      (authorizer, authorized, assetKey, role, event) => {
-        log(
-          `EVENT: AuthorizationAdded - By: ${authorizer}, For: ${authorized}, Key: ${assetKey}, Role: ${role}`
-        );
-      }
-    );
-
-    contract.on(
-      'AuthorizationRemoved',
-      (authorizer, authorized, assetKey, event) => {
-        log(
-          `EVENT: AuthorizationRemoved - By: ${authorizer}, From: ${authorized}, Key: ${assetKey}`
-        );
-      }
-    );
+    contract.on('AuthorizationRemoved', (authorizer, authorized, assetKey, event) => {
+      log(`EVENT: AuthorizationRemoved - By: ${authorizer}, From: ${authorized}, Key: ${assetKey}`);
+    });
 
     contract.on('AccessAttempt', (account, assetKey, accessGranted, event) => {
       log(
@@ -147,125 +131,111 @@ document.addEventListener('DOMContentLoaded', () => {
       );
     });
 
-    contract.on(
-      'AssetCreationRejected',
-      (account, assetKey, message, event) => {
-        log(
-          `EVENT: AssetCreationRejected - Account: ${account}, Key: ${assetKey}, Message: ${message}`
-        );
-      }
-    );
+    contract.on('AssetCreationRejected', (account, assetKey, message, event) => {
+      log(
+        `EVENT: AssetCreationRejected - Account: ${account}, Key: ${assetKey}, Message: ${message}`
+      );
+    });
   };
 
   // 4. Bind Functions to Forms
 
   // Add Asset
-  document
-    .getElementById('form_asset')
-    .addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!contract) return log('Contract not connected', true);
+  document.getElementById('form_asset').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!contract) return log('Contract not connected', true);
 
-      const assetKey = document.getElementById('assetKey').value;
-      const assetDescription =
-        document.getElementById('assetDescription').value;
-      log(`Adding asset: ${assetKey}...`);
+    const assetKey = document.getElementById('assetKey').value;
+    const assetDescription = document.getElementById('assetDescription').value;
+    log(`Adding asset: ${assetKey}...`);
 
-      try {
-        const tx = await contract.newAsset(assetKey, assetDescription);
-        log(`Transaction sent: ${tx.hash}`);
-        await tx.wait();
-        log(`Transaction confirmed for asset: ${assetKey}`);
-      } catch (error) {
-        log(`Error creating asset: ${error.message}`, true);
-        console.error(error);
-      }
-    });
+    try {
+      const tx = await contract.newAsset(assetKey, assetDescription);
+      log(`Transaction sent: ${tx.hash}`);
+      await tx.wait();
+      log(`Transaction confirmed for asset: ${assetKey}`);
+    } catch (error) {
+      log(`Error creating asset: ${error.message}`, true);
+      console.error(error);
+    }
+  });
 
   // Add Authorization
-  document
-    .getElementById('form_assign')
-    .addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!contract) return log('Contract not connected', true);
+  document.getElementById('form_assign').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!contract) return log('Contract not connected', true);
 
-      const assetKey = document.getElementById('assetKey_assign').value;
-      const address = document.getElementById('address_assign').value;
-      const role = document.getElementById('role_assign').value;
-      log(`Assigning role '${role}' for asset ${assetKey} to ${address}...`);
+    const assetKey = document.getElementById('assetKey_assign').value;
+    const address = document.getElementById('address_assign').value;
+    const role = document.getElementById('role_assign').value;
+    log(`Assigning role '${role}' for asset ${assetKey} to ${address}...`);
 
-      try {
-        const tx = await contract.addAuthorization(assetKey, address, role);
-        log(`Transaction sent: ${tx.hash}`);
-        await tx.wait();
-        log('Authorization added successfully.');
-      } catch (error) {
-        log(`Error adding authorization: ${error.message}`, true);
-        console.error(error);
-      }
-    });
+    try {
+      const tx = await contract.addAuthorization(assetKey, address, role);
+      log(`Transaction sent: ${tx.hash}`);
+      await tx.wait();
+      log('Authorization added successfully.');
+    } catch (error) {
+      log(`Error adding authorization: ${error.message}`, true);
+      console.error(error);
+    }
+  });
 
   // Check Role
-  document
-    .getElementById('form_isAssigned')
-    .addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!contract) return log('Contract not connected', true);
+  document.getElementById('form_isAssigned').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!contract) return log('Contract not connected', true);
 
-      const assetKey = document.getElementById('assetKey_isAssigned').value;
-      const address = document.getElementById('address_isAssigned').value;
-      log(`Checking role for asset ${assetKey} and address ${address}...`);
+    const assetKey = document.getElementById('assetKey_isAssigned').value;
+    const address = document.getElementById('address_isAssigned').value;
+    log(`Checking role for asset ${assetKey} and address ${address}...`);
 
-      try {
-        const role = await contract.getAssetAuthorization(assetKey, address);
-        log(`Role found: ${role || 'No role assigned'}`);
-      } catch (error) {
-        log(`Error checking role: ${error.message}`, true);
-        console.error(error);
-      }
-    });
+    try {
+      const role = await contract.getAssetAuthorization(assetKey, address);
+      log(`Role found: ${role || 'No role assigned'}`);
+    } catch (error) {
+      log(`Error checking role: ${error.message}`, true);
+      console.error(error);
+    }
+  });
 
   // Access Asset
-  document
-    .getElementById('form_access')
-    .addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!contract) return log('Contract not connected', true);
+  document.getElementById('form_access').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!contract) return log('Contract not connected', true);
 
-      const assetKey = document.getElementById('assetKey_access').value;
-      log(`Requesting access for asset ${assetKey}...`);
+    const assetKey = document.getElementById('assetKey_access').value;
+    log(`Requesting access for asset ${assetKey}...`);
 
-      try {
-        const tx = await contract.getAccess(assetKey);
-        // The result is emitted as an event, which the listener will catch
-        log(`Access request transaction sent. See events for result.`);
-      } catch (error) {
-        log(`Error requesting access: ${error.message}`, true);
-        console.error(error);
-      }
-    });
+    try {
+      const tx = await contract.getAccess(assetKey);
+      // The result is emitted as an event, which the listener will catch
+      log(`Access request transaction sent. See events for result.`);
+    } catch (error) {
+      log(`Error requesting access: ${error.message}`, true);
+      console.error(error);
+    }
+  });
 
   // Remove Authorization
-  document
-    .getElementById('form_unassign')
-    .addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!contract) return log('Contract not connected', true);
+  document.getElementById('form_unassign').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!contract) return log('Contract not connected', true);
 
-      const assetKey = document.getElementById('assetKey_unassign').value;
-      const address = document.getElementById('address_unassign').value;
-      log(`Removing authorization for asset ${assetKey} from ${address}...`);
+    const assetKey = document.getElementById('assetKey_unassign').value;
+    const address = document.getElementById('address_unassign').value;
+    log(`Removing authorization for asset ${assetKey} from ${address}...`);
 
-      try {
-        const tx = await contract.removeAuthorization(assetKey, address);
-        log(`Transaction sent: ${tx.hash}`);
-        await tx.wait();
-        log('Authorization removed successfully.');
-      } catch (error) {
-        log(`Error removing authorization: ${error.message}`, true);
-        console.error(error);
-      }
-    });
+    try {
+      const tx = await contract.removeAuthorization(assetKey, address);
+      log(`Transaction sent: ${tx.hash}`);
+      await tx.wait();
+      log('Authorization removed successfully.');
+    } catch (error) {
+      log(`Error removing authorization: ${error.message}`, true);
+      console.error(error);
+    }
+  });
 
   // Start the initialization process
   initialize();

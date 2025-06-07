@@ -1,103 +1,103 @@
 const smartContractAbi = [
   {
-    "inputs": [],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
+    inputs: [],
+    stateMutability: 'nonpayable',
+    type: 'constructor',
   },
   {
-    "inputs": [
+    inputs: [
       {
-        "internalType": "address",
-        "name": "caller",
-        "type": "address"
-      }
+        internalType: 'address',
+        name: 'caller',
+        type: 'address',
+      },
     ],
-    "name": "Unauthorized",
-    "type": "error"
+    name: 'Unauthorized',
+    type: 'error',
   },
   {
-    "anonymous": false,
-    "inputs": [
+    anonymous: false,
+    inputs: [
       {
-        "indexed": true,
-        "internalType": "address",
-        "name": "client",
-        "type": "address"
+        indexed: true,
+        internalType: 'address',
+        name: 'client',
+        type: 'address',
       },
       {
-        "indexed": true,
-        "internalType": "string",
-        "name": "role",
-        "type": "string"
+        indexed: true,
+        internalType: 'string',
+        name: 'role',
+        type: 'string',
       },
       {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "assigned",
-        "type": "bool"
-      }
+        indexed: false,
+        internalType: 'bool',
+        name: 'assigned',
+        type: 'bool',
+      },
     ],
-    "name": "RoleChange",
-    "type": "event"
+    name: 'RoleChange',
+    type: 'event',
   },
   {
-    "inputs": [
+    inputs: [
       {
-        "internalType": "address",
-        "name": "entity",
-        "type": "address"
+        internalType: 'address',
+        name: 'entity',
+        type: 'address',
       },
       {
-        "internalType": "string",
-        "name": "role",
-        "type": "string"
-      }
+        internalType: 'string',
+        name: 'role',
+        type: 'string',
+      },
     ],
-    "name": "assignRole",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
+    name: 'assignRole',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
   },
   {
-    "inputs": [
+    inputs: [
       {
-        "internalType": "address",
-        "name": "entity",
-        "type": "address"
+        internalType: 'address',
+        name: 'entity',
+        type: 'address',
       },
       {
-        "internalType": "string",
-        "name": "role",
-        "type": "string"
-      }
+        internalType: 'string',
+        name: 'role',
+        type: 'string',
+      },
     ],
-    "name": "isAssignedRole",
-    "outputs": [
+    name: 'isAssignedRole',
+    outputs: [
       {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
+        internalType: 'bool',
+        name: '',
+        type: 'bool',
+      },
     ],
-    "stateMutability": "view",
-    "type": "function"
+    stateMutability: 'view',
+    type: 'function',
   },
   {
-    "inputs": [
+    inputs: [
       {
-        "internalType": "address",
-        "name": "entity",
-        "type": "address"
+        internalType: 'address',
+        name: 'entity',
+        type: 'address',
       },
       {
-        "internalType": "string",
-        "name": "role",
-        "type": "string"
-      }
+        internalType: 'string',
+        name: 'role',
+        type: 'string',
+      },
     ],
-    "name": "unassignRole",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  }
+    name: 'unassignRole',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
 ];

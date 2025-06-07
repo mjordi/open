@@ -64,9 +64,7 @@ async function main() {
 
     // Deploy AccessManagement
     console.log('\n🔧 Deploying AccessManagement...');
-    const AccessManagement = await ethers.getContractFactory(
-      'AccessManagement'
-    );
+    const AccessManagement = await ethers.getContractFactory('AccessManagement');
     const accessManagement = await AccessManagement.deploy();
     await accessManagement.waitForDeployment();
 
@@ -83,9 +81,7 @@ async function main() {
     let totalDeploymentCost = 0n;
     for (const contract of Object.values(deploymentInfo.contracts)) {
       if (contract.txHash) {
-        const receipt = await ethers.provider.getTransactionReceipt(
-          contract.txHash
-        );
+        const receipt = await ethers.provider.getTransactionReceipt(contract.txHash);
         if (receipt) {
           totalGasUsed += receipt.gasUsed;
           // In ethers v6, the receipt contains the effective gas price
@@ -98,11 +94,7 @@ async function main() {
 
     console.log(`\n⛽ Total gas used: ${totalGasUsed.toString()}`);
     if (totalDeploymentCost > 0n) {
-      console.log(
-        `💸 Total deployment cost: ${ethers.formatEther(
-          totalDeploymentCost
-        )} ETH`
-      );
+      console.log(`💸 Total deployment cost: ${ethers.formatEther(totalDeploymentCost)} ETH`);
     }
 
     deploymentInfo.gasUsed = totalGasUsed.toString();

@@ -49,7 +49,7 @@
     "hardhat": "^2.24.3",
     "hardhat-contract-sizer": "^2.10.0",
     "hardhat-gas-reporter": "^1.0.10",
-    "prettier": "^3.3.3",
+    "prettier": "^3.6.0",
     "solidity-coverage": "^0.8.12",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.3"

@@ -38,7 +38,7 @@
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.9",
     "@nomicfoundation/hardhat-ethers": "^3.0.6",
-    "@nomicfoundation/hardhat-network-helpers": "^1.0.11",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.13",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "@nomicfoundation/hardhat-verify": "^2.0.8",
     "@types/chai": "^4.3.16",
@@ -46,7 +46,7 @@
     "chai": "^4.4.1",
     "dotenv": "^16.4.5",
     "ethers": "^6.14.4",
-    "hardhat": "^2.24.3",
+    "hardhat": "^2.25.0",
     "hardhat-contract-sizer": "^2.10.0",
     "hardhat-gas-reporter": "^1.0.10",
     "prettier": "^3.6.0",

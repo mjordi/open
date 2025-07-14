@@ -51,6 +51,7 @@
     "hardhat": "^2.25.0",
     "hardhat-contract-sizer": "^2.10.0",
     "hardhat-gas-reporter": "^2.3.0",
+    "prettier": "^3.6.0",
     "solidity-coverage": "^0.8.0",
     "ts-node": "^10.9.1",
     "typechain": "^8.1.0",

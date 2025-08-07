@@ -55,7 +55,7 @@
     "solidity-coverage": "^0.8.0",
     "ts-node": "^10.9.1",
     "typechain": "^8.1.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.9.2"
   },
   "keywords": [
     "blockchain",

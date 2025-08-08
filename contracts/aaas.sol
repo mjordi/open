@@ -14,6 +14,7 @@ contract AccessManagement {
         string description;
         address[] authorizationList;
         mapping(address => Authorization) authorizationStructs;
+        mapping(address => uint256) authorizationIndex;
         bool initialized;
     }
 
@@ -89,11 +90,11 @@ contract AccessManagement {
         ) {
             revert NotOwnerOrAdmin(msg.sender);
         }
-        _assetStructs[assetKey].authorizationList.push(authorizationKey);
-        _assetStructs[assetKey].authorizationStructs[authorizationKey]
-            .role = authorizationRole;
-        _assetStructs[assetKey].authorizationStructs[authorizationKey]
-            .active = true;
+        Asset storage asset = _assetStructs[assetKey];
+        asset.authorizationIndex[authorizationKey] = asset.authorizationList.length;
+        asset.authorizationList.push(authorizationKey);
+        asset.authorizationStructs[authorizationKey].role = authorizationRole;
+        asset.authorizationStructs[authorizationKey].active = true;
         emit AuthorizationAdded(
             msg.sender,
             authorizationKey,
@@ -112,12 +113,16 @@ contract AccessManagement {
         ) {
             revert NotOwnerOrAdmin(msg.sender);
         }
-        _assetStructs[assetKey]
-            .authorizationStructs[authorizationKey]
-            .role = "";
-        _assetStructs[assetKey]
-            .authorizationStructs[authorizationKey]
-            .active = false;
+        Asset storage asset = _assetStructs[assetKey];
+        uint256 index = asset.authorizationIndex[authorizationKey];
+        uint256 lastIndex = asset.authorizationList.length - 1;
+        address lastAddress = asset.authorizationList[lastIndex];
+        asset.authorizationList[index] = lastAddress;
+        asset.authorizationIndex[lastAddress] = index;
+        asset.authorizationList.pop();
+        delete asset.authorizationIndex[authorizationKey];
+        asset.authorizationStructs[authorizationKey].role = "";
+        asset.authorizationStructs[authorizationKey].active = false;
         emit AuthorizationRemoved(msg.sender, authorizationKey, assetKey);
     }
 
@@ -152,7 +157,8 @@ contract AccessManagement {
         string memory assetKey,
         uint256 authorizationRow
     ) public view returns (address authorizationKey) {
-        return (_assetStructs[assetKey].authorizationList[authorizationRow]);
+        Asset storage asset = _assetStructs[assetKey];
+        return asset.authorizationList[authorizationRow];
     }
 
     function getAccess(string memory assetKey) public returns (bool success) {

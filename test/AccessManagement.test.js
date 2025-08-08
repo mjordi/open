@@ -165,6 +165,15 @@ describe('AccessManagement', function () {
         authList.push(await accessManagement.getAssetAuthorizationAtIndex(testAssetKey, i));
       }
       expect(authList).to.have.members([user1.address, user2.address, user3.address]);
+
+      await accessManagement.removeAuthorization(testAssetKey, user2.address);
+      const newCount = await accessManagement.getAssetAuthorizationCount(testAssetKey);
+      expect(newCount).to.equal(2);
+      const newAuthList = [];
+      for (let i = 0; i < newCount; i++) {
+        newAuthList.push(await accessManagement.getAssetAuthorizationAtIndex(testAssetKey, i));
+      }
+      expect(newAuthList).to.have.members([user1.address, user3.address]);
     });
   });
 

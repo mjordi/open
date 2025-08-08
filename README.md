@@ -38,12 +38,14 @@ This project uses `npm` scripts for common tasks. See `package.json` for a full 
 
 ## Smart Contracts
 
-The core contracts of this project include:
+The core contracts of this project include (all targeting Solidity `^0.8.24`):
 
-- `AssetTracker.sol`: The original asset management and ownership tracking contract (Solidity `^0.4.24`).
-- `AssetTrackerOptimized.sol`: A gas-optimized version of `AssetTracker` using modern Solidity features (`^0.8.24`).
-- `RoleBasedAcl.sol`: Hierarchical role-based access control (Solidity `^0.4.24`).
-- `aaas.sol` (AccessManagement): A contract for comprehensive asset access and authorization, upgraded to Solidity `^0.8.24`.
+- `AssetTracker.sol`: The original asset management and ownership tracking contract.
+- `AssetTrackerOptimized.sol`: A gas-optimized version of `AssetTracker`.
+- `RoleBasedAcl.sol`: Hierarchical role-based access control.
+- `aaas.sol` (AccessManagement): A contract for comprehensive asset access and authorization.
+
+Legacy Solidity `^0.4.24` contracts have been archived and are no longer maintained.
 
 ## Security
 

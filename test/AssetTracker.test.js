@@ -47,10 +47,10 @@ describe('AssetTracker', function () {
       // Create first asset
       await assetTracker.createAsset(name, description, uuid, manufacturer);
 
-      // Try to create duplicate - should emit RejectCreate event
-      await expect(assetTracker.createAsset(name, description, uuid, manufacturer))
-        .to.emit(assetTracker, 'RejectCreate')
-        .withArgs(owner.address, uuid, 'Asset with this UUID already exists.');
+      // Try to create duplicate - should revert with custom error
+      await expect(
+        assetTracker.createAsset(name, description, uuid, manufacturer)
+      ).to.be.revertedWithCustomError(assetTracker, 'AssetExists').withArgs(uuid);
     });
 
     it('Should allow multiple different assets', async function () {
@@ -118,16 +118,20 @@ describe('AssetTracker', function () {
     it('Should reject transfer of non-existent asset', async function () {
       const nonExistentUuid = 'non-existent-uuid';
 
-      await expect(assetTracker.transferAsset(addr1.address, nonExistentUuid))
-        .to.emit(assetTracker, 'RejectTransfer')
-        .withArgs(owner.address, addr1.address, nonExistentUuid, 'No asset with this UUID exists');
+      await expect(
+        assetTracker.transferAsset(addr1.address, nonExistentUuid)
+      )
+        .to.be.revertedWithCustomError(assetTracker, 'AssetNotFound')
+        .withArgs(nonExistentUuid);
     });
 
     it('Should reject transfer by non-owner', async function () {
       // Try to transfer from addr1 (who doesn't own the asset)
-      await expect(assetTracker.connect(addr1).transferAsset(addr2.address, testAsset.uuid))
-        .to.emit(assetTracker, 'RejectTransfer')
-        .withArgs(addr1.address, addr2.address, testAsset.uuid, 'Sender does not own this asset.');
+      await expect(
+        assetTracker.connect(addr1).transferAsset(addr2.address, testAsset.uuid)
+      )
+        .to.be.revertedWithCustomError(assetTracker, 'NotAssetOwner')
+        .withArgs(addr1.address, testAsset.uuid);
     });
 
     it('Should allow chained transfers', async function () {

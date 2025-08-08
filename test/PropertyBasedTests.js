@@ -106,7 +106,9 @@ describe('Property-Based Tests (Fuzzing)', function () {
           assetTracker
             .connect(account2)
             .createAsset(randomString(10), randomString(20), uuid, randomString(15))
-        ).to.emit(assetTracker, 'RejectCreate');
+        )
+          .to.be.revertedWithCustomError(assetTracker, 'AssetExists')
+          .withArgs(uuid);
       }
     });
 

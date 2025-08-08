@@ -47,10 +47,10 @@ describe('AssetTracker', function () {
       // Create first asset
       await assetTracker.createAsset(name, description, uuid, manufacturer);
 
-      // Try to create duplicate - should emit RejectCreate event
+      // Try to create duplicate - should revert with custom error
       await expect(assetTracker.createAsset(name, description, uuid, manufacturer))
-        .to.emit(assetTracker, 'RejectCreate')
-        .withArgs(owner.address, uuid, 'Asset with this UUID already exists.');
+        .to.be.revertedWithCustomError(assetTracker, 'AssetExists')
+        .withArgs(uuid);
     });
 
     it('Should allow multiple different assets', async function () {
@@ -119,15 +119,21 @@ describe('AssetTracker', function () {
       const nonExistentUuid = 'non-existent-uuid';
 
       await expect(assetTracker.transferAsset(addr1.address, nonExistentUuid))
-        .to.emit(assetTracker, 'RejectTransfer')
-        .withArgs(owner.address, addr1.address, nonExistentUuid, 'No asset with this UUID exists');
+        .to.be.revertedWithCustomError(assetTracker, 'AssetNotFound')
+        .withArgs(nonExistentUuid);
     });
 
     it('Should reject transfer by non-owner', async function () {
       // Try to transfer from addr1 (who doesn't own the asset)
       await expect(assetTracker.connect(addr1).transferAsset(addr2.address, testAsset.uuid))
-        .to.emit(assetTracker, 'RejectTransfer')
-        .withArgs(addr1.address, addr2.address, testAsset.uuid, 'Sender does not own this asset.');
+        .to.be.revertedWithCustomError(assetTracker, 'NotAssetOwner')
+        .withArgs(addr1.address, testAsset.uuid);
+    });
+
+    it('Should reject transfer to zero address', async function () {
+      await expect(assetTracker.transferAsset(ethers.ZeroAddress, testAsset.uuid))
+        .to.be.revertedWithCustomError(assetTracker, 'InvalidAddress')
+        .withArgs(ethers.ZeroAddress);
     });
 
     it('Should allow chained transfers', async function () {
@@ -152,6 +158,12 @@ describe('AssetTracker', function () {
       expect(asset[0]).to.equal(''); // name
       expect(asset[1]).to.equal(''); // description
       expect(asset[2]).to.equal(''); // manufacturer
+    });
+
+    it('Should reject ownership checks for zero address', async function () {
+      await expect(assetTracker.isOwnerOf(ethers.ZeroAddress, 'some-uuid'))
+        .to.be.revertedWithCustomError(assetTracker, 'InvalidAddress')
+        .withArgs(ethers.ZeroAddress);
     });
 
     it('Should return false for non-ownership queries', async function () {

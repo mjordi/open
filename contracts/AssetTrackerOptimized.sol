@@ -41,7 +41,6 @@ contract AssetTrackerOptimized {
 
     // State variables
     mapping(string => Asset) private _assets;
-    mapping(address => mapping(string => bool)) private _ownerAssets;
     mapping(address => uint256) private _assetCounts;
     
     // Total asset count for statistics
@@ -104,8 +103,7 @@ contract AssetTrackerOptimized {
             manufacturer: manufacturer
         });
 
-        // Update ownership tracking
-        _ownerAssets[msg.sender][uuid] = true;
+        // Update ownership count
         _assetCounts[msg.sender]++;
         _totalAssets++;
 
@@ -124,17 +122,13 @@ contract AssetTrackerOptimized {
         assetExists(uuid)
         onlyAssetOwner(uuid)
     {
-        address from = msg.sender;
-        
+        address from = _assets[uuid].owner;
+
         // Update ownership
         /* solhint-disable not-rely-on-time */
         _assets[uuid].owner = to;
         _assets[uuid].timestamp = uint96(block.timestamp);
-        
-        // Update tracking mappings
-        _ownerAssets[from][uuid] = false;
-        _ownerAssets[to][uuid] = true;
-        
+
         // Update counters
         _assetCounts[from]--;
         _assetCounts[to]++;
@@ -185,7 +179,7 @@ contract AssetTrackerOptimized {
         view
         returns (bool)
     {
-        return _ownerAssets[owner][uuid];
+        return _assets[uuid].owner == owner;
     }
 
     /**

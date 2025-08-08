@@ -35,6 +35,8 @@ describe('AssetTrackerOptimized', function () {
       expect(asset.manufacturer).to.equal(manufacturer);
 
       expect(await assetTrackerOptimized.isOwnerOf(owner.address, uuid)).to.be.true;
+
+      expect(await assetTrackerOptimized.getAssetCount(owner.address)).to.equal(1);
     });
 
     it('Should reject creation of duplicate assets', async function () {
@@ -85,6 +87,9 @@ describe('AssetTrackerOptimized', function () {
 
       expect(await assetTrackerOptimized.isOwnerOf(owner.address, testAsset.uuid)).to.be.false;
       expect(await assetTrackerOptimized.isOwnerOf(addr1.address, testAsset.uuid)).to.be.true;
+
+      expect(await assetTrackerOptimized.getAssetCount(owner.address)).to.equal(0);
+      expect(await assetTrackerOptimized.getAssetCount(addr1.address)).to.equal(1);
     });
 
     it('Should reject transfer of non-existent asset', async function () {

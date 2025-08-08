@@ -9,7 +9,7 @@ These instructions apply to the entire repository.
   - JavaScript uses 2-space indentation, single quotes, and semicolons.
   - Solidity uses 4-space indentation and double quotes.
 - Run linters and fix any issues:
-  - `npm run lint:js` for JavaScript (may emit a config warning).
+  - `npm run lint:js` for JavaScript.
   - `npm run lint:sol` for Solidity (will install solhint if missing).
 
 ## Testing

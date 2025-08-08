@@ -48,9 +48,9 @@ describe('AssetTracker', function () {
       await assetTracker.createAsset(name, description, uuid, manufacturer);
 
       // Try to create duplicate - should revert with custom error
-      await expect(
-        assetTracker.createAsset(name, description, uuid, manufacturer)
-      ).to.be.revertedWithCustomError(assetTracker, 'AssetExists').withArgs(uuid);
+      await expect(assetTracker.createAsset(name, description, uuid, manufacturer))
+        .to.be.revertedWithCustomError(assetTracker, 'AssetExists')
+        .withArgs(uuid);
     });
 
     it('Should allow multiple different assets', async function () {
@@ -118,18 +118,14 @@ describe('AssetTracker', function () {
     it('Should reject transfer of non-existent asset', async function () {
       const nonExistentUuid = 'non-existent-uuid';
 
-      await expect(
-        assetTracker.transferAsset(addr1.address, nonExistentUuid)
-      )
+      await expect(assetTracker.transferAsset(addr1.address, nonExistentUuid))
         .to.be.revertedWithCustomError(assetTracker, 'AssetNotFound')
         .withArgs(nonExistentUuid);
     });
 
     it('Should reject transfer by non-owner', async function () {
       // Try to transfer from addr1 (who doesn't own the asset)
-      await expect(
-        assetTracker.connect(addr1).transferAsset(addr2.address, testAsset.uuid)
-      )
+      await expect(assetTracker.connect(addr1).transferAsset(addr2.address, testAsset.uuid))
         .to.be.revertedWithCustomError(assetTracker, 'NotAssetOwner')
         .withArgs(addr1.address, testAsset.uuid);
     });

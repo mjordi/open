@@ -130,6 +130,12 @@ describe('AssetTracker', function () {
         .withArgs(addr1.address, testAsset.uuid);
     });
 
+    it('Should reject transfer to zero address', async function () {
+      await expect(assetTracker.transferAsset(ethers.ZeroAddress, testAsset.uuid))
+        .to.be.revertedWithCustomError(assetTracker, 'InvalidAddress')
+        .withArgs(ethers.ZeroAddress);
+    });
+
     it('Should allow chained transfers', async function () {
       // Transfer from owner to addr1
       await assetTracker.transferAsset(addr1.address, testAsset.uuid);
@@ -152,6 +158,12 @@ describe('AssetTracker', function () {
       expect(asset[0]).to.equal(''); // name
       expect(asset[1]).to.equal(''); // description
       expect(asset[2]).to.equal(''); // manufacturer
+    });
+
+    it('Should reject ownership checks for zero address', async function () {
+      await expect(assetTracker.isOwnerOf(ethers.ZeroAddress, 'some-uuid'))
+        .to.be.revertedWithCustomError(assetTracker, 'InvalidAddress')
+        .withArgs(ethers.ZeroAddress);
     });
 
     it('Should return false for non-ownership queries', async function () {

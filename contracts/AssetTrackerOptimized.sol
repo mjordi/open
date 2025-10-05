@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 /**
  * @title AssetTracker Optimized
- * @dev Optimized version of asset tracking with improved gas efficiency and security
+ * @notice Optimized version of asset tracking with improved gas efficiency and security.
  * @author Optimized Smart Contract Team
  */
 contract AssetTrackerOptimized {
@@ -15,14 +15,25 @@ contract AssetTrackerOptimized {
     error EmptyString(string param);
 
     // Events
+    /// @notice Emitted when a new asset is created.
+    /// @param owner The address of the asset owner.
+    /// @param uuid The unique identifier for the asset.
+    /// @param name The name of the asset.
+    /// @param manufacturer The manufacturer of the asset.
+    /// @param timestamp The time the asset was created.
     event AssetCreated(
         address indexed owner,
         string indexed uuid,
         string name,
         string manufacturer,
-        uint256 timestamp
+        uint256 indexed timestamp
     );
     
+    /// @notice Emitted when an asset is transferred.
+    /// @param from The address of the previous owner.
+    /// @param to The address of the new owner.
+    /// @param uuid The unique identifier of the asset.
+    /// @param timestamp The time the asset was transferred.
     event AssetTransferred(
         address indexed from,
         address indexed to,
@@ -76,7 +87,8 @@ contract AssetTrackerOptimized {
     }
 
     /**
-     * @dev Creates a new asset
+     * @notice Creates a new asset.
+     * @dev Creates a new asset.
      * @param name Asset name
      * @param description Asset description
      * @param uuid Unique identifier for the asset
@@ -104,14 +116,15 @@ contract AssetTrackerOptimized {
         });
 
         // Update ownership count
-        _assetCounts[msg.sender]++;
-        _totalAssets++;
+        ++_assetCounts[msg.sender];
+        ++_totalAssets;
 
         emit AssetCreated(msg.sender, uuid, name, manufacturer, block.timestamp);
         /* solhint-enable not-rely-on-time */
     }
 
     /**
+     * @notice Transfers asset ownership.
      * @dev Transfers asset ownership
      * @param to New owner address
      * @param uuid Asset UUID
@@ -130,14 +143,15 @@ contract AssetTrackerOptimized {
         _assets[uuid].timestamp = uint96(block.timestamp);
 
         // Update counters
-        _assetCounts[from]--;
-        _assetCounts[to]++;
+        --_assetCounts[from];
+        ++_assetCounts[to];
 
         emit AssetTransferred(from, to, uuid, block.timestamp);
         /* solhint-enable not-rely-on-time */
     }
 
     /**
+     * @notice Gets asset information by UUID.
      * @dev Gets asset information by UUID
      * @param uuid Asset UUID
      * @return owner Asset owner address
@@ -169,6 +183,7 @@ contract AssetTrackerOptimized {
     }
 
     /**
+     * @notice Checks if an address owns a specific asset.
      * @dev Checks if an address owns a specific asset
      * @param owner Address to check
      * @param uuid Asset UUID
@@ -183,6 +198,7 @@ contract AssetTrackerOptimized {
     }
 
     /**
+     * @notice Gets the number of assets owned by an address.
      * @dev Gets the number of assets owned by an address
      * @param owner Address to check
      * @return Number of assets owned
@@ -192,6 +208,7 @@ contract AssetTrackerOptimized {
     }
 
     /**
+     * @notice Gets total number of assets in the system.
      * @dev Gets total number of assets in the system
      * @return Total asset count
      */
@@ -200,16 +217,16 @@ contract AssetTrackerOptimized {
     }
 
     /**
-     * @dev Checks if an asset exists
-     * @param uuid Asset UUID
-     * @return exists Boolean indicating if the asset exists.
+     * @notice Checks if an asset exists.
+     * @param uuid The unique identifier for the asset.
+     * @return exists True if the asset exists, false otherwise.
      */
-    // slither-disable-next-line block-timestamp
     function checkAssetExists(string calldata uuid) external view returns (bool exists) {
         return _assets[uuid].owner != address(0);
     }
 
     /**
+     * @notice Gets asset owner.
      * @dev Gets asset owner
      * @param uuid Asset UUID
      * @return Owner address
@@ -224,7 +241,10 @@ contract AssetTrackerOptimized {
     }
 
     /**
+     * @notice Returns contract metadata.
      * @dev Emergency function to pause transfers (can be extended with access control)
+     * @return name The name of the contract.
+     * @return version The version of the contract.
      */
     function getContractInfo()
         external

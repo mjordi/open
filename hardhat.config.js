@@ -1,9 +1,11 @@
-require('dotenv').config();
-require('@nomicfoundation/hardhat-toolbox');
-require('hardhat-contract-sizer');
+import dotenv from 'dotenv';
+import '@nomicfoundation/hardhat-toolbox';
+import 'hardhat-contract-sizer';
+
+dotenv.config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
-module.exports = {
+const config = {
   solidity: {
     compilers: [
       {
@@ -81,3 +83,5 @@ module.exports = {
     apiKey: process.env.ETHERSCAN_API_KEY || '',
   },
 };
+
+export default config;

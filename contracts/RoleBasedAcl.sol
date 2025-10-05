@@ -12,7 +12,7 @@ import { Unauthorized } from "./CustomErrors.sol";
 /// @author Your Name
 /// @notice A simple role-based access control contract.
 contract RoleBasedAcl {
-    address private immutable _CREATOR;
+    address private immutable _creator;
 
     mapping(address => mapping(string => bool)) private _roles;
 
@@ -28,12 +28,12 @@ contract RoleBasedAcl {
 
     /// @notice Sets the contract creator and assigns the "superadmin" role.
     constructor() {
-        _CREATOR = msg.sender;
+        _creator = msg.sender;
         _roles[msg.sender]["superadmin"] = true;
     }
 
     modifier hasRole(string memory role) {
-        if (!_roles[msg.sender][role] && msg.sender != _CREATOR) {
+        if (!_roles[msg.sender][role] && msg.sender != _creator) {
             revert Unauthorized(msg.sender);
         }
         _;

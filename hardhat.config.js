@@ -1,9 +1,9 @@
 import 'dotenv/config';
 import '@nomicfoundation/hardhat-ethers';
-import '@nomicfoundation/hardhat-chai-matchers';
 import '@nomicfoundation/hardhat-verify';
 import '@nomicfoundation/hardhat-ignition-ethers';
 // TODO: Re-enable these plugins when they add Hardhat 3.x support:
+// - @nomicfoundation/hardhat-chai-matchers (requires hardhat-ethers@^3.1.0, hardhat@^2.26.0)
 // - @nomicfoundation/hardhat-network-helpers (requires hardhat/common export)
 // - @typechain/hardhat (requires hardhat/common/bigInt export)
 // - hardhat-gas-reporter (requires hardhat/common/bigInt export)

@@ -106,13 +106,16 @@ Updated `eslint.config.js`:
 
 The following plugins are temporarily disabled due to Hardhat 3.x compatibility issues:
 
+- `@nomicfoundation/hardhat-chai-matchers` - requires `hardhat-ethers@^3.1.0` and `hardhat@^2.26.0`
 - `@nomicfoundation/hardhat-network-helpers` - requires `hardhat/common` export
 - `@typechain/hardhat` - requires `hardhat/common/bigInt` export
 - `hardhat-gas-reporter` - requires `hardhat/common/bigInt` export
 - `solidity-coverage` - requires `hardhat/common` export
 - `hardhat-contract-sizer` - compatibility unknown
 
-These plugins access internal Hardhat modules that are not exported in Hardhat 3.x. They should be re-enabled once updated versions are released.
+These plugins either access internal Hardhat modules that are not exported in Hardhat 3.x or have peer dependencies that are incompatible with Hardhat 3.x. They should be re-enabled once updated versions are released.
+
+**Note on Testing:** Tests currently use standard Chai assertions instead of hardhat-chai-matchers. The test assertions will need to be updated to use hardhat-specific matchers once the plugin is re-enabled.
 
 ## Files Modified
 

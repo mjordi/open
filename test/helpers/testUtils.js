@@ -1,4 +1,4 @@
-const { ethers } = require('hardhat');
+import { ethers } from 'hardhat';
 
 /**
  * Test utilities for smart contract testing
@@ -212,4 +212,4 @@ class TestUtils {
   }
 }
 
-module.exports = TestUtils;
+export default TestUtils;

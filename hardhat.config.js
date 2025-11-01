@@ -1,9 +1,17 @@
-require('dotenv').config();
-require('@nomicfoundation/hardhat-toolbox');
-require('hardhat-contract-sizer');
+import 'dotenv/config';
+import '@nomicfoundation/hardhat-ethers';
+import '@nomicfoundation/hardhat-chai-matchers';
+import '@nomicfoundation/hardhat-verify';
+import '@nomicfoundation/hardhat-ignition-ethers';
+// TODO: Re-enable these plugins when they add Hardhat 3.x support:
+// - @nomicfoundation/hardhat-network-helpers (requires hardhat/common export)
+// - @typechain/hardhat (requires hardhat/common/bigInt export)
+// - hardhat-gas-reporter (requires hardhat/common/bigInt export)
+// - solidity-coverage (requires hardhat/common export)
+// - hardhat-contract-sizer (compatibility unknown)
 
 /** @type import('hardhat/config').HardhatUserConfig */
-module.exports = {
+export default {
   solidity: {
     compilers: [
       {
@@ -43,6 +51,7 @@ module.exports = {
   },
   networks: {
     hardhat: {
+      type: 'edr-simulated',
       accounts: {
         count: 20,
         accountsBalance: '10000000000000000000000', // 10,000 ETH
@@ -53,11 +62,13 @@ module.exports = {
       gasPrice: 'auto',
     },
     localhost: {
+      type: 'http',
       url: 'http://127.0.0.1:8545',
       chainId: 31337,
     },
     sepolia: {
-      url: process.env.SEPOLIA_URL || '',
+      type: 'http',
+      url: process.env.SEPOLIA_URL || 'https://ethereum-sepolia.publicnode.com',
       accounts:
         process.env.PRIVATE_KEY && process.env.PRIVATE_KEY.length === 66
           ? [process.env.PRIVATE_KEY]
@@ -65,7 +76,8 @@ module.exports = {
       chainId: 11155111,
     },
     mainnet: {
-      url: process.env.MAINNET_URL || '',
+      type: 'http',
+      url: process.env.MAINNET_URL || 'https://ethereum.publicnode.com',
       accounts:
         process.env.PRIVATE_KEY && process.env.PRIVATE_KEY.length === 66
           ? [process.env.PRIVATE_KEY]

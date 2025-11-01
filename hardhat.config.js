@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import '@nomicfoundation/hardhat-ethers';
+import '@nomicfoundation/hardhat-mocha';
 import '@nomicfoundation/hardhat-verify';
 import '@nomicfoundation/hardhat-ignition-ethers';
 // TODO: Re-enable these plugins when they add Hardhat 3.x support:

@@ -1,17 +1,14 @@
-module.exports = [
+export default [
   {
-    ignores: ['docs/**'],
+    ignores: ['docs/**', 'cache/**', 'artifacts/**', 'coverage/**', 'node_modules/**'],
   },
   {
     languageOptions: {
-      ecmaVersion: 2021,
-      sourceType: 'commonjs',
+      ecmaVersion: 2022,
+      sourceType: 'module',
       globals: {
         console: 'readonly',
-        module: 'readonly',
-        require: 'readonly',
         process: 'readonly',
-        __dirname: 'readonly',
         describe: 'readonly',
         it: 'readonly',
         before: 'readonly',

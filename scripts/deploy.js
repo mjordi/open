@@ -1,6 +1,10 @@
-const { ethers, run, network } = require('hardhat');
-const fs = require('fs');
-const path = require('path');
+import { ethers, run, network } from 'hardhat';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function main() {
   console.log('🚀 Starting deployment process...');
@@ -161,7 +165,7 @@ async function main() {
 }
 
 // Handle script execution
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   main()
     .then(() => process.exit(0))
     .catch((error) => {
@@ -170,4 +174,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { main };
+export { main };

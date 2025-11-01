@@ -1,4 +1,10 @@
-const { ethers } = require('hardhat');
+import { ethers } from 'hardhat';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Performance Analysis Script
@@ -269,9 +275,6 @@ async function main() {
   console.log('✅ Optimize mapping structures for gas efficiency');
 
   // Save performance data
-  const fs = require('fs');
-  const path = require('path');
-
   const reportsDir = path.join(__dirname, '..', 'reports');
   if (!fs.existsSync(reportsDir)) {
     fs.mkdirSync(reportsDir, { recursive: true });
@@ -293,7 +296,7 @@ async function main() {
   console.log('\n🎉 Performance analysis completed!');
 }
 
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   main()
     .then(() => process.exit(0))
     .catch((error) => {
@@ -302,4 +305,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { main };
+export { main };

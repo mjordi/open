@@ -2,6 +2,16 @@
 
 This document describes the changes made to upgrade dependencies to their latest versions.
 
+## ⚠️ IMPORTANT: Node.js Version Requirement
+
+**Hardhat 3.x requires Node.js 22.10.0 or later (even major versions only: 22, 24, etc.)**
+
+The project will not work with Node.js 18 or 20. You must upgrade to Node.js 22.10.0 or later.
+
+- **Minimum version**: Node.js 22.10.0
+- **Recommended**: Latest LTS version of Node.js 22.x
+- **Reason**: Hardhat 3.x uses modern JavaScript features like `Array.prototype.toReversed()` that are only available in Node.js 20+, and specifically requires even major versions (22, 24, etc.)
+
 ## Upgraded Dependencies
 
 ### Major Version Upgrades
@@ -139,11 +149,19 @@ These plugins either access internal Hardhat modules that are not exported in Ha
 
 ## Installation
 
-Install dependencies with legacy peer deps flag to handle remaining peer dependency warnings:
+### Prerequisites
 
-```bash
-npm install --legacy-peer-deps
-```
+1. **Upgrade Node.js to version 22.10.0 or later**:
+   ```bash
+   node --version  # Should show v22.10.0 or higher
+   ```
+
+2. **Install dependencies** with legacy peer deps flag:
+   ```bash
+   npm install --legacy-peer-deps
+   ```
+
+The `--legacy-peer-deps` flag is required because some packages haven't updated their peer dependency declarations for Hardhat 3.x yet.
 
 ## Security Improvements
 

@@ -1,5 +1,11 @@
 # Pull Request: Upgrade to Hardhat 3.x and Update Dependencies
 
+## ⚠️ IMPORTANT: Node.js 22.10.0+ Required
+
+**This PR upgrades to Hardhat 3.x which requires Node.js 22.10.0 or later (even major versions only).**
+
+Your CI/CD environment must be upgraded from Node.js 18 to Node.js 22. The GitHub Actions workflow has been updated accordingly.
+
 ## Summary
 
 This PR addresses **5 Dependabot security alerts** (#57, #63, #64, #65, #66) by upgrading dependencies to their latest versions and migrating the project to ESM (ECMAScript Modules) as required by Hardhat 3.x.
@@ -59,9 +65,17 @@ All updated dependencies include important security fixes as flagged by Dependab
 
 ## 📦 Installation
 
-```bash
-npm install --legacy-peer-deps
-```
+### Prerequisites
+
+1. **Upgrade to Node.js 22.10.0 or later**:
+   ```bash
+   node --version  # Must show v22.10.0 or higher
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install --legacy-peer-deps
+   ```
 
 The `--legacy-peer-deps` flag is required because some packages haven't updated their peer dependency declarations for Hardhat 3.x yet.
 

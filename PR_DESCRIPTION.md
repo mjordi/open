@@ -13,6 +13,7 @@ This PR addresses **5 Dependabot security alerts** (#57, #63, #64, #65, #66) by 
 ## 🔄 Dependency Updates
 
 ### Major Upgrades
+
 - ✅ hardhat: `2.26.2` → `3.0.10` (#64)
 - ✅ @nomicfoundation/hardhat-ethers: `3.0.9` → `4.0.2` (#66)
 - ✅ @nomicfoundation/hardhat-verify: `2.1.1` → `3.0.4` (#65)
@@ -23,11 +24,13 @@ This PR addresses **5 Dependabot security alerts** (#57, #63, #64, #65, #66) by 
 - ✅ eslint: `9.34.0` → `9.39.0` (#63)
 
 ### Removed
+
 - ❌ @nomicfoundation/hardhat-toolbox - Not yet compatible with Hardhat 3.x (individual plugins imported directly)
 
 ## 🔧 Breaking Changes & Migrations
 
 ### ESM Migration (Required by Hardhat 3.x)
+
 Hardhat 3.x requires ECMAScript Modules (ESM) instead of CommonJS:
 
 - ✅ Added `"type": "module"` to package.json
@@ -40,6 +43,7 @@ Hardhat 3.x requires ECMAScript Modules (ESM) instead of CommonJS:
 - ✅ Added `__dirname` and `__filename` polyfills where needed
 
 ### Hardhat 3.x Configuration Updates
+
 - ✅ Added explicit `type` field to all network configurations
 - ✅ Networks now specify `type: 'http'` or `type: 'edr-simulated'`
 - ✅ Updated RPC URL defaults (empty strings no longer allowed)
@@ -68,6 +72,7 @@ All updated dependencies include important security fixes as flagged by Dependab
 ### Prerequisites
 
 1. **Upgrade to Node.js 22.10.0 or later**:
+
    ```bash
    node --version  # Must show v22.10.0 or higher
    ```
@@ -86,6 +91,7 @@ See [MIGRATION_NOTES.md](./MIGRATION_NOTES.md) for a detailed migration guide an
 ## ✅ Testing
 
 The ESM migration has been validated:
+
 - ✅ ESLint runs successfully with the new configuration
 - ✅ All import/export syntax is correct
 - ⚠️ Compilation and tests require network access to download Solidity compilers (blocked in current environment)

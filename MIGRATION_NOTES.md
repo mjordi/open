@@ -48,9 +48,11 @@ The project will not work with Node.js 18 or 20. You must upgrade to Node.js 22.
 All JavaScript files were converted from CommonJS to ESM format:
 
 #### package.json
+
 - Added `"type": "module"` to enable ESM
 
 #### Import/Export Syntax
+
 - Changed `require()` to `import`
 - Changed `module.exports` to `export default` or `export { ... }`
 - Updated `require.main === module` to `import.meta.url === \`file://\${process.argv[1]}\``
@@ -58,26 +60,30 @@ All JavaScript files were converted from CommonJS to ESM format:
 #### Example Changes
 
 **Before (CommonJS):**
+
 ```javascript
-const { ethers } = require('hardhat');
+const { ethers } = require("hardhat");
 module.exports = { main };
 ```
 
 **After (ESM):**
+
 ```javascript
-import { ethers } from 'hardhat';
+import { ethers } from "hardhat";
 export { main };
 ```
 
 ### 2. Hardhat Configuration
 
 #### hardhat.config.js
+
 - Converted to ESM syntax
 - Added `type` field to all network configurations
 - Networks now require: `type: 'http'` or `type: 'edr-simulated'`
 - Updated RPC URL defaults (empty strings not allowed)
 
 **Example:**
+
 ```javascript
 networks: {
   hardhat: {
@@ -92,10 +98,12 @@ networks: {
 }
 ```
 
-#### __dirname and __filename in ESM
+#### **dirname and **filename in ESM
+
 For scripts that use `__dirname` or `__filename`, added:
+
 ```javascript
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 ```
@@ -103,6 +111,7 @@ const __dirname = path.dirname(__filename);
 ### 3. ESLint Configuration
 
 Updated `eslint.config.js`:
+
 - Changed `module.exports` to `export default`
 - Updated `sourceType` from `'commonjs'` to `'module'`
 - Updated `ecmaVersion` to `2022`
@@ -130,11 +139,13 @@ These plugins either access internal Hardhat modules that are not exported in Ha
 ## Files Modified
 
 ### Configuration Files
+
 - `package.json` - Updated dependencies and added `"type": "module"`
 - `hardhat.config.js` - Converted to ESM, updated network config
 - `eslint.config.js` - Converted to ESM
 
 ### Test Files
+
 - `test/AssetTracker.test.js` - Converted to ESM
 - `test/RoleBasedAcl.test.js` - Converted to ESM
 - `test/AccessManagement.test.js` - Converted to ESM
@@ -144,6 +155,7 @@ These plugins either access internal Hardhat modules that are not exported in Ha
 - `test/helpers/testUtils.js` - Converted to ESM
 
 ### Scripts
+
 - `scripts/deploy.js` - Converted to ESM
 - `scripts/performance-analysis.js` - Converted to ESM
 
@@ -152,6 +164,7 @@ These plugins either access internal Hardhat modules that are not exported in Ha
 ### Prerequisites
 
 1. **Upgrade Node.js to version 22.10.0 or later**:
+
    ```bash
    node --version  # Should show v22.10.0 or higher
    ```

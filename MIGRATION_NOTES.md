@@ -121,20 +121,24 @@ Updated `eslint.config.js`:
 
 `@nomicfoundation/hardhat-toolbox` was removed as it doesn't yet support Hardhat 3.x. Instead, individual plugins are imported directly.
 
-## Temporarily Disabled Plugins
+## Plugin Compatibility Notes
 
-The following plugins are temporarily disabled due to Hardhat 3.x compatibility issues:
+### Working with --legacy-peer-deps
 
-- `@nomicfoundation/hardhat-chai-matchers` - requires `hardhat-ethers@^3.1.0` and `hardhat@^2.26.0`
+- `@nomicfoundation/hardhat-chai-matchers@^2.1.2` - Despite requiring `hardhat@^2.26.0` in peer dependencies, this plugin **works correctly** with Hardhat 3.x when installed using `--legacy-peer-deps`. Test matchers like `.to.emit()`, `.withArgs()`, and `.to.be.reverted` function properly.
+- `@nomicfoundation/hardhat-mocha@^3.0.5` - Official Hardhat 3.x test runner plugin. Required for tests to run.
+
+### Temporarily Disabled Plugins
+
+The following plugins are temporarily disabled due to Hardhat 3.x compatibility issues (they access internal Hardhat modules that are not exported):
+
 - `@nomicfoundation/hardhat-network-helpers` - requires `hardhat/common` export
 - `@typechain/hardhat` - requires `hardhat/common/bigInt` export
 - `hardhat-gas-reporter` - requires `hardhat/common/bigInt` export
 - `solidity-coverage` - requires `hardhat/common` export
 - `hardhat-contract-sizer` - compatibility unknown
 
-These plugins either access internal Hardhat modules that are not exported in Hardhat 3.x or have peer dependencies that are incompatible with Hardhat 3.x. They should be re-enabled once updated versions are released.
-
-**Note on Testing:** Tests currently use standard Chai assertions instead of hardhat-chai-matchers. The test assertions will need to be updated to use hardhat-specific matchers once the plugin is re-enabled.
+These will be re-enabled once updated versions are released.
 
 ## Files Modified
 

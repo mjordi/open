@@ -48,11 +48,15 @@ Hardhat 3.x requires ECMAScript Modules (ESM) instead of CommonJS:
 - ✅ Networks now specify `type: 'http'` or `type: 'edr-simulated'`
 - ✅ Updated RPC URL defaults (empty strings no longer allowed)
 
+## ✅ Working Features
+
+- **Test Matchers**: `@nomicfoundation/hardhat-chai-matchers@^2.1.2` works with Hardhat 3.x using `--legacy-peer-deps`. All test matchers (`.to.emit()`, `.withArgs()`, `.to.be.reverted`) function correctly.
+- **Test Runner**: `@nomicfoundation/hardhat-mocha@^3.0.5` provides Mocha test runner for Hardhat 3.x.
+
 ## ⚠️ Temporarily Disabled Features
 
-The following plugins are **temporarily disabled** due to Hardhat 3.x compatibility issues:
+The following plugins are **temporarily disabled** due to Hardhat 3.x compatibility issues (they access internal Hardhat modules):
 
-- `@nomicfoundation/hardhat-chai-matchers` - requires `hardhat-ethers@^3.1.0` and `hardhat@^2.26.0`
 - `@nomicfoundation/hardhat-network-helpers` - requires `hardhat/common` export
 - `@typechain/hardhat` - requires `hardhat/common/bigInt` export
 - `hardhat-gas-reporter` - requires `hardhat/common/bigInt` export
@@ -60,8 +64,6 @@ The following plugins are **temporarily disabled** due to Hardhat 3.x compatibil
 - `hardhat-contract-sizer` - compatibility unknown
 
 **These will be re-enabled** when compatible versions are released by their maintainers.
-
-**Note on Testing:** Tests currently use standard Chai assertions. Once `hardhat-chai-matchers` is updated for Hardhat 3.x, test assertions should be updated to use hardhat-specific matchers like `.to.be.revertedWithCustomError()`, `.to.emit()`, etc.
 
 ## 🔒 Security Improvements
 

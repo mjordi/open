@@ -120,8 +120,7 @@ jobs:
           slither . --json slither-report.json --exclude-dependencies || echo "⚠️  Slither analysis skipped - Hardhat 3.x not yet supported"
 
       - name: Upload Slither report
-        if: always()
-        continue-on-error: true
+        if: hashFiles('slither-report.json') != ''
         uses: actions/upload-artifact@v4
         with:
           name: slither-report

@@ -1,6 +1,5 @@
 import { expect } from 'chai';
 import hre from 'hardhat';
-const { ethers } = hre;
 import TestUtils from './helpers/testUtils.js';
 
 describe('AssetTracker', function () {
@@ -11,8 +10,8 @@ describe('AssetTracker', function () {
 
   beforeEach(async function () {
     // Get the ContractFactory and Signers here.
-    const AssetTracker = await ethers.getContractFactory('AssetTracker');
-    [owner, addr1, addr2] = await ethers.getSigners();
+    const AssetTracker = await hre.ethers.getContractFactory('AssetTracker');
+    [owner, addr1, addr2] = await hre.ethers.getSigners();
 
     // Deploy a new AssetTracker contract for each test
     assetTracker = await AssetTracker.deploy();
@@ -149,10 +148,10 @@ describe('AssetTracker', function () {
 
     it('Should reject transfer to zero address', async function () {
       await TestUtils.expectRevertWithCustomError(
-        assetTracker.transferAsset(ethers.ZeroAddress, testAsset.uuid),
+        assetTracker.transferAsset(hre.ethers.ZeroAddress, testAsset.uuid),
         assetTracker,
         'InvalidAddress',
-        [ethers.ZeroAddress]
+        [hre.ethers.ZeroAddress]
       );
     });
 
@@ -182,10 +181,10 @@ describe('AssetTracker', function () {
 
     it('Should reject ownership checks for zero address', async function () {
       await TestUtils.expectRevertWithCustomError(
-        assetTracker.isOwnerOf(ethers.ZeroAddress, 'some-uuid'),
+        assetTracker.isOwnerOf(hre.ethers.ZeroAddress, 'some-uuid'),
         assetTracker,
         'InvalidAddress',
-        [ethers.ZeroAddress]
+        [hre.ethers.ZeroAddress]
       );
     });
 

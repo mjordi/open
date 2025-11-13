@@ -1,6 +1,5 @@
 import { expect } from 'chai';
 import hre from 'hardhat';
-const { ethers } = hre;
 import TestUtils from './helpers/testUtils.js';
 
 describe('AssetTrackerOptimized', function () {
@@ -10,8 +9,8 @@ describe('AssetTrackerOptimized', function () {
   let addr2;
 
   beforeEach(async function () {
-    const AssetTrackerOptimized = await ethers.getContractFactory('AssetTrackerOptimized');
-    [owner, addr1, addr2] = await ethers.getSigners();
+    const AssetTrackerOptimized = await hre.ethers.getContractFactory('AssetTrackerOptimized');
+    [owner, addr1, addr2] = await hre.ethers.getSigners();
     assetTrackerOptimized = await AssetTrackerOptimized.deploy();
     await assetTrackerOptimized.waitForDeployment();
   });

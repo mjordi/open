@@ -1,6 +1,5 @@
 import { expect } from 'chai';
 import hre from 'hardhat';
-const { ethers } = hre;
 import TestUtils from './helpers/testUtils.js';
 
 describe('Contract Integration Tests', function () {
@@ -13,12 +12,12 @@ describe('Contract Integration Tests', function () {
   let user2;
 
   beforeEach(async function () {
-    [owner, admin, user1, user2] = await ethers.getSigners();
+    [owner, admin, user1, user2] = await hre.ethers.getSigners();
 
     // Deploy all contracts
-    const AssetTracker = await ethers.getContractFactory('AssetTracker');
-    const RoleBasedAcl = await ethers.getContractFactory('RoleBasedAcl');
-    const AccessManagement = await ethers.getContractFactory('AccessManagement');
+    const AssetTracker = await hre.ethers.getContractFactory('AssetTracker');
+    const RoleBasedAcl = await hre.ethers.getContractFactory('RoleBasedAcl');
+    const AccessManagement = await hre.ethers.getContractFactory('AccessManagement');
 
     assetTracker = await AssetTracker.deploy();
     roleBasedAcl = await RoleBasedAcl.deploy();

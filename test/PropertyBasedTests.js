@@ -1,6 +1,5 @@
 import { expect } from 'chai';
 import hre from 'hardhat';
-const { ethers } = hre;
 import TestUtils from './helpers/testUtils.js';
 
 /**
@@ -14,12 +13,12 @@ describe('Property-Based Tests (Fuzzing)', function () {
   let accounts;
 
   before(async function () {
-    accounts = await ethers.getSigners();
+    accounts = await hre.ethers.getSigners();
 
     // Deploy contracts once for all fuzz tests
-    const AssetTracker = await ethers.getContractFactory('AssetTracker');
-    const RoleBasedAcl = await ethers.getContractFactory('RoleBasedAcl');
-    const AccessManagement = await ethers.getContractFactory('AccessManagement');
+    const AssetTracker = await hre.ethers.getContractFactory('AssetTracker');
+    const RoleBasedAcl = await hre.ethers.getContractFactory('RoleBasedAcl');
+    const AccessManagement = await hre.ethers.getContractFactory('AccessManagement');
 
     assetTracker = await AssetTracker.deploy();
     roleBasedAcl = await RoleBasedAcl.deploy();
@@ -153,7 +152,7 @@ describe('Property-Based Tests (Fuzzing)', function () {
   describe('RoleBasedAcl Fuzz Tests', function () {
     it('Property: Role assignment should be consistent and retrievable', async function () {
       const iterations = 10; // Reduced iterations to avoid conflicts
-      const [creator] = await ethers.getSigners();
+      const [creator] = await hre.ethers.getSigners();
 
       for (let i = 0; i < iterations; i++) {
         // Use a unique user for each iteration to avoid conflicts
@@ -175,7 +174,7 @@ describe('Property-Based Tests (Fuzzing)', function () {
 
     it('Property: Role unassignment should remove access', async function () {
       const iterations = 15;
-      const [creator] = await ethers.getSigners();
+      const [creator] = await hre.ethers.getSigners();
 
       for (let i = 0; i < iterations; i++) {
         const user = randomAddress();
@@ -192,7 +191,7 @@ describe('Property-Based Tests (Fuzzing)', function () {
 
     it('Property: Non-superadmin users cannot assign roles', async function () {
       const iterations = 3;
-      const [creator] = await ethers.getSigners();
+      const [creator] = await hre.ethers.getSigners();
 
       for (let i = 0; i < iterations; i++) {
         // Use unique accounts to avoid conflicts
@@ -299,7 +298,7 @@ describe('Property-Based Tests (Fuzzing)', function () {
   describe('Cross-Contract Fuzz Tests', function () {
     it('Property: Role-based asset management should be consistent', async function () {
       const iterations = 5;
-      const [creator] = await ethers.getSigners();
+      const [creator] = await hre.ethers.getSigners();
 
       for (let i = 0; i < iterations; i++) {
         // Use unique accounts

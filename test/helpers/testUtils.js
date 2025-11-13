@@ -1,7 +1,5 @@
 import hre from 'hardhat';
 
-const { ethers } = hre;
-
 /**
  * Test utilities for smart contract testing
  */
@@ -10,11 +8,11 @@ class TestUtils {
    * Deploy all contracts and return instances
    */
   static async deployAllContracts() {
-    const [owner, ...addrs] = await ethers.getSigners();
+    const [owner, ...addrs] = await hre.ethers.getSigners();
 
-    const AssetTracker = await ethers.getContractFactory('AssetTracker');
-    const RoleBasedAcl = await ethers.getContractFactory('RoleBasedAcl');
-    const AccessManagement = await ethers.getContractFactory('AccessManagement');
+    const AssetTracker = await hre.ethers.getContractFactory('AssetTracker');
+    const RoleBasedAcl = await hre.ethers.getContractFactory('RoleBasedAcl');
+    const AccessManagement = await hre.ethers.getContractFactory('AccessManagement');
 
     const assetTracker = await AssetTracker.deploy();
     const roleBasedAcl = await RoleBasedAcl.deploy();
@@ -140,15 +138,15 @@ class TestUtils {
    * Advance time in hardhat network
    */
   static async advanceTime(seconds) {
-    await ethers.provider.send('evm_increaseTime', [seconds]);
-    await ethers.provider.send('evm_mine');
+    await hre.ethers.provider.send('evm_increaseTime', [seconds]);
+    await hre.ethers.provider.send('evm_mine');
   }
 
   /**
    * Get current block timestamp
    */
   static async getCurrentTimestamp() {
-    const block = await ethers.provider.getBlock('latest');
+    const block = await hre.ethers.provider.getBlock('latest');
     return block.timestamp;
   }
 
@@ -261,32 +259,32 @@ class TestUtils {
     const receipt = await tx.wait();
 
     if (!gasPrice) {
-      gasPrice = await ethers.provider.getGasPrice();
+      gasPrice = await hre.ethers.provider.getGasPrice();
     }
 
     const gasCost = receipt.gasUsed.mul(gasPrice);
-    return ethers.utils.formatEther(gasCost);
+    return hre.ethers.utils.formatEther(gasCost);
   }
 
   /**
    * Generate random address for testing
    */
   static generateRandomAddress() {
-    return ethers.Wallet.createRandom().address;
+    return hre.ethers.Wallet.createRandom().address;
   }
 
   /**
    * Convert string to bytes32 for Solidity
    */
   static stringToBytes32(str) {
-    return ethers.utils.formatBytes32String(str);
+    return hre.ethers.utils.formatBytes32String(str);
   }
 
   /**
    * Convert bytes32 to string
    */
   static bytes32ToString(bytes32) {
-    return ethers.utils.parseBytes32String(bytes32);
+    return hre.ethers.utils.parseBytes32String(bytes32);
   }
 }
 

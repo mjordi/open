@@ -1,6 +1,5 @@
 import { expect } from 'chai';
 import hre from 'hardhat';
-const { ethers } = hre;
 import TestUtils from './helpers/testUtils.js';
 
 describe('RoleBasedAcl', function () {
@@ -10,8 +9,8 @@ describe('RoleBasedAcl', function () {
   let user3;
 
   beforeEach(async function () {
-    const RoleBasedAcl = await ethers.getContractFactory('RoleBasedAcl');
-    const [, u1, u2, u3] = await ethers.getSigners();
+    const RoleBasedAcl = await hre.ethers.getContractFactory('RoleBasedAcl');
+    const [, u1, u2, u3] = await hre.ethers.getSigners();
     user1 = u1;
     user2 = u2;
     user3 = u3;

@@ -3,18 +3,16 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const { ethers, run, network } = hre;
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function main() {
   console.log('🚀 Starting deployment process...');
-  console.log(`📡 Network: ${network.name}`);
+  console.log(`📡 Network: ${hre.network.name}`);
   console.log(`🕒 Timestamp: ${new Date().toISOString()}`);
 
   // Get the deployer account
-  const [deployer] = await ethers.getSigners();
+  const [deployer] = await hre.ethers.getSigners();
   if (!deployer) {
     throw new Error(
       '❌ No deployer account found. Please check your Hardhat configuration and ensure a private key is provided.'
@@ -24,14 +22,14 @@ async function main() {
 
   // Check deployer balance
   const balance = await deployer.provider.getBalance(deployer.address);
-  console.log(`💰 Account balance: ${ethers.formatEther(balance)} ETH`);
+  console.log(`💰 Account balance: ${hre.ethers.formatEther(balance)} ETH`);
 
   if (balance === 0n) {
     throw new Error('❌ Deployer account has no funds');
   }
 
   const deploymentInfo = {
-    network: network.name,
+    network: hre.network.name,
     deployer: deployer.address,
     timestamp: new Date().toISOString(),
     contracts: {},
@@ -42,7 +40,7 @@ async function main() {
   try {
     // Deploy AssetTracker
     console.log('\n🔧 Deploying AssetTracker...');
-    const AssetTracker = await ethers.getContractFactory('AssetTracker');
+    const AssetTracker = await hre.ethers.getContractFactory('AssetTracker');
     const assetTracker = await AssetTracker.deploy();
     await assetTracker.waitForDeployment();
 
@@ -56,7 +54,7 @@ async function main() {
 
     // Deploy RoleBasedAcl
     console.log('\n🔧 Deploying RoleBasedAcl...');
-    const RoleBasedAcl = await ethers.getContractFactory('RoleBasedAcl');
+    const RoleBasedAcl = await hre.ethers.getContractFactory('RoleBasedAcl');
     const roleBasedAcl = await RoleBasedAcl.deploy();
     await roleBasedAcl.waitForDeployment();
 
@@ -70,7 +68,7 @@ async function main() {
 
     // Deploy AccessManagement
     console.log('\n🔧 Deploying AccessManagement...');
-    const AccessManagement = await ethers.getContractFactory('AccessManagement');
+    const AccessManagement = await hre.ethers.getContractFactory('AccessManagement');
     const accessManagement = await AccessManagement.deploy();
     await accessManagement.waitForDeployment();
 
@@ -87,7 +85,7 @@ async function main() {
     let totalDeploymentCost = 0n;
     for (const contract of Object.values(deploymentInfo.contracts)) {
       if (contract.txHash) {
-        const receipt = await ethers.provider.getTransactionReceipt(contract.txHash);
+        const receipt = await hre.ethers.provider.getTransactionReceipt(contract.txHash);
         if (receipt) {
           totalGasUsed += receipt.gasUsed;
           // In ethers v6, the receipt contains the effective gas price
@@ -100,11 +98,11 @@ async function main() {
 
     console.log(`\n⛽ Total gas used: ${totalGasUsed.toString()}`);
     if (totalDeploymentCost > 0n) {
-      console.log(`💸 Total deployment cost: ${ethers.formatEther(totalDeploymentCost)} ETH`);
+      console.log(`💸 Total deployment cost: ${hre.ethers.formatEther(totalDeploymentCost)} ETH`);
     }
 
     deploymentInfo.gasUsed = totalGasUsed.toString();
-    deploymentInfo.deploymentCost = ethers.formatEther(totalDeploymentCost);
+    deploymentInfo.deploymentCost = hre.ethers.formatEther(totalDeploymentCost);
 
     // Save deployment info
     const deploymentsDir = path.join(__dirname, '..', 'deployments');
@@ -112,12 +110,12 @@ async function main() {
       fs.mkdirSync(deploymentsDir, { recursive: true });
     }
 
-    const deploymentFile = path.join(deploymentsDir, `${network.name}.json`);
+    const deploymentFile = path.join(deploymentsDir, `${hre.network.name}.json`);
     fs.writeFileSync(deploymentFile, JSON.stringify(deploymentInfo, null, 2));
     console.log(`📄 Deployment info saved to: ${deploymentFile}`);
 
     // Verify contracts on public networks
-    if (network.name !== 'hardhat' && network.name !== 'localhost') {
+    if (hre.network.name !== 'hardhat' && hre.network.name !== 'localhost') {
       console.log('\n🔍 Verifying contracts...');
 
       await new Promise((resolve) => setTimeout(resolve, 30000)); // Wait 30 seconds

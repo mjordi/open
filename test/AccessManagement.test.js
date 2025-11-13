@@ -10,8 +10,8 @@ describe('AccessManagement', function () {
   let user3;
 
   beforeEach(async function () {
-    const AccessManagement = await hre.network.ethers.getContractFactory('AccessManagement');
-    [owner, user1, user2, user3] = await hre.network.ethers.getSigners();
+    const AccessManagement = await hre.ethers.getContractFactory('AccessManagement');
+    [owner, user1, user2, user3] = await hre.ethers.getSigners();
 
     accessManagement = await AccessManagement.deploy();
     await accessManagement.waitForDeployment();
@@ -282,7 +282,7 @@ describe('AccessManagement', function () {
 
     it('Should return empty data for non-existent assets', async function () {
       const asset = await accessManagement.getAsset('non-existent');
-      expect(asset.assetOwner).to.equal(hre.network.ethers.ZeroAddress);
+      expect(asset.assetOwner).to.equal(hre.ethers.ZeroAddress);
       expect(asset.assetDescription).to.equal('');
       expect(asset.initialized).to.be.false;
       expect(asset.authorizationCount).to.equal(0);

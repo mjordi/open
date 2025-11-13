@@ -1,5 +1,6 @@
 import { expect } from 'chai';
-import { ethers } from 'hardhat';
+import hre from 'hardhat';
+const { ethers } = hre;
 import TestUtils from './helpers/testUtils.js';
 
 /**

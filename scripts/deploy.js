@@ -1,7 +1,9 @@
-import { ethers, run, network } from 'hardhat';
+import hre from 'hardhat';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+const { ethers, run, network } = hre;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

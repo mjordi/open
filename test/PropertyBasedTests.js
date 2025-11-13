@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
+import TestUtils from './helpers/testUtils.js';
 
 /**
  * Property-based testing for smart contracts
@@ -66,16 +67,15 @@ describe('Property-Based Tests (Fuzzing)', function () {
         const randomAccount = randomAddress();
 
         // Asset creation should succeed
-        await expect(
-          assetTracker
-            .connect(randomAccount)
-            .createAsset(
-              assetData.name,
-              assetData.description,
-              assetData.uuid,
-              assetData.manufacturer
-            )
-        ).to.emit(assetTracker, 'AssetCreate');
+        const tx = await assetTracker
+          .connect(randomAccount)
+          .createAsset(
+            assetData.name,
+            assetData.description,
+            assetData.uuid,
+            assetData.manufacturer
+          );
+        await TestUtils.expectEvent(tx, assetTracker, 'AssetCreate');
 
         // Asset should be owned by creator
         expect(await assetTracker.isOwnerOf(randomAccount.address, assetData.uuid)).to.be.true;
@@ -102,13 +102,14 @@ describe('Property-Based Tests (Fuzzing)', function () {
           .createAsset(randomString(10), randomString(20), uuid, randomString(15));
 
         // Second creation with same UUID should fail
-        await expect(
+        await TestUtils.expectRevertWithCustomError(
           assetTracker
             .connect(account2)
-            .createAsset(randomString(10), randomString(20), uuid, randomString(15))
-        )
-          .to.be.revertedWithCustomError(assetTracker, 'AssetExists')
-          .withArgs(uuid);
+            .createAsset(randomString(10), randomString(20), uuid, randomString(15)),
+          assetTracker,
+          'AssetExists',
+          [uuid]
+        );
       }
     });
 

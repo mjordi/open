@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
+import TestUtils from './helpers/testUtils.js';
 
 describe('Contract Integration Tests', function () {
   let assetTracker;
@@ -122,14 +123,16 @@ describe('Contract Integration Tests', function () {
         .false;
 
       // Test unauthorized access attempts
-      await expect(roleBasedAcl.connect(user1).assignRole(user2.address, 'admin')).to.be.reverted;
+      await TestUtils.expectRevert(roleBasedAcl.connect(user1).assignRole(user2.address, 'admin'));
 
       const testAsset = 'error-test-asset';
       await accessManagement.newAsset(testAsset, 'Error testing');
 
-      await expect(
-        accessManagement.connect(user1).addAuthorization(testAsset, user2.address, 'admin')
-      ).to.be.revertedWithCustomError(accessManagement, 'NotOwnerOrAdmin');
+      await TestUtils.expectRevertWithCustomError(
+        accessManagement.connect(user1).addAuthorization(testAsset, user2.address, 'admin'),
+        accessManagement,
+        'NotOwnerOrAdmin'
+      );
     });
   });
 

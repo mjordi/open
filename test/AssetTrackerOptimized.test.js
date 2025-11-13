@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
+import TestUtils from './helpers/testUtils.js';
 
 describe('AssetTrackerOptimized', function () {
   let assetTrackerOptimized;
@@ -21,12 +22,15 @@ describe('AssetTrackerOptimized', function () {
       const uuid = 'test-uuid-123';
       const manufacturer = 'Test Manufacturer';
 
-      await expect(assetTrackerOptimized.createAsset(name, description, uuid, manufacturer))
-        .to.emit(assetTrackerOptimized, 'AssetCreated')
-        .withArgs(owner.address, uuid, name, manufacturer, (value) => {
-          expect(typeof value).to.equal('bigint');
-          return true;
-        });
+      const tx = await assetTrackerOptimized.createAsset(name, description, uuid, manufacturer);
+      const event = await TestUtils.expectEvent(tx, assetTrackerOptimized, 'AssetCreated');
+
+      // Verify event arguments
+      expect(event.args[0]).to.equal(owner.address);
+      expect(event.args[1]).to.equal(uuid);
+      expect(event.args[2]).to.equal(name);
+      expect(event.args[3]).to.equal(manufacturer);
+      expect(typeof event.args[4]).to.equal('bigint'); // timestamp
 
       const asset = await assetTrackerOptimized.getAsset(uuid);
       expect(asset.owner).to.equal(owner.address);
@@ -47,16 +51,20 @@ describe('AssetTrackerOptimized', function () {
 
       await assetTrackerOptimized.createAsset(name, description, uuid, manufacturer);
 
-      await expect(
-        assetTrackerOptimized.createAsset(name, description, uuid, manufacturer)
-      ).to.be.revertedWithCustomError(assetTrackerOptimized, 'AssetAlreadyExists');
+      await TestUtils.expectRevertWithCustomError(
+        assetTrackerOptimized.createAsset(name, description, uuid, manufacturer),
+        assetTrackerOptimized,
+        'AssetAlreadyExists'
+      );
     });
 
     it('Should handle empty strings in creation', async function () {
       const uuid = 'empty-string-uuid';
-      await expect(
-        assetTrackerOptimized.createAsset('', '', uuid, '')
-      ).to.be.revertedWithCustomError(assetTrackerOptimized, 'EmptyString');
+      await TestUtils.expectRevertWithCustomError(
+        assetTrackerOptimized.createAsset('', '', uuid, ''),
+        assetTrackerOptimized,
+        'EmptyString'
+      );
     });
   });
 
@@ -78,12 +86,14 @@ describe('AssetTrackerOptimized', function () {
     });
 
     it('Should transfer asset successfully', async function () {
-      await expect(assetTrackerOptimized.transferAsset(addr1.address, testAsset.uuid))
-        .to.emit(assetTrackerOptimized, 'AssetTransferred')
-        .withArgs(owner.address, addr1.address, testAsset.uuid, (value) => {
-          expect(typeof value).to.equal('bigint');
-          return true;
-        });
+      const tx = await assetTrackerOptimized.transferAsset(addr1.address, testAsset.uuid);
+      const event = await TestUtils.expectEvent(tx, assetTrackerOptimized, 'AssetTransferred');
+
+      // Verify event arguments
+      expect(event.args[0]).to.equal(owner.address);
+      expect(event.args[1]).to.equal(addr1.address);
+      expect(event.args[2]).to.equal(testAsset.uuid);
+      expect(typeof event.args[3]).to.equal('bigint'); // timestamp
 
       expect(await assetTrackerOptimized.isOwnerOf(owner.address, testAsset.uuid)).to.be.false;
       expect(await assetTrackerOptimized.isOwnerOf(addr1.address, testAsset.uuid)).to.be.true;
@@ -94,15 +104,19 @@ describe('AssetTrackerOptimized', function () {
 
     it('Should reject transfer of non-existent asset', async function () {
       const nonExistentUuid = 'non-existent-uuid';
-      await expect(
-        assetTrackerOptimized.transferAsset(addr1.address, nonExistentUuid)
-      ).to.be.revertedWithCustomError(assetTrackerOptimized, 'AssetNotFound');
+      await TestUtils.expectRevertWithCustomError(
+        assetTrackerOptimized.transferAsset(addr1.address, nonExistentUuid),
+        assetTrackerOptimized,
+        'AssetNotFound'
+      );
     });
 
     it('Should reject transfer by non-owner', async function () {
-      await expect(
-        assetTrackerOptimized.connect(addr1).transferAsset(addr2.address, testAsset.uuid)
-      ).to.be.revertedWithCustomError(assetTrackerOptimized, 'NotAssetOwner');
+      await TestUtils.expectRevertWithCustomError(
+        assetTrackerOptimized.connect(addr1).transferAsset(addr2.address, testAsset.uuid),
+        assetTrackerOptimized,
+        'NotAssetOwner'
+      );
     });
   });
 });

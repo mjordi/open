@@ -1,11 +1,11 @@
 import 'dotenv/config';
 import '@nomicfoundation/hardhat-ethers';
 import '@nomicfoundation/hardhat-mocha';
-import '@nomicfoundation/hardhat-chai-matchers';
 import '@nomicfoundation/hardhat-verify';
 import '@nomicfoundation/hardhat-ignition-ethers';
-// NOTE: hardhat-chai-matchers technically requires hardhat@^2.26.0 but works with 3.x using --legacy-peer-deps
+
 // TODO: Re-enable these plugins when they add Hardhat 3.x support:
+// - @nomicfoundation/hardhat-chai-matchers (requires hardhat/common/bigInt export)
 // - @nomicfoundation/hardhat-network-helpers (requires hardhat/common export)
 // - @typechain/hardhat (requires hardhat/common/bigInt export)
 // - hardhat-gas-reporter (requires hardhat/common/bigInt export)

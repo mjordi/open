@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
+import TestUtils from './helpers/testUtils.js';
 
 describe('AccessManagement', function () {
   let accessManagement;
@@ -21,9 +22,12 @@ describe('AccessManagement', function () {
       const assetKey = 'asset-001';
       const assetDescription = 'Test Asset Description';
 
-      await expect(accessManagement.newAsset(assetKey, assetDescription))
-        .to.emit(accessManagement, 'AssetCreated')
-        .withArgs(owner.address, assetKey, assetDescription);
+      const tx = await accessManagement.newAsset(assetKey, assetDescription);
+      await TestUtils.expectEvent(tx, accessManagement, 'AssetCreated', [
+        owner.address,
+        assetKey,
+        assetDescription,
+      ]);
 
       const asset = await accessManagement.getAsset(assetKey);
       expect(asset.assetOwner).to.equal(owner.address);
@@ -38,9 +42,11 @@ describe('AccessManagement', function () {
 
       await accessManagement.newAsset(assetKey, assetDescription);
 
-      await expect(
-        accessManagement.newAsset(assetKey, assetDescription)
-      ).to.be.revertedWithCustomError(accessManagement, 'AssetAlreadyExists');
+      await TestUtils.expectRevertWithCustomError(
+        accessManagement.newAsset(assetKey, assetDescription),
+        accessManagement,
+        'AssetAlreadyExists'
+      );
     });
 
     it('Should allow different users to create assets', async function () {
@@ -91,9 +97,13 @@ describe('AccessManagement', function () {
     it('Should allow owner to add authorization', async function () {
       const authRole = 'admin';
 
-      await expect(accessManagement.addAuthorization(testAssetKey, user1.address, authRole))
-        .to.emit(accessManagement, 'AuthorizationAdded')
-        .withArgs(owner.address, user1.address, testAssetKey, authRole);
+      const tx = await accessManagement.addAuthorization(testAssetKey, user1.address, authRole);
+      await TestUtils.expectEvent(tx, accessManagement, 'AuthorizationAdded', [
+        owner.address,
+        user1.address,
+        testAssetKey,
+        authRole,
+      ]);
 
       const role = await accessManagement.getAssetAuthorization(testAssetKey, user1.address);
       expect(role).to.equal(authRole);
@@ -105,28 +115,37 @@ describe('AccessManagement', function () {
     it('Should allow authorized admins to add authorization', async function () {
       await accessManagement.addAuthorization(testAssetKey, user1.address, 'admin');
 
-      await expect(
-        accessManagement.connect(user1).addAuthorization(testAssetKey, user2.address, 'user')
-      )
-        .to.emit(accessManagement, 'AuthorizationAdded')
-        .withArgs(user1.address, user2.address, testAssetKey, 'user');
+      const tx = await accessManagement
+        .connect(user1)
+        .addAuthorization(testAssetKey, user2.address, 'user');
+      await TestUtils.expectEvent(tx, accessManagement, 'AuthorizationAdded', [
+        user1.address,
+        user2.address,
+        testAssetKey,
+        'user',
+      ]);
 
       const role = await accessManagement.getAssetAuthorization(testAssetKey, user2.address);
       expect(role).to.equal('user');
     });
 
     it('Should reject authorization from unauthorized users', async function () {
-      await expect(
-        accessManagement.connect(user1).addAuthorization(testAssetKey, user2.address, 'admin')
-      ).to.be.revertedWithCustomError(accessManagement, 'NotOwnerOrAdmin');
+      await TestUtils.expectRevertWithCustomError(
+        accessManagement.connect(user1).addAuthorization(testAssetKey, user2.address, 'admin'),
+        accessManagement,
+        'NotOwnerOrAdmin'
+      );
     });
 
     it('Should allow owner to remove authorization', async function () {
       await accessManagement.addAuthorization(testAssetKey, user1.address, 'admin');
 
-      await expect(accessManagement.removeAuthorization(testAssetKey, user1.address))
-        .to.emit(accessManagement, 'AuthorizationRemoved')
-        .withArgs(owner.address, user1.address, testAssetKey);
+      const tx = await accessManagement.removeAuthorization(testAssetKey, user1.address);
+      await TestUtils.expectEvent(tx, accessManagement, 'AuthorizationRemoved', [
+        owner.address,
+        user1.address,
+        testAssetKey,
+      ]);
 
       const role = await accessManagement.getAssetAuthorization(testAssetKey, user1.address);
       expect(role).to.equal('');
@@ -136,9 +155,14 @@ describe('AccessManagement', function () {
       await accessManagement.addAuthorization(testAssetKey, user1.address, 'admin');
       await accessManagement.connect(user1).addAuthorization(testAssetKey, user2.address, 'user');
 
-      await expect(accessManagement.connect(user1).removeAuthorization(testAssetKey, user2.address))
-        .to.emit(accessManagement, 'AuthorizationRemoved')
-        .withArgs(user1.address, user2.address, testAssetKey);
+      const tx = await accessManagement
+        .connect(user1)
+        .removeAuthorization(testAssetKey, user2.address);
+      await TestUtils.expectEvent(tx, accessManagement, 'AuthorizationRemoved', [
+        user1.address,
+        user2.address,
+        testAssetKey,
+      ]);
 
       const role = await accessManagement.getAssetAuthorization(testAssetKey, user2.address);
       expect(role).to.equal('');
@@ -147,9 +171,11 @@ describe('AccessManagement', function () {
     it('Should reject authorization removal from unauthorized users', async function () {
       await accessManagement.addAuthorization(testAssetKey, user1.address, 'admin');
 
-      await expect(
-        accessManagement.connect(user2).removeAuthorization(testAssetKey, user1.address)
-      ).to.be.revertedWithCustomError(accessManagement, 'NotOwnerOrAdmin');
+      await TestUtils.expectRevertWithCustomError(
+        accessManagement.connect(user2).removeAuthorization(testAssetKey, user1.address),
+        accessManagement,
+        'NotOwnerOrAdmin'
+      );
     });
 
     it('Should handle authorization listing', async function () {
@@ -186,39 +212,54 @@ describe('AccessManagement', function () {
     });
 
     it('Should grant access to asset owner', async function () {
-      await expect(accessManagement.getAccess(testAssetKey))
-        .to.emit(accessManagement, 'AccessAttempt')
-        .withArgs(owner.address, testAssetKey, true);
+      const tx = await accessManagement.getAccess(testAssetKey);
+      await TestUtils.expectEvent(tx, accessManagement, 'AccessAttempt', [
+        owner.address,
+        testAssetKey,
+        true,
+      ]);
       expect(await accessManagement.getAccess.staticCall(testAssetKey)).to.be.true;
     });
 
     it('Should grant access to authorized users', async function () {
-      await expect(accessManagement.connect(user1).getAccess(testAssetKey))
-        .to.emit(accessManagement, 'AccessAttempt')
-        .withArgs(user1.address, testAssetKey, true);
+      const tx = await accessManagement.connect(user1).getAccess(testAssetKey);
+      await TestUtils.expectEvent(tx, accessManagement, 'AccessAttempt', [
+        user1.address,
+        testAssetKey,
+        true,
+      ]);
       expect(await accessManagement.connect(user1).getAccess.staticCall(testAssetKey)).to.be.true;
     });
 
     it('Should deny access to unauthorized users', async function () {
-      await expect(accessManagement.connect(user2).getAccess(testAssetKey))
-        .to.emit(accessManagement, 'AccessAttempt')
-        .withArgs(user2.address, testAssetKey, false);
+      const tx = await accessManagement.connect(user2).getAccess(testAssetKey);
+      await TestUtils.expectEvent(tx, accessManagement, 'AccessAttempt', [
+        user2.address,
+        testAssetKey,
+        false,
+      ]);
       expect(await accessManagement.connect(user2).getAccess.staticCall(testAssetKey)).to.be.false;
     });
 
     it('Should deny access after authorization removal', async function () {
       await accessManagement.removeAuthorization(testAssetKey, user1.address);
-      await expect(accessManagement.connect(user1).getAccess(testAssetKey))
-        .to.emit(accessManagement, 'AccessAttempt')
-        .withArgs(user1.address, testAssetKey, false);
+      const tx = await accessManagement.connect(user1).getAccess(testAssetKey);
+      await TestUtils.expectEvent(tx, accessManagement, 'AccessAttempt', [
+        user1.address,
+        testAssetKey,
+        false,
+      ]);
       expect(await accessManagement.connect(user1).getAccess.staticCall(testAssetKey)).to.be.false;
     });
 
     it('Should handle access for non-existent assets', async function () {
       const nonExistentKey = 'non-existent-asset';
-      await expect(accessManagement.getAccess(nonExistentKey))
-        .to.emit(accessManagement, 'AccessAttempt')
-        .withArgs(owner.address, nonExistentKey, false);
+      const tx = await accessManagement.getAccess(nonExistentKey);
+      await TestUtils.expectEvent(tx, accessManagement, 'AccessAttempt', [
+        owner.address,
+        nonExistentKey,
+        false,
+      ]);
       expect(await accessManagement.getAccess.staticCall(nonExistentKey)).to.be.false;
     });
   });
@@ -290,9 +331,11 @@ describe('AccessManagement', function () {
       await accessManagement.connect(user1).addAuthorization(assetKey, user2.address, 'user');
 
       // user2, being an authorized user, CAN add user3
-      await expect(
-        accessManagement.connect(user2).addAuthorization(assetKey, user3.address, 'viewer')
-      ).to.not.be.reverted;
+      const tx = await accessManagement
+        .connect(user2)
+        .addAuthorization(assetKey, user3.address, 'viewer');
+      // Verify it didn't revert
+      await tx.wait();
 
       // user1 removes user2's access
       await accessManagement.connect(user1).removeAuthorization(assetKey, user2.address);

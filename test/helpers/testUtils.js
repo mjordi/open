@@ -151,28 +151,104 @@ class TestUtils {
   }
 
   /**
-   * Assert event emission with proper error handling
+   * Assert event emission with proper error handling (ethers v6 compatible)
+   * Works without hardhat-chai-matchers
    */
-  static async expectEvent(txPromise, contract, eventName, args = []) {
-    const tx = await txPromise;
+  static async expectEvent(tx, contract, eventName, expectedArgs = []) {
     const receipt = await tx.wait();
 
-    const event = receipt.events?.find((e) => e.event === eventName);
-    if (!event) {
+    // Parse logs to find the event
+    const eventFragment = contract.interface.getEvent(eventName);
+    const eventTopic = contract.interface.getEventTopic(eventName);
+
+    const log = receipt.logs.find((log) => log.topics[0] === eventTopic);
+
+    if (!log) {
       throw new Error(`Event ${eventName} not found in transaction`);
     }
 
-    if (args.length > 0) {
-      for (let i = 0; i < args.length; i++) {
-        if (event.args[i] !== args[i]) {
+    const parsedLog = contract.interface.parseLog(log);
+
+    if (expectedArgs.length > 0) {
+      for (let i = 0; i < expectedArgs.length; i++) {
+        if (parsedLog.args[i] !== expectedArgs[i]) {
           throw new Error(
-            `Event argument ${i} mismatch: expected ${args[i]}, got ${event.args[i]}`
+            `Event argument ${i} mismatch: expected ${expectedArgs[i]}, got ${parsedLog.args[i]}`
           );
         }
       }
     }
 
-    return event;
+    return parsedLog;
+  }
+
+  /**
+   * Expect a transaction to revert (generic)
+   * Works without hardhat-chai-matchers
+   */
+  static async expectRevert(txPromise) {
+    let reverted = false;
+
+    try {
+      const tx = await txPromise;
+      await tx.wait();
+    } catch (error) {
+      reverted = true;
+    }
+
+    if (!reverted) {
+      throw new Error('Expected transaction to revert, but it succeeded');
+    }
+  }
+
+  /**
+   * Expect a transaction to revert with a custom error
+   * Works without hardhat-chai-matchers
+   */
+  static async expectRevertWithCustomError(txPromise, contract, errorName, expectedArgs = []) {
+    let revertError = null;
+
+    try {
+      const tx = await txPromise;
+      await tx.wait();
+    } catch (error) {
+      revertError = error;
+    }
+
+    if (!revertError) {
+      throw new Error('Expected transaction to revert, but it succeeded');
+    }
+
+    // Check if the error matches the custom error
+    const errorFragment = contract.interface.getError(errorName);
+    if (!errorFragment) {
+      throw new Error(`Custom error ${errorName} not found in contract interface`);
+    }
+
+    // Check error data contains the custom error selector
+    const errorSelector = contract.interface.getErrorSelector(errorName);
+
+    if (!revertError.data || !revertError.data.startsWith(errorSelector)) {
+      throw new Error(`Expected custom error ${errorName}, but got: ${revertError.message}`);
+    }
+
+    // If expectedArgs provided, decode and verify
+    if (expectedArgs.length > 0) {
+      try {
+        const decodedError = contract.interface.parseError(revertError.data);
+        for (let i = 0; i < expectedArgs.length; i++) {
+          if (decodedError.args[i] !== expectedArgs[i]) {
+            throw new Error(
+              `Error argument ${i} mismatch: expected ${expectedArgs[i]}, got ${decodedError.args[i]}`
+            );
+          }
+        }
+      } catch (decodeError) {
+        throw new Error(`Failed to decode error arguments: ${decodeError.message}`);
+      }
+    }
+
+    return revertError;
   }
 
   /**

@@ -9,8 +9,8 @@ describe('RoleBasedAcl', function () {
   let user3;
 
   beforeEach(async function () {
-    const RoleBasedAcl = await hre.ethers.getContractFactory('RoleBasedAcl');
-    const [, u1, u2, u3] = await hre.ethers.getSigners();
+    const RoleBasedAcl = await hre.network.ethers.getContractFactory('RoleBasedAcl');
+    const [, u1, u2, u3] = await hre.network.ethers.getSigners();
     user1 = u1;
     user2 = u2;
     user3 = u3;

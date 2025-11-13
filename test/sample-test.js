@@ -12,12 +12,12 @@ describe('Contract Integration Tests', function () {
   let user2;
 
   beforeEach(async function () {
-    [owner, admin, user1, user2] = await hre.ethers.getSigners();
+    [owner, admin, user1, user2] = await hre.network.ethers.getSigners();
 
     // Deploy all contracts
-    const AssetTracker = await hre.ethers.getContractFactory('AssetTracker');
-    const RoleBasedAcl = await hre.ethers.getContractFactory('RoleBasedAcl');
-    const AccessManagement = await hre.ethers.getContractFactory('AccessManagement');
+    const AssetTracker = await hre.network.ethers.getContractFactory('AssetTracker');
+    const RoleBasedAcl = await hre.network.ethers.getContractFactory('RoleBasedAcl');
+    const AccessManagement = await hre.network.ethers.getContractFactory('AccessManagement');
 
     assetTracker = await AssetTracker.deploy();
     roleBasedAcl = await RoleBasedAcl.deploy();

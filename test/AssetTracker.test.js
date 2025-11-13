@@ -10,8 +10,8 @@ describe('AssetTracker', function () {
 
   beforeEach(async function () {
     // Get the ContractFactory and Signers here.
-    const AssetTracker = await hre.ethers.getContractFactory('AssetTracker');
-    [owner, addr1, addr2] = await hre.ethers.getSigners();
+    const AssetTracker = await hre.network.ethers.getContractFactory('AssetTracker');
+    [owner, addr1, addr2] = await hre.network.ethers.getSigners();
 
     // Deploy a new AssetTracker contract for each test
     assetTracker = await AssetTracker.deploy();
@@ -148,10 +148,10 @@ describe('AssetTracker', function () {
 
     it('Should reject transfer to zero address', async function () {
       await TestUtils.expectRevertWithCustomError(
-        assetTracker.transferAsset(hre.ethers.ZeroAddress, testAsset.uuid),
+        assetTracker.transferAsset(hre.network.ethers.ZeroAddress, testAsset.uuid),
         assetTracker,
         'InvalidAddress',
-        [hre.ethers.ZeroAddress]
+        [hre.network.ethers.ZeroAddress]
       );
     });
 
@@ -181,10 +181,10 @@ describe('AssetTracker', function () {
 
     it('Should reject ownership checks for zero address', async function () {
       await TestUtils.expectRevertWithCustomError(
-        assetTracker.isOwnerOf(hre.ethers.ZeroAddress, 'some-uuid'),
+        assetTracker.isOwnerOf(hre.network.ethers.ZeroAddress, 'some-uuid'),
         assetTracker,
         'InvalidAddress',
-        [hre.ethers.ZeroAddress]
+        [hre.network.ethers.ZeroAddress]
       );
     });
 

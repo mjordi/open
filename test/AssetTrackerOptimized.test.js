@@ -9,8 +9,8 @@ describe('AssetTrackerOptimized', function () {
   let addr2;
 
   beforeEach(async function () {
-    const AssetTrackerOptimized = await hre.ethers.getContractFactory('AssetTrackerOptimized');
-    [owner, addr1, addr2] = await hre.ethers.getSigners();
+    const AssetTrackerOptimized = await hre.network.ethers.getContractFactory('AssetTrackerOptimized');
+    [owner, addr1, addr2] = await hre.network.ethers.getSigners();
     assetTrackerOptimized = await AssetTrackerOptimized.deploy();
     await assetTrackerOptimized.waitForDeployment();
   });

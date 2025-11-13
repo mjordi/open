@@ -1,8 +1,9 @@
 import 'dotenv/config';
-import '@nomicfoundation/hardhat-ethers';
-import '@nomicfoundation/hardhat-mocha';
-import '@nomicfoundation/hardhat-verify';
-import '@nomicfoundation/hardhat-ignition-ethers';
+import { defineConfig } from 'hardhat/config';
+import hardhatEthers from '@nomicfoundation/hardhat-ethers';
+import hardhatMocha from '@nomicfoundation/hardhat-mocha';
+import hardhatVerify from '@nomicfoundation/hardhat-verify';
+import hardhatIgnitionEthers from '@nomicfoundation/hardhat-ignition-ethers';
 
 // TODO: Re-enable these plugins when they add Hardhat 3.x support:
 // - @nomicfoundation/hardhat-chai-matchers (requires hardhat/common/bigInt export)
@@ -12,8 +13,8 @@ import '@nomicfoundation/hardhat-ignition-ethers';
 // - solidity-coverage (requires hardhat/common export)
 // - hardhat-contract-sizer (compatibility unknown)
 
-/** @type import('hardhat/config').HardhatUserConfig */
-export default {
+export default defineConfig({
+  plugins: [hardhatEthers, hardhatMocha, hardhatVerify, hardhatIgnitionEthers],
   solidity: {
     compilers: [
       {
@@ -47,7 +48,9 @@ export default {
   },
   paths: {
     sources: './contracts',
-    tests: './test',
+    tests: {
+      mocha: './test',
+    },
     cache: './cache',
     artifacts: './artifacts',
   },
@@ -88,10 +91,12 @@ export default {
       gasPrice: 'auto',
     },
   },
-  mocha: {
-    timeout: 60000,
+  test: {
+    mocha: {
+      timeout: 60000,
+    },
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY || '',
   },
-};
+});

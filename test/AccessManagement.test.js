@@ -10,8 +10,11 @@ describe('AccessManagement', function () {
   let user3;
 
   beforeEach(async function () {
-    const AccessManagement = await hre.ethers.getContractFactory('AccessManagement');
-    [owner, user1, user2, user3] = await hre.ethers.getSigners();
+    // Connect to network and get ethers
+    const { ethers } = await hre.network.connect();
+
+    const AccessManagement = await ethers.getContractFactory('AccessManagement');
+    [owner, user1, user2, user3] = await ethers.getSigners();
 
     accessManagement = await AccessManagement.deploy();
     await accessManagement.waitForDeployment();
@@ -91,6 +94,9 @@ describe('AccessManagement', function () {
     const testAssetKey = 'test-asset';
 
     beforeEach(async function () {
+      // Connect to network and get ethers
+      const { ethers } = await hre.network.connect();
+
       await accessManagement.newAsset(testAssetKey, 'Test Asset');
     });
 
@@ -207,6 +213,9 @@ describe('AccessManagement', function () {
     const testAssetKey = 'access-test-asset';
 
     beforeEach(async function () {
+      // Connect to network and get ethers
+      const { ethers } = await hre.network.connect();
+
       await accessManagement.newAsset(testAssetKey, 'Access Test Asset');
       await accessManagement.addAuthorization(testAssetKey, user1.address, 'admin');
     });
@@ -268,6 +277,9 @@ describe('AccessManagement', function () {
     const assetKey = 'query-asset';
 
     beforeEach(async function () {
+      // Connect to network and get ethers
+      const { ethers } = await hre.network.connect();
+
       await accessManagement.newAsset(assetKey, 'Query Asset');
       await accessManagement.addAuthorization(assetKey, user1.address, 'viewer');
     });
@@ -282,7 +294,7 @@ describe('AccessManagement', function () {
 
     it('Should return empty data for non-existent assets', async function () {
       const asset = await accessManagement.getAsset('non-existent');
-      expect(asset.assetOwner).to.equal(hre.ethers.ZeroAddress);
+      expect(asset.assetOwner).to.equal(ethers.ZeroAddress);
       expect(asset.assetDescription).to.equal('');
       expect(asset.initialized).to.be.false;
       expect(asset.authorizationCount).to.equal(0);

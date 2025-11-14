@@ -13,13 +13,16 @@ const __dirname = path.dirname(__filename);
 async function main() {
   console.log('🔍 Starting Performance Analysis...\n');
 
-  const [, /* deployer */ user1 /* user2 */] = await hre.ethers.getSigners();
+  // Connect to network and get ethers
+  const { ethers } = await hre.network.connect();
+
+  const [, /* deployer */ user1 /* user2 */] = await ethers.getSigners();
 
   // Deploy original contracts
   console.log('📦 Deploying Original Contracts...');
-  const AssetTracker = await hre.ethers.getContractFactory('AssetTracker');
-  const RoleBasedAcl = await hre.ethers.getContractFactory('RoleBasedAcl');
-  const AccessManagement = await hre.ethers.getContractFactory('AccessManagement');
+  const AssetTracker = await ethers.getContractFactory('AssetTracker');
+  const RoleBasedAcl = await ethers.getContractFactory('RoleBasedAcl');
+  const AccessManagement = await ethers.getContractFactory('AccessManagement');
 
   const assetTracker = await AssetTracker.deploy();
   const roleBasedAcl = await RoleBasedAcl.deploy();
@@ -31,7 +34,7 @@ async function main() {
 
   // Deploy optimized contracts
   console.log('📦 Deploying Optimized Contracts...');
-  const AssetTrackerOptimized = await hre.ethers.getContractFactory('AssetTrackerOptimized');
+  const AssetTrackerOptimized = await ethers.getContractFactory('AssetTrackerOptimized');
   const assetTrackerOpt = await AssetTrackerOptimized.deploy();
   await assetTrackerOpt.waitForDeployment();
 
@@ -51,10 +54,8 @@ async function main() {
   const optimizedDeployTx = assetTrackerOpt.deploymentTransaction();
 
   if (originalDeployTx && optimizedDeployTx) {
-    const originalReceipt = await hre.ethers.provider.getTransactionReceipt(originalDeployTx.hash);
-    const optimizedReceipt = await hre.ethers.provider.getTransactionReceipt(
-      optimizedDeployTx.hash
-    );
+    const originalReceipt = await ethers.provider.getTransactionReceipt(originalDeployTx.hash);
+    const optimizedReceipt = await ethers.provider.getTransactionReceipt(optimizedDeployTx.hash);
 
     performance.deployment.original = originalReceipt.gasUsed;
     performance.deployment.optimized = optimizedReceipt.gasUsed;
@@ -222,8 +223,8 @@ async function main() {
   console.log('\n💾 Storage Efficiency Analysis:');
 
   // Get contract sizes
-  const originalSize = await hre.ethers.provider.getCode(await assetTracker.getAddress());
-  const optimizedSize = await hre.ethers.provider.getCode(await assetTrackerOpt.getAddress());
+  const originalSize = await ethers.provider.getCode(await assetTracker.getAddress());
+  const optimizedSize = await ethers.provider.getCode(await assetTrackerOpt.getAddress());
 
   performance.storage.originalSize = originalSize.length;
   performance.storage.optimizedSize = optimizedSize.length;

@@ -8,11 +8,12 @@ class TestUtils {
    * Deploy all contracts and return instances
    */
   static async deployAllContracts() {
-    const [owner, ...addrs] = await hre.ethers.getSigners();
+    const { ethers } = await hre.network.connect();
+    const [owner, ...addrs] = await ethers.getSigners();
 
-    const AssetTracker = await hre.ethers.getContractFactory('AssetTracker');
-    const RoleBasedAcl = await hre.ethers.getContractFactory('RoleBasedAcl');
-    const AccessManagement = await hre.ethers.getContractFactory('AccessManagement');
+    const AssetTracker = await ethers.getContractFactory('AssetTracker');
+    const RoleBasedAcl = await ethers.getContractFactory('RoleBasedAcl');
+    const AccessManagement = await ethers.getContractFactory('AccessManagement');
 
     const assetTracker = await AssetTracker.deploy();
     const roleBasedAcl = await RoleBasedAcl.deploy();

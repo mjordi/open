@@ -9,8 +9,11 @@ describe('RoleBasedAcl', function () {
   let user3;
 
   beforeEach(async function () {
-    const RoleBasedAcl = await hre.ethers.getContractFactory('RoleBasedAcl');
-    const [, u1, u2, u3] = await hre.ethers.getSigners();
+    // Connect to network and get ethers
+    const { ethers } = await hre.network.connect();
+
+    const RoleBasedAcl = await ethers.getContractFactory('RoleBasedAcl');
+    const [, u1, u2, u3] = await ethers.getSigners();
     user1 = u1;
     user2 = u2;
     user3 = u3;
@@ -86,6 +89,9 @@ describe('RoleBasedAcl', function () {
 
   describe('Role Removal', function () {
     beforeEach(async function () {
+      // Connect to network and get ethers
+      const { ethers } = await hre.network.connect();
+
       // Setup: assign some roles before each test
       await roleBasedAcl.assignRole(user1.address, 'admin');
       await roleBasedAcl.assignRole(user2.address, 'moderator');
@@ -136,6 +142,9 @@ describe('RoleBasedAcl', function () {
 
   describe('Role Checking', function () {
     beforeEach(async function () {
+      // Connect to network and get ethers
+      const { ethers } = await hre.network.connect();
+
       await roleBasedAcl.assignRole(user1.address, 'admin');
       await roleBasedAcl.assignRole(user1.address, 'moderator');
       await roleBasedAcl.assignRole(user2.address, 'user');

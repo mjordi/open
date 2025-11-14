@@ -11,8 +11,11 @@ async function main() {
   console.log(`📡 Network: ${hre.network.name}`);
   console.log(`🕒 Timestamp: ${new Date().toISOString()}`);
 
+  // Connect to network and get ethers
+  const { ethers } = await hre.network.connect();
+
   // Get the deployer account
-  const [deployer] = await hre.ethers.getSigners();
+  const [deployer] = await ethers.getSigners();
   if (!deployer) {
     throw new Error(
       '❌ No deployer account found. Please check your Hardhat configuration and ensure a private key is provided.'
@@ -22,7 +25,7 @@ async function main() {
 
   // Check deployer balance
   const balance = await deployer.provider.getBalance(deployer.address);
-  console.log(`💰 Account balance: ${hre.ethers.formatEther(balance)} ETH`);
+  console.log(`💰 Account balance: ${ethers.formatEther(balance)} ETH`);
 
   if (balance === 0n) {
     throw new Error('❌ Deployer account has no funds');
@@ -40,7 +43,7 @@ async function main() {
   try {
     // Deploy AssetTracker
     console.log('\n🔧 Deploying AssetTracker...');
-    const AssetTracker = await hre.ethers.getContractFactory('AssetTracker');
+    const AssetTracker = await ethers.getContractFactory('AssetTracker');
     const assetTracker = await AssetTracker.deploy();
     await assetTracker.waitForDeployment();
 
@@ -54,7 +57,7 @@ async function main() {
 
     // Deploy RoleBasedAcl
     console.log('\n🔧 Deploying RoleBasedAcl...');
-    const RoleBasedAcl = await hre.ethers.getContractFactory('RoleBasedAcl');
+    const RoleBasedAcl = await ethers.getContractFactory('RoleBasedAcl');
     const roleBasedAcl = await RoleBasedAcl.deploy();
     await roleBasedAcl.waitForDeployment();
 
@@ -68,7 +71,7 @@ async function main() {
 
     // Deploy AccessManagement
     console.log('\n🔧 Deploying AccessManagement...');
-    const AccessManagement = await hre.ethers.getContractFactory('AccessManagement');
+    const AccessManagement = await ethers.getContractFactory('AccessManagement');
     const accessManagement = await AccessManagement.deploy();
     await accessManagement.waitForDeployment();
 
@@ -85,7 +88,7 @@ async function main() {
     let totalDeploymentCost = 0n;
     for (const contract of Object.values(deploymentInfo.contracts)) {
       if (contract.txHash) {
-        const receipt = await hre.ethers.provider.getTransactionReceipt(contract.txHash);
+        const receipt = await ethers.provider.getTransactionReceipt(contract.txHash);
         if (receipt) {
           totalGasUsed += receipt.gasUsed;
           // In ethers v6, the receipt contains the effective gas price
@@ -98,11 +101,11 @@ async function main() {
 
     console.log(`\n⛽ Total gas used: ${totalGasUsed.toString()}`);
     if (totalDeploymentCost > 0n) {
-      console.log(`💸 Total deployment cost: ${hre.ethers.formatEther(totalDeploymentCost)} ETH`);
+      console.log(`💸 Total deployment cost: ${ethers.formatEther(totalDeploymentCost)} ETH`);
     }
 
     deploymentInfo.gasUsed = totalGasUsed.toString();
-    deploymentInfo.deploymentCost = hre.ethers.formatEther(totalDeploymentCost);
+    deploymentInfo.deploymentCost = ethers.formatEther(totalDeploymentCost);
 
     // Save deployment info
     const deploymentsDir = path.join(__dirname, '..', 'deployments');

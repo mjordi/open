@@ -9,9 +9,12 @@ describe('AssetTracker', function () {
   let addr2;
 
   beforeEach(async function () {
+    // Connect to network and get ethers
+    const { ethers } = await hre.network.connect();
+
     // Get the ContractFactory and Signers here.
-    const AssetTracker = await hre.ethers.getContractFactory('AssetTracker');
-    [owner, addr1, addr2] = await hre.ethers.getSigners();
+    const AssetTracker = await ethers.getContractFactory('AssetTracker');
+    [owner, addr1, addr2] = await ethers.getSigners();
 
     // Deploy a new AssetTracker contract for each test
     assetTracker = await AssetTracker.deploy();

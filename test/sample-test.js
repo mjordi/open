@@ -152,7 +152,7 @@ describe('Contract Integration Tests', function () {
       }
 
       // Verify all assets were created
-      expect(await accessManagement.getAssetCount()).to.be.at.least(assetCount);
+      expect(Number(await accessManagement.getAssetCount())).to.be.at.least(assetCount);
 
       // Add multiple authorizations
       for (let i = 0; i < assetCount; i++) {

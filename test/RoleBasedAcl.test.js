@@ -7,10 +7,12 @@ describe('RoleBasedAcl', function () {
   let user1;
   let user2;
   let user3;
+  let ethers;
 
   beforeEach(async function () {
     // Connect to network and get ethers
-    const { ethers } = await hre.network.connect();
+    const connection = await hre.network.connect();
+    ethers = connection.ethers;
 
     const RoleBasedAcl = await ethers.getContractFactory('RoleBasedAcl');
     const [, u1, u2, u3] = await ethers.getSigners();

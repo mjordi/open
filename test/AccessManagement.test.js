@@ -8,10 +8,12 @@ describe('AccessManagement', function () {
   let user1;
   let user2;
   let user3;
+  let ethers;
 
   beforeEach(async function () {
     // Connect to network and get ethers
-    const { ethers } = await hre.network.connect();
+    const connection = await hre.network.connect();
+    ethers = connection.ethers;
 
     const AccessManagement = await ethers.getContractFactory('AccessManagement');
     [owner, user1, user2, user3] = await ethers.getSigners();
@@ -36,7 +38,7 @@ describe('AccessManagement', function () {
       expect(asset.assetOwner).to.equal(owner.address);
       expect(asset.assetDescription).to.equal(assetDescription);
       expect(asset.initialized).to.be.true;
-      expect(asset.authorizationCount).to.equal(0);
+      expect(Number(asset.authorizationCount)).to.equal(0);
     });
 
     it('Should reject creation of duplicate assets', async function () {
@@ -67,13 +69,13 @@ describe('AccessManagement', function () {
     });
 
     it('Should track asset count correctly', async function () {
-      expect(await accessManagement.getAssetCount()).to.equal(0);
+      expect(Number(await accessManagement.getAssetCount())).to.equal(0);
 
       await accessManagement.newAsset('asset1', 'Asset 1');
-      expect(await accessManagement.getAssetCount()).to.equal(1);
+      expect(Number(await accessManagement.getAssetCount())).to.equal(1);
 
       await accessManagement.newAsset('asset2', 'Asset 2');
-      expect(await accessManagement.getAssetCount()).to.equal(2);
+      expect(Number(await accessManagement.getAssetCount())).to.equal(2);
     });
 
     it('Should provide asset listing functionality', async function () {
@@ -115,7 +117,7 @@ describe('AccessManagement', function () {
       expect(role).to.equal(authRole);
 
       const asset = await accessManagement.getAsset(testAssetKey);
-      expect(asset.authorizationCount).to.equal(1);
+      expect(Number(asset.authorizationCount)).to.equal(1);
     });
 
     it('Should allow authorized admins to add authorization', async function () {
@@ -190,10 +192,10 @@ describe('AccessManagement', function () {
       await accessManagement.addAuthorization(testAssetKey, user3.address, 'viewer');
 
       const authCount = await accessManagement.getAssetAuthorizationCount(testAssetKey);
-      expect(authCount).to.equal(3);
+      expect(Number(authCount)).to.equal(3);
 
       const authList = [];
-      for (let i = 0; i < authCount; i++) {
+      for (let i = 0; i < Number(authCount); i++) {
         authList.push(await accessManagement.getAssetAuthorizationAtIndex(testAssetKey, i));
       }
       expect(authList).to.have.members([user1.address, user2.address, user3.address]);
@@ -289,7 +291,7 @@ describe('AccessManagement', function () {
       expect(asset.assetOwner).to.equal(owner.address);
       expect(asset.assetDescription).to.equal('Query Asset');
       expect(asset.initialized).to.be.true;
-      expect(asset.authorizationCount).to.equal(1);
+      expect(Number(asset.authorizationCount)).to.equal(1);
     });
 
     it('Should return empty data for non-existent assets', async function () {
@@ -297,7 +299,7 @@ describe('AccessManagement', function () {
       expect(asset.assetOwner).to.equal(ethers.ZeroAddress);
       expect(asset.assetDescription).to.equal('');
       expect(asset.initialized).to.be.false;
-      expect(asset.authorizationCount).to.equal(0);
+      expect(Number(asset.authorizationCount)).to.equal(0);
     });
 
     it('Should return correct authorization for authorized users', async function () {

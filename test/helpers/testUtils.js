@@ -160,7 +160,7 @@ class TestUtils {
 
     // Parse logs to find the event
     const eventFragment = contract.interface.getEvent(eventName);
-    const eventTopic = contract.interface.getEventTopic(eventName);
+    const eventTopic = eventFragment.topicHash;
 
     const log = receipt.logs.find((log) => log.topics[0] === eventTopic);
 
@@ -227,7 +227,7 @@ class TestUtils {
     }
 
     // Check error data contains the custom error selector
-    const errorSelector = contract.interface.getErrorSelector(errorName);
+    const errorSelector = errorFragment.selector;
 
     if (!revertError.data || !revertError.data.startsWith(errorSelector)) {
       throw new Error(`Expected custom error ${errorName}, but got: ${revertError.message}`);

@@ -11,10 +11,12 @@ describe('Property-Based Tests (Fuzzing)', function () {
   let roleBasedAcl;
   let accessManagement;
   let accounts;
+  let ethers;
 
   before(async function () {
     // Connect to network and get ethers
-    const { ethers } = await hre.network.connect();
+    const connection = await hre.network.connect();
+    ethers = connection.ethers;
 
     accounts = await ethers.getSigners();
 

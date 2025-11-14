@@ -7,10 +7,12 @@ describe('AssetTrackerOptimized', function () {
   let owner;
   let addr1;
   let addr2;
+  let ethers;
 
   beforeEach(async function () {
     // Connect to network and get ethers
-    const { ethers } = await hre.network.connect();
+    const connection = await hre.network.connect();
+    ethers = connection.ethers;
 
     const AssetTrackerOptimized = await ethers.getContractFactory('AssetTrackerOptimized');
     [owner, addr1, addr2] = await ethers.getSigners();

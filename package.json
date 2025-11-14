@@ -8,6 +8,7 @@
   "scripts": {
     "compile": "npx hardhat compile",
     "test": "hardhat test",
+    "test:diagnostic": "npx hardhat test test/test-global-ethers.test.js test/test-network-connect.test.js",
     "test:unit": "npx hardhat test --grep 'AssetTracker|RoleBasedAcl|AccessManagement'",
     "test:integration": "npx hardhat test test/sample-test.js",
     "test:coverage": "hardhat coverage",

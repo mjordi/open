@@ -16,6 +16,13 @@ relative_links:
   enabled: true
   collections: false
 
+# Keep these directories/files as static assets (don't process with Jekyll)
+include:
+  - css
+  - js
+  - images
+  - contracts
+
 # Exclude from processing
 exclude:
   - Gemfile

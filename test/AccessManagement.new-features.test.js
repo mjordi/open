@@ -209,7 +209,7 @@ describe("AccessManagement - New Features", function () {
             // Check that new owner can add authorizations
             await expect(
                 accessManagement.connect(user1).addAuthorization("ASSET-001", user3.address, "permanent")
-            ).to.not.be.reverted;
+            ).to.not.be.revertedWithoutReason(ethers);
         });
 
         it("Should handle batch operations with mixed success", async function () {

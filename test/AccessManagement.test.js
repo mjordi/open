@@ -1,5 +1,5 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
+import { expect } from "chai";
+import hre from "hardhat";
 
 describe("AccessManagement", function () {
   let accessManagement;
@@ -8,6 +8,14 @@ describe("AccessManagement", function () {
   let user1;
   let user2;
   let user3;
+  let ethers;
+  let provider;
+
+  before(async function () {
+    const network = await hre.network.connect();
+    ethers = network.ethers;
+    provider = network.provider;
+  });
 
   beforeEach(async function () {
     [owner, admin, user1, user2, user3] = await ethers.getSigners();
@@ -367,8 +375,8 @@ describe("AccessManagement", function () {
       expect(accessBefore).to.equal(true);
 
       // Fast forward time by 3 seconds
-      await ethers.provider.send("evm_increaseTime", [3]);
-      await ethers.provider.send("evm_mine");
+      await provider.send("evm_increaseTime", [3]);
+      await provider.send("evm_mine");
 
       // Should not have access after expiration
       await expect(accessManagement.connect(user1).getAccess(assetKey))
@@ -391,8 +399,8 @@ describe("AccessManagement", function () {
       await accessManagement.connect(user1).addAuthorization(assetKey, user2.address, "permanent");
 
       // Fast forward time by 3 seconds
-      await ethers.provider.send("evm_increaseTime", [3]);
-      await ethers.provider.send("evm_mine");
+      await provider.send("evm_increaseTime", [3]);
+      await provider.send("evm_mine");
 
       // user1 should not be able to add authorization after expiration
       await expect(
@@ -415,8 +423,8 @@ describe("AccessManagement", function () {
       await accessManagement.addAuthorization(assetKey, user2.address, "permanent");
 
       // Fast forward time by 3 seconds
-      await ethers.provider.send("evm_increaseTime", [3]);
-      await ethers.provider.send("evm_mine");
+      await provider.send("evm_increaseTime", [3]);
+      await provider.send("evm_mine");
 
       // user1 should not be able to remove authorization after expiration
       await expect(
@@ -433,8 +441,8 @@ describe("AccessManagement", function () {
       expect(accessBefore).to.equal(true);
 
       // Fast forward time by 1 hour
-      await ethers.provider.send("evm_increaseTime", [3600]);
-      await ethers.provider.send("evm_mine");
+      await provider.send("evm_increaseTime", [3600]);
+      await provider.send("evm_mine");
 
       // Should still have access after time passes
       const accessAfter = await accessManagement.connect(user1).getAccess.staticCall(assetKey);
@@ -450,8 +458,8 @@ describe("AccessManagement", function () {
       expect(accessBefore).to.equal(true);
 
       // Fast forward time by 1 hour
-      await ethers.provider.send("evm_increaseTime", [3600]);
-      await ethers.provider.send("evm_mine");
+      await provider.send("evm_increaseTime", [3600]);
+      await provider.send("evm_mine");
 
       // Should still have access after time passes
       const accessAfter = await accessManagement.connect(admin).getAccess.staticCall(assetKey);

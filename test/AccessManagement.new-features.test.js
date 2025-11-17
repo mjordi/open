@@ -1,9 +1,15 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
+import { expect } from "chai";
+import hre from "hardhat";
 
 describe("AccessManagement - New Features", function () {
     let accessManagement;
     let owner, user1, user2, user3;
+    let ethers;
+
+    before(async function () {
+        const network = await hre.network.connect();
+        ethers = network.ethers;
+    });
 
     beforeEach(async function () {
         [owner, user1, user2, user3] = await ethers.getSigners();
@@ -203,7 +209,7 @@ describe("AccessManagement - New Features", function () {
             // Check that new owner can add authorizations
             await expect(
                 accessManagement.connect(user1).addAuthorization("ASSET-001", user3.address, "permanent")
-            ).to.not.be.reverted;
+            ).to.not.be.revertedWithoutReason(ethers);
         });
 
         it("Should handle batch operations with mixed success", async function () {

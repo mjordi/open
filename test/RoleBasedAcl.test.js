@@ -1,5 +1,5 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
+import { expect } from "chai";
+import hre from "hardhat";
 
 describe("RoleBasedAcl", function () {
   let roleBasedAcl;
@@ -8,6 +8,12 @@ describe("RoleBasedAcl", function () {
   let admin;
   let user1;
   let user2;
+  let ethers;
+
+  before(async function () {
+    const network = await hre.network.connect();
+    ethers = network.ethers;
+  });
 
   beforeEach(async function () {
     [creator, superadmin, admin, user1, user2] = await ethers.getSigners();
@@ -59,7 +65,7 @@ describe("RoleBasedAcl", function () {
     it("Should reject role assignment by non-superadmin", async function () {
       await expect(
         roleBasedAcl.connect(user1).assignRole(user2.address, "admin")
-      ).to.be.reverted;
+      ).to.be.revertedWith("Unauthorized: Missing required role");
     });
 
     it("Should allow assigning multiple roles to same address", async function () {
@@ -128,7 +134,7 @@ describe("RoleBasedAcl", function () {
     it("Should reject role unassignment by non-superadmin", async function () {
       await expect(
         roleBasedAcl.connect(user2).unassignRole(user1.address, "admin")
-      ).to.be.reverted;
+      ).to.be.revertedWith("Unauthorized: Missing required role");
     });
 
     it("Should allow unassigning non-existent role", async function () {
@@ -223,7 +229,7 @@ describe("RoleBasedAcl", function () {
 
       await expect(
         roleBasedAcl.connect(user1).assignRole(user2.address, "admin")
-      ).to.be.reverted;
+      ).to.be.revertedWith("Unauthorized: Missing required role");
     });
   });
 
@@ -265,7 +271,7 @@ describe("RoleBasedAcl", function () {
       // Only superadmin can assign/unassign (admin cannot)
       await expect(
         roleBasedAcl.connect(user2).assignRole(admin.address, "moderator")
-      ).to.be.reverted;
+      ).to.be.revertedWith("Unauthorized: Missing required role");
     });
   });
 

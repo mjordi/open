@@ -1,8 +1,7 @@
-import { defineConfig } from "hardhat/config";
-import hardhatToolboxMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
+require("@nomicfoundation/hardhat-toolbox");
 
-export default defineConfig({
-  plugins: [hardhatToolboxMochaEthers],
+/** @type import('hardhat/config').HardhatUserConfig */
+module.exports = {
   solidity: {
     version: "0.8.20",
     settings: {
@@ -18,4 +17,4 @@ export default defineConfig({
     cache: "./cache",
     artifacts: "./artifacts"
   }
-});
+};

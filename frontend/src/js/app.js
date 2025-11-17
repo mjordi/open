@@ -26,6 +26,32 @@ window.addEventListener('load', async () => {
         return;
     }
 
+    // Network Detection
+    try {
+        const networkId = await web3.eth.net.getId();
+        const networkName = {
+            1: 'Mainnet',
+            3: 'Ropsten',
+            4: 'Rinkeby',
+            5: 'Goerli',
+            11155111: 'Sepolia',
+            1337: 'Local',
+            31337: 'Hardhat'
+        }[networkId] || 'Unknown';
+
+        console.log("Connected to network:", networkName, "(ID:", networkId + ")");
+
+        if (networkId === 1) {
+            const proceed = confirm("⚠️ WARNING: You are on Ethereum Mainnet!\n\nTransactions will cost real ETH. Are you sure you want to continue?");
+            if (!proceed) {
+                $('#log').text('Application stopped - Connected to Mainnet');
+                return;
+            }
+        }
+    } catch (err) {
+        console.error("Error detecting network:", err);
+    }
+
     //Set User from Metamask
     const accounts = await web3.eth.getAccounts();
     var user1Address = accounts[0];
@@ -130,31 +156,88 @@ window.addEventListener('load', async () => {
     });
 
     //Add Asset
-    $('#form_asset').on('submit', function (e) {
+    $('#form_asset').on('submit', async function (e) {
         e.preventDefault();
-        console.log("Adding Asset to Smart Contract '" + smartContractInstance.address + "'... \n");
-        smartContractInstance.newAsset($('#assetKey').val(), $('#assetDescription').val(), function (error, result) {
-            if (error) {
-                console.error("Failed to create asset:", error);
-                alert("Failed to create asset: " + error.message);
-                return;
+        const submitButton = $(this).find('button[type="submit"]');
+        const originalText = submitButton.text();
+
+        try {
+            // Set loading state
+            submitButton.prop('disabled', true).text('Processing...');
+
+            console.log("Adding Asset to Smart Contract '" + smartContractInstance.address + "'... \n");
+
+            const txHash = await new Promise((resolve, reject) => {
+                smartContractInstance.newAsset($('#assetKey').val(), $('#assetDescription').val(), function (error, result) {
+                    if (error) {
+                        reject(error);
+                    } else {
+                        resolve(result);
+                    }
+                });
+            });
+
+            console.log("Asset creation transaction sent:", txHash);
+            submitButton.text('Waiting for confirmation...');
+
+            // Wait for transaction confirmation
+            const receipt = await waitForTransactionReceipt(txHash);
+
+            if (receipt && receipt.status) {
+                console.log("✓ Transaction confirmed in block:", receipt.blockNumber);
+                alert("✓ Asset created successfully!");
+            } else {
+                console.error("✗ Transaction failed");
+                alert("✗ Transaction failed. Please check the console for details.");
             }
-            console.log("Asset creation transaction sent:", result);
-        });
+        } catch (error) {
+            console.error("Failed to create asset:", error);
+            alert("Failed to create asset: " + error.message);
+        } finally {
+            // Reset button state
+            submitButton.prop('disabled', false).text(originalText);
+        }
     });
 
     //Add Authorization
-    $('#form_assign').on('submit', function (e) {
+    $('#form_assign').on('submit', async function (e) {
         e.preventDefault();
-        console.log("Assigning Role in Smart Contract '" + smartContractInstance.address + "'... \n");
-        smartContractInstance.addAuthorization($('#assetKey_assign').val(), $('#address_assign').val(), $('#role_assign').val(), function (error, result) {
-            if (error) {
-                console.error("Failed to add authorization:", error);
-                alert("Failed to add authorization: " + error.message);
-                return;
+        const submitButton = $(this).find('button[type="submit"]');
+        const originalText = submitButton.text();
+
+        try {
+            submitButton.prop('disabled', true).text('Processing...');
+
+            console.log("Assigning Role in Smart Contract '" + smartContractInstance.address + "'... \n");
+
+            const txHash = await new Promise((resolve, reject) => {
+                smartContractInstance.addAuthorization($('#assetKey_assign').val(), $('#address_assign').val(), $('#role_assign').val(), function (error, result) {
+                    if (error) {
+                        reject(error);
+                    } else {
+                        resolve(result);
+                    }
+                });
+            });
+
+            console.log("Authorization transaction sent:", txHash);
+            submitButton.text('Waiting for confirmation...');
+
+            const receipt = await waitForTransactionReceipt(txHash);
+
+            if (receipt && receipt.status) {
+                console.log("✓ Transaction confirmed in block:", receipt.blockNumber);
+                alert("✓ Authorization added successfully!");
+            } else {
+                console.error("✗ Transaction failed");
+                alert("✗ Transaction failed. Please check the console for details.");
             }
-            console.log("Authorization transaction sent:", result);
-        });
+        } catch (error) {
+            console.error("Failed to add authorization:", error);
+            alert("Failed to add authorization: " + error.message);
+        } finally {
+            submitButton.prop('disabled', false).text(originalText);
+        }
     });
 
     //Check Role
@@ -186,16 +269,186 @@ window.addEventListener('load', async () => {
     });
 
     //Remove Authorization
-    $('#form_unassign').on('submit', function (e) {
+    $('#form_unassign').on('submit', async function (e) {
         e.preventDefault();
-        console.log("Unassigning Role in Smart Contract '" + smartContractInstance.address + "'... \n");
-        smartContractInstance.removeAuthorization($('#assetKey_unassign').val(), $('#address_unassign').val(), function (error, result) {
-            if (error) {
-                console.error("Failed to remove authorization:", error);
-                alert("Failed to remove authorization: " + error.message);
-                return;
+        const submitButton = $(this).find('button[type="submit"]');
+        const originalText = submitButton.text();
+
+        try {
+            submitButton.prop('disabled', true).text('Processing...');
+
+            console.log("Unassigning Role in Smart Contract '" + smartContractInstance.address + "'... \n");
+
+            const txHash = await new Promise((resolve, reject) => {
+                smartContractInstance.removeAuthorization($('#assetKey_unassign').val(), $('#address_unassign').val(), function (error, result) {
+                    if (error) {
+                        reject(error);
+                    } else {
+                        resolve(result);
+                    }
+                });
+            });
+
+            console.log("Remove authorization transaction sent:", txHash);
+            submitButton.text('Waiting for confirmation...');
+
+            const receipt = await waitForTransactionReceipt(txHash);
+
+            if (receipt && receipt.status) {
+                console.log("✓ Transaction confirmed in block:", receipt.blockNumber);
+                alert("✓ Authorization removed successfully!");
+            } else {
+                console.error("✗ Transaction failed");
+                alert("✗ Transaction failed. Please check the console for details.");
             }
-            console.log("Remove authorization transaction sent:", result);
-        });
+        } catch (error) {
+            console.error("Failed to remove authorization:", error);
+            alert("Failed to remove authorization: " + error.message);
+        } finally {
+            submitButton.prop('disabled', false).text(originalText);
+        }
     });
+
+    // Helper function to wait for transaction receipt
+    async function waitForTransactionReceipt(txHash, maxAttempts = 60) {
+        for (let i = 0; i < maxAttempts; i++) {
+            try {
+                const receipt = await web3.eth.getTransactionReceipt(txHash);
+                if (receipt) {
+                    return receipt;
+                }
+                // Wait 1 second before trying again
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            } catch (error) {
+                console.error("Error getting transaction receipt:", error);
+            }
+        }
+        console.warn("Transaction receipt not found after", maxAttempts, "attempts");
+        return null;
+    }
+
+    // List all assets function
+    window.listAllAssets = async function() {
+        try {
+            console.log("Fetching all assets...");
+            const assetCount = await new Promise((resolve, reject) => {
+                smartContractInstance.getAssetCount(function (error, result) {
+                    if (error) reject(error);
+                    else resolve(result);
+                });
+            });
+
+            console.log(`Found ${assetCount} asset(s)`);
+            const assets = [];
+
+            for (let i = 0; i < assetCount; i++) {
+                const assetKey = await new Promise((resolve, reject) => {
+                    smartContractInstance.getAssetAtIndex(i, function (error, result) {
+                        if (error) reject(error);
+                        else resolve(result);
+                    });
+                });
+
+                const asset = await new Promise((resolve, reject) => {
+                    smartContractInstance.getAsset(assetKey, function (error, result) {
+                        if (error) reject(error);
+                        else resolve(result);
+                    });
+                });
+
+                assets.push({
+                    key: assetKey,
+                    owner: asset[0],
+                    description: asset[1],
+                    initialized: asset[2],
+                    authorizationCount: asset[3].toString()
+                });
+            }
+
+            console.table(assets);
+            return assets;
+        } catch (error) {
+            console.error("Error listing assets:", error);
+            return [];
+        }
+    };
+
+    // List authorizations for an asset
+    window.listAssetAuthorizations = async function(assetKey) {
+        try {
+            console.log(`Fetching authorizations for asset: ${assetKey}`);
+            const authCount = await new Promise((resolve, reject) => {
+                smartContractInstance.getAssetAuthorizationCount(assetKey, function (error, result) {
+                    if (error) reject(error);
+                    else resolve(result);
+                });
+            });
+
+            console.log(`Found ${authCount} authorization(s)`);
+            const authorizations = [];
+
+            for (let i = 0; i < authCount; i++) {
+                const address = await new Promise((resolve, reject) => {
+                    smartContractInstance.getAssetAuthorizationAtIndex(assetKey, i, function (error, result) {
+                        if (error) reject(error);
+                        else resolve(result);
+                    });
+                });
+
+                const role = await new Promise((resolve, reject) => {
+                    smartContractInstance.getAssetAuthorization(assetKey, address, function (error, result) {
+                        if (error) reject(error);
+                        else resolve(result);
+                    });
+                });
+
+                authorizations.push({
+                    address: address,
+                    role: role
+                });
+            }
+
+            console.table(authorizations);
+            return authorizations;
+        } catch (error) {
+            console.error("Error listing authorizations:", error);
+            return [];
+        }
+    };
+
+    // Get event history for an asset
+    window.getAssetHistory = async function(assetKey) {
+        try {
+            console.log(`Fetching event history for asset: ${assetKey || 'all assets'}`);
+
+            const filter = assetKey ? { assetKey: assetKey } : {};
+
+            const events = await smartContractInstance.getPastEvents('allEvents', {
+                filter: filter,
+                fromBlock: 0,
+                toBlock: 'latest'
+            });
+
+            const history = events.map(event => ({
+                event: event.event,
+                block: event.blockNumber,
+                txHash: event.transactionHash,
+                args: event.returnValues
+            }));
+
+            console.log(`Found ${history.length} event(s)`);
+            console.table(history);
+            return history;
+        } catch (error) {
+            console.error("Error fetching event history:", error);
+            return [];
+        }
+    };
+
+    // Make functions available in console
+    console.log("\n=== Available Functions ===");
+    console.log("listAllAssets() - List all assets in the system");
+    console.log("listAssetAuthorizations(assetKey) - List all authorizations for an asset");
+    console.log("getAssetHistory(assetKey) - Get event history for an asset (or all if no key provided)");
+    console.log("===========================\n");
 });

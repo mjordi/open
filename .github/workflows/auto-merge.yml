@@ -27,14 +27,17 @@ jobs:
       - name: Fetch Dependabot metadata
         id: metadata
         uses: dependabot/fetch-metadata@v2
+        continue-on-error: true
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Auto-merge non-major updates
         # Only auto-merge if:
-        # 1. Update type is not a major version change
-        # 2. All checks have passed (verified by the workflow_run trigger from CI)
+        # 1. Metadata fetch succeeded
+        # 2. Update type is not a major version change
+        # 3. All checks have passed (verified by the workflow_run trigger from CI)
         if: |
+          steps.metadata.outcome == 'success' &&
           steps.metadata.outputs.update-type != 'version-update:semver-major'
         run: |
           echo "Update type: ${{ steps.metadata.outputs.update-type }}"
@@ -47,6 +50,7 @@ jobs:
 
       - name: Skip major updates
         if: |
+          steps.metadata.outcome == 'success' &&
           steps.metadata.outputs.update-type == 'version-update:semver-major'
         run: |
           echo "This is a major version update - skipping auto-merge"

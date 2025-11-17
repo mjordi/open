@@ -1,26 +1,32 @@
-### Windows template
-# Windows thumbnail cache files
+# Dependencies
+node_modules/
+
+# Build artifacts
+artifacts/
+cache/
+deployments/
+
+# Environment & Configuration
+.env
+.idea/
+
+# Reports & Coverage
+coverage.json
+slither-report.json
+reports/
+
+# OS Files
+.DS_Store
 Thumbs.db
 ehthumbs.db
 ehthumbs_vista.db
-
-# Dump file
-*.stackdump
-
-# Folder config file
 Desktop.ini
-
-# Recycle Bin used on file shares
 $RECYCLE.BIN/
 
-# Windows Installer files
+# Windows
+*.stackdump
 *.cab
 *.msi
 *.msm
 *.msp
-
-# Windows shortcuts
 *.lnk
-
-#Project Folder
-.idea

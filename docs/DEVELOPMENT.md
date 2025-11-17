@@ -2,6 +2,27 @@
 
 This document outlines the development practices and requirements for the OPEN blockchain access management system.
 
+## Environment Requirements
+
+### Node.js Version
+
+**Required**: Node.js 20 LTS or higher
+
+- Hardhat requires Node.js version 20 or higher (even-numbered LTS versions only)
+- Node.js 18 reached end-of-life in April 2025 and is no longer supported
+- Install Node.js from [https://nodejs.org](https://nodejs.org)
+- Verify your version: `node --version`
+- For version management, use [nvm](https://github.com/nvm-sh/nvm):
+  ```bash
+  nvm install 20
+  nvm use 20
+  ```
+
+**Why even-numbered versions only?**
+- Node.js follows a release schedule where even-numbered versions (20, 22, 24, etc.) are Long-Term Support (LTS) releases
+- Odd-numbered versions (19, 21, 23, etc.) are not LTS and have shorter support lifecycles
+- Hardhat only supports LTS versions to ensure stability
+
 ## Testing Requirements
 
 ### ⚠️ CRITICAL: Verify All Changes Before Completion

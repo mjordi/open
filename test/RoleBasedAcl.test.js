@@ -1,5 +1,5 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
+import { expect } from "chai";
+import hre from "hardhat";
 
 describe("RoleBasedAcl", function () {
   let roleBasedAcl;
@@ -8,6 +8,12 @@ describe("RoleBasedAcl", function () {
   let admin;
   let user1;
   let user2;
+  let ethers;
+
+  before(async function () {
+    const network = await hre.network.connect();
+    ethers = network.ethers;
+  });
 
   beforeEach(async function () {
     [creator, superadmin, admin, user1, user2] = await ethers.getSigners();

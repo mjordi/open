@@ -1,9 +1,15 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
+import { expect } from "chai";
+import hre from "hardhat";
 
 describe("AccessManagement - New Features", function () {
     let accessManagement;
     let owner, user1, user2, user3;
+    let ethers;
+
+    before(async function () {
+        const network = await hre.network.connect();
+        ethers = network.ethers;
+    });
 
     beforeEach(async function () {
         [owner, user1, user2, user3] = await ethers.getSigners();

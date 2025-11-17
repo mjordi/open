@@ -2,6 +2,7 @@
   "name": "access-management-contracts",
   "version": "1.0.0",
   "description": "Solidity smart contracts for access management",
+  "type": "module",
   "scripts": {
     "test": "npx hardhat test",
     "coverage": "npx hardhat coverage",
@@ -12,11 +13,7 @@
     "serve": "npx http-server frontend/public -p 8000"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
-    "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
-    "@nomicfoundation/hardhat-ethers": "^3.0.0",
-    "hardhat": "^2.19.0",
-    "chai": "^4.3.10",
-    "ethers": "^6.9.0"
+    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.1",
+    "hardhat": "^3.0.15"
   }
 }

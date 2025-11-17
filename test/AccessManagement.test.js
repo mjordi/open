@@ -51,17 +51,17 @@ describe("AccessManagement", function () {
       expect(count).to.equal(3);
     });
 
-    it("Should handle empty asset key", async function () {
-      const result = await accessManagement.newAsset("", "Empty Key Asset");
-      const asset = await accessManagement.getAsset("");
-      expect(asset.initialized).to.equal(true);
+    it("Should reject empty asset key", async function () {
+      await expect(
+        accessManagement.newAsset("", "Empty Key Asset")
+      ).to.be.revertedWith("Asset key cannot be empty");
     });
 
-    it("Should handle empty asset description", async function () {
+    it("Should reject empty asset description", async function () {
       const assetKey = "ASSET-006";
-      await accessManagement.newAsset(assetKey, "");
-      const asset = await accessManagement.getAsset(assetKey);
-      expect(asset.assetDescription).to.equal("");
+      await expect(
+        accessManagement.newAsset(assetKey, "")
+      ).to.be.revertedWith("Description cannot be empty");
     });
   });
 

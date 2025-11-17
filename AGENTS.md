@@ -332,6 +332,49 @@ These events provide an immutable audit trail of all agent activities in the sys
 
 ---
 
+## Development Guidelines
+
+### Testing Requirements
+
+**CRITICAL**: All changes to smart contracts or core functionality **MUST** be verified with running tests before completing any task or marking work as complete.
+
+#### Required Testing Protocol
+
+1. **Before Completion**: Run the full test suite using `npx hardhat test`
+2. **All Tests Must Pass**: Ensure all 87 tests pass (100% success rate)
+3. **Update Tests**: If adding new functionality or changing behavior, update tests accordingly
+4. **Input Validation Tests**: Any new input validation must have corresponding tests that verify the validation works correctly
+
+#### Running Tests
+
+```bash
+# Install dependencies (first time only)
+npm install
+
+# Run all tests
+npx hardhat test
+
+# Expected output: "87 passing"
+```
+
+#### Test Coverage
+
+The project includes comprehensive tests for:
+- **AccessManagement Contract**: 32 tests covering asset creation, authorization, access control, and edge cases
+- **AssetTracker Contract**: 22 tests covering asset creation, transfers, ownership verification
+- **RoleBasedAcl Contract**: 33 tests covering role assignment, unassignment, and permission checking
+
+#### Why This Matters
+
+- **Security**: Tests verify that input validation prevents invalid data (empty strings, zero addresses)
+- **Correctness**: Tests ensure all business logic works as expected
+- **Regression Prevention**: Tests catch breaking changes before they reach production
+- **Documentation**: Tests serve as executable documentation of expected behavior
+
+**NEVER mark a task as complete without running and passing all tests first.** This is non-negotiable for maintaining the security and integrity of the blockchain contracts.
+
+---
+
 ## Summary
 
 The OPEN system implements a flexible, blockchain-based access control model with clear separation of privileges across different agent types. Understanding these roles is essential for secure and effective use of the platform. All agent interactions are transparently logged on the blockchain, providing accountability and traceability for access management decisions.

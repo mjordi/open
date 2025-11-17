@@ -15,7 +15,6 @@ updates:
     # Add labels to PRs
     labels:
       - "dependencies"
-      - "automated"
 
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
@@ -25,4 +24,3 @@ updates:
     labels:
       - "github-actions"
       - "dependencies"
-      - "automated"

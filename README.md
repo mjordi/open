@@ -81,14 +81,14 @@ OPEN is a proof-of-concept application demonstrating how blockchain technology c
 
 ### Prerequisites
 
-1. **Node.js 20 LTS or higher**
+1. **Node.js 22.10.0 or higher**
    - Install from [https://nodejs.org](https://nodejs.org)
-   - Hardhat requires Node.js 20 or higher (even-numbered LTS versions only)
-   - Verify installation: `node --version` (should be v20.x.x or higher)
+   - Hardhat 3 requires Node.js 22.10.0 or higher (even-numbered LTS versions only)
+   - Verify installation: `node --version` (should be v22.10.0 or higher)
    - Optional: Use [nvm](https://github.com/nvm-sh/nvm) to manage Node.js versions
      ```bash
-     nvm install 20
-     nvm use 20
+     nvm install 22
+     nvm use 22
      ```
 
 2. **MetaMask Browser Extension**
@@ -142,7 +142,6 @@ npm run serve
 - `npm run generate` - Generate frontend artifacts (ABI/bytecode) from compiled contracts
 - `npm run build` - Full build (compile + generate + build frontend)
 - `npm test` - Run all tests
-- `npm run coverage` - Generate test coverage report
 - `npm run serve` - Serve frontend locally on port 8000
 - `npm run clean` - Clean build artifacts
 

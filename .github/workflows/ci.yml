@@ -22,12 +22,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Compile contracts
-        run: npm run compile
-
       - name: Run tests
         run: npm test
-
-      - name: Check test coverage
-        run: npm run coverage
-        continue-on-error: true

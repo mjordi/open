@@ -8,7 +8,6 @@
   },
   "scripts": {
     "test": "npx hardhat test",
-    "coverage": "npx hardhat coverage",
     "compile": "npx hardhat compile",
     "generate": "node scripts/generate-frontend-artifacts.js",
     "build": "npm run compile && npm run generate && node scripts/build-frontend.js",

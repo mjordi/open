@@ -18,11 +18,15 @@ contract RoleBasedAcl {
   }
   
   function assignRole (address entity, string role) hasRole('superadmin') {
+    require(entity != address(0), "Invalid address");
+    require(bytes(role).length > 0, "Role cannot be empty");
     roles[entity][role] = true;
     RoleChange(entity, role);
   }
   
   function unassignRole (address entity, string role) hasRole('superadmin') {
+    require(entity != address(0), "Invalid address");
+    require(bytes(role).length > 0, "Role cannot be empty");
     roles[entity][role] = false;
     RoleChange(entity, role);
   }
@@ -32,9 +36,7 @@ contract RoleBasedAcl {
   }
   
   modifier hasRole (string role) {
-    if (!roles[msg.sender][role] && msg.sender != creator) {
-      throw;
-    }
+    require(roles[msg.sender][role] || msg.sender == creator, "Unauthorized: missing required role");
     _;
   }
 }

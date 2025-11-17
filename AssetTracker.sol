@@ -48,17 +48,17 @@ function transferAsset(address to, string uuid) {
     AssetTransfer(msg.sender, to, uuid);
 }
 
-function getAssetByUUID(string uuid) constant returns (string, string, string) {
- 
+function getAssetByUUID(string uuid) view returns (string, string, string) {
+
     return (assetStore[uuid].name, assetStore[uuid].description, assetStore[uuid].manufacturer);
- 
+
 }
-function isOwnerOf(address owner, string uuid) constant returns (bool) {
- 
+function isOwnerOf(address owner, string uuid) view returns (bool) {
+
     if(walletStore[owner][uuid]) {
         return true;
     }
- 
+
     return false;
 }
 

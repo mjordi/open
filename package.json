@@ -4,7 +4,7 @@
   "description": "Solidity smart contracts for access management",
   "type": "module",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.10.0"
   },
   "scripts": {
     "test": "npx hardhat test",

@@ -212,7 +212,78 @@ function addAuthorization(string memory assetKey, address authorizationKey, stri
 
 ---
 
-### 5. Array Index Not Updated on Removal
+### 5. ✅ Temporary Role Expiration (COMPLETED)
+
+**Status**: ✅ RESOLVED
+**Previous State**: "temporary" role had no expiration mechanism
+**Current State**: Temporary roles now require and enforce expiration timestamps
+
+**Implemented Fix in contracts/aaas.sol**:
+
+**Added expiration field to Authorization struct**:
+```solidity
+struct Authorization {
+    string role;
+    bool active;
+    uint256 expiresAt; // Unix timestamp, 0 for permanent access
+    uint index;
+}
+```
+
+**Added overloaded addAuthorization function with duration parameter**:
+```solidity
+function addAuthorization(string memory assetKey, address authorizationKey, string memory authorizationRole, uint256 duration) public returns(bool success) {
+    require(authorizationKey != address(0), "Invalid address");
+    require(bytes(authorizationRole).length > 0, "Role cannot be empty");
+    require(assetStructs[assetKey].owner == msg.sender || isAuthorized(assetKey, msg.sender), "Only the owner or admins can add authorizations.");
+
+    // Calculate expiration time
+    uint256 expiresAt = 0;
+    if (keccak256(abi.encodePacked(authorizationRole)) == keccak256(abi.encodePacked("temporary"))) {
+        require(duration > 0, "Temporary roles must have expiration duration");
+        expiresAt = block.timestamp + duration;
+    }
+
+    // ... rest of function
+    assetStructs[assetKey].authorizationStructs[authorizationKey].expiresAt = expiresAt;
+}
+```
+
+**Added isAuthorized helper function to check expiration**:
+```solidity
+function isAuthorized(string memory assetKey, address user) internal view returns(bool) {
+    Authorization memory auth = assetStructs[assetKey].authorizationStructs[user];
+    if (!auth.active) return false;
+    if (auth.expiresAt > 0 && auth.expiresAt < block.timestamp) return false;
+    return true;
+}
+```
+
+**Updated getAccess and authorization checks to use expiration**:
+- All access checks now verify expiration status
+- Expired users cannot add or remove authorizations
+- Expired users are denied access automatically
+
+**Benefits Achieved**:
+- ✅ Temporary users now have true time-limited access
+- ✅ No manual revocation needed for temporary access
+- ✅ Prevents expired users from performing admin actions
+- ✅ Backward compatible (existing code uses default duration=0 for permanent access)
+- ✅ Comprehensive test coverage (8 new tests added)
+
+**Test Coverage**:
+- ✅ Should allow adding temporary authorization with duration
+- ✅ Should reject temporary authorization without duration
+- ✅ Should grant access to temporary user before expiration
+- ✅ Should deny access after temporary authorization expires
+- ✅ Should prevent expired users from adding authorizations
+- ✅ Should prevent expired users from removing authorizations
+- ✅ Should allow permanent roles without expiration
+- ✅ Should allow admin roles without expiration
+
+---
+
+### 6. Array Index Not Updated on Removal
 
 **Current State**: `removeAuthorization()` sets `active = false` but doesn't remove from array
 **Issue**: Array grows indefinitely, wasting gas when iterating
@@ -470,41 +541,23 @@ $('#form_deploy').on('submit', async function (e) {
 
 ## Medium Priority Issues
 
-### 12. No Temporary Role Expiration
+### 12. ✅ Temporary Role Expiration (COMPLETED)
 
-**Current State**: "temporary" role has no expiration mechanism
-**Issue**: Temporary users have permanent access unless manually revoked
-**Location**: `aaas.sol` - `Authorization` struct
+**Status**: ✅ RESOLVED
+**Previous State**: "temporary" role had no expiration mechanism
+**Current State**: Temporary roles now require and enforce expiration timestamps
+**Location**: `contracts/aaas.sol`
 
-**Recommendation**: Add timestamp-based expiration
-```solidity
-struct Authorization {
-    string role;
-    bool active;
-    uint256 expiresAt; // Unix timestamp, 0 for permanent
-    uint index;
-}
+**Implemented Fix**:
 
-function addAuthorization(string assetKey, address authorizationKey, string authorizationRole, uint256 duration) public returns(bool success) {
-    // ... existing checks ...
+Added expiration field to Authorization struct, overloaded addAuthorization function with duration parameter, and created isAuthorized helper function to check expiration. All access control functions now properly validate expiration timestamps.
 
-    uint256 expiresAt = 0;
-    if (keccak256(abi.encodePacked(authorizationRole)) == keccak256(abi.encodePacked("temporary"))) {
-        require(duration > 0, "Temporary roles must have expiration");
-        expiresAt = block.timestamp + duration;
-    }
-
-    assetStructs[assetKey].authorizationStructs[authorizationKey].expiresAt = expiresAt;
-    // ... rest of function
-}
-
-function isAuthorized(string assetKey, address user) internal view returns(bool) {
-    Authorization memory auth = assetStructs[assetKey].authorizationStructs[user];
-    if (!auth.active) return false;
-    if (auth.expiresAt > 0 && auth.expiresAt < block.timestamp) return false;
-    return true;
-}
-```
+**Benefits Achieved**:
+- ✅ Temporary users now have true time-limited access
+- ✅ No manual revocation needed for temporary access
+- ✅ Prevents expired users from performing admin actions
+- ✅ Backward compatible with existing code
+- ✅ Comprehensive test coverage (8 new tests, all passing)
 
 ---
 
@@ -856,27 +909,28 @@ string constant ROLE_TEMPORARY = "temporary";
 
 ### ✅ Completed Improvements
 
-#### Smart Contract Improvements (Issues #1-6, #22)
+#### Smart Contract Improvements (Issues #1-6, #12, #22)
 1. ✅ Upgrade Solidity version (0.4.x → 0.8.20)
 2. ✅ Fix deprecated keywords (`throw`, `constant`)
 3. ✅ Add input validation (empty strings, zero addresses) - **ALL CONTRACTS**
 4. ✅ Fix duplicate array entries in authorization - **RESOLVED**
-5. ✅ Add comprehensive unit tests (87 tests)
+5. ✅ Add comprehensive unit tests (95 tests - all passing!)
 6. ✅ Fix contract bugs (encoding, struct initialization)
 7. ✅ Set up development infrastructure (Hardhat)
 8. ✅ Add proper visibility modifiers
 9. ✅ Update constructor syntax
 10. ✅ Add SPDX license identifiers
+11. ✅ **Add role expiration for temporary access** - Time-limited authorization with automatic expiration
 
 #### Frontend Improvements (Issues #7-11)
-11. ✅ **Update Web3.js usage in frontend** - Modern API with `ethereum.request()`
-12. ✅ **Fix event watcher memory leaks** - Watchers initialized once at startup
-13. ✅ **Add proper error handling** - Comprehensive error handling for all contract calls
-14. ✅ **Extract hardcoded bytecode** - Moved to separate `contractBytecode.js` file
-15. ✅ **Implement gas estimation** - Dynamic estimation with 20% buffer
+12. ✅ **Update Web3.js usage in frontend** - Modern API with `ethereum.request()`
+13. ✅ **Fix event watcher memory leaks** - Watchers initialized once at startup
+14. ✅ **Add proper error handling** - Comprehensive error handling for all contract calls
+15. ✅ **Extract hardcoded bytecode** - Moved to separate `contractBytecode.js` file
+16. ✅ **Implement gas estimation** - Dynamic estimation with 20% buffer
 
 ### High Priority (Remaining)
-1. Add role expiration for temporary access
+**None! All high priority issues have been resolved! 🎉**
 
 ### Medium Priority (Plan for Next Version)
 2. Add ownership transfer function
@@ -898,34 +952,35 @@ string constant ROLE_TEMPORARY = "temporary";
 ---
 
 **Progress Update**:
-- ✅ **Completed**: **15 major improvements** (ALL critical issues resolved!)
-  - ✅ 10 smart contract improvements
+- ✅ **Completed**: **16 major improvements** (ALL critical and high-priority issues resolved!)
+  - ✅ 11 smart contract improvements (including temporary role expiration)
   - ✅ 5 frontend improvements
-- ⏳ **Remaining**: 13 improvements (1 high, 5 medium, 7 low priority)
+- ⏳ **Remaining**: 12 improvements (0 high, 5 medium, 7 low priority)
 
 **Estimated Effort for Remaining Work**:
-- High priority: 2-3 days
+- High priority: **NONE - All completed!** ✅
 - Medium priority: 5-7 days
 - Low priority: 7-10 days
-- **Total**: 14-20 days
+- **Total**: 12-17 days
 
-**Latest Achievement**: Successfully resolved ALL high-priority frontend issues! 🎉
-- ✅ Modernized Web3.js integration (compatible with latest MetaMask)
-- ✅ Eliminated memory leaks from event watchers
-- ✅ Added comprehensive error handling with user-friendly messages
-- ✅ Improved code organization (bytecode extraction)
-- ✅ Implemented dynamic gas estimation
+**Latest Achievement**: Successfully implemented temporary role expiration! 🎉
+- ✅ Added time-based expiration for temporary access
+- ✅ Automatic denial of access after expiration
+- ✅ Prevents expired users from performing admin actions
+- ✅ Backward compatible with existing code
+- ✅ 8 comprehensive new tests (all passing!)
 
-**All Tests Passing**: ✅ 87/87 tests passing (100% success rate)
+**All Tests Passing**: ✅ 95/95 tests passing (100% success rate)
 
 **Combined Achievements**:
 - ✅ **Smart Contracts**: Production-ready security posture with full test coverage
 - ✅ **Frontend**: Modern, maintainable code with proper error handling
 - ✅ **Development**: Complete testing infrastructure and documentation
+- ✅ **Access Control**: Time-limited temporary access with automatic expiration
 
-**No Critical or High-Priority Issues Remaining!** 🎉
+**🎉 NO CRITICAL OR HIGH-PRIORITY ISSUES REMAINING! 🎉**
 
 **Recommended Next Steps**:
-1. Add role expiration mechanism for temporary access (last high-priority item)
-2. Consider medium priority enhancements (ownership transfer, batch operations)
-3. Add frontend improvements (list views, network detection, loading states)
+1. Consider medium priority enhancements (ownership transfer, batch operations)
+2. Add frontend improvements (list views, network detection, loading states)
+3. Optional: Implement low-priority nice-to-have features

@@ -160,7 +160,7 @@ describe("AccessManagement", function () {
     it("Should handle multiple authorization roles", async function () {
       await accessManagement.addAuthorization(assetKey, user1.address, "admin");
       await accessManagement.addAuthorization(assetKey, user2.address, "permanent");
-      await accessManagement.addAuthorization(assetKey, user3.address, "temporary");
+      await accessManagement["addAuthorization(string,address,string,uint256)"](assetKey, user3.address, "temporary", 3600);
 
       expect(await accessManagement.getAssetAuthorization(assetKey, user1.address)).to.equal("admin");
       expect(await accessManagement.getAssetAuthorization(assetKey, user2.address)).to.equal("permanent");
@@ -300,6 +300,165 @@ describe("AccessManagement", function () {
     });
   });
 
+  describe("Temporary Role Expiration", function () {
+    const assetKey = "ASSET-TEMP";
+
+    beforeEach(async function () {
+      await accessManagement.newAsset(assetKey, "Temporary Access Test Asset");
+    });
+
+    it("Should allow adding temporary authorization with duration", async function () {
+      const duration = 3600; // 1 hour in seconds
+
+      await expect(
+        accessManagement["addAuthorization(string,address,string,uint256)"](
+          assetKey,
+          user1.address,
+          "temporary",
+          duration
+        )
+      )
+        .to.emit(accessManagement, "AuthorizationCreate")
+        .withArgs(user1.address, assetKey, "temporary");
+
+      const role = await accessManagement.getAssetAuthorization(assetKey, user1.address);
+      expect(role).to.equal("temporary");
+    });
+
+    it("Should reject temporary authorization without duration", async function () {
+      await expect(
+        accessManagement["addAuthorization(string,address,string,uint256)"](
+          assetKey,
+          user1.address,
+          "temporary",
+          0
+        )
+      ).to.be.revertedWith("Temporary roles must have expiration duration");
+    });
+
+    it("Should grant access to temporary user before expiration", async function () {
+      const duration = 3600; // 1 hour
+
+      await accessManagement["addAuthorization(string,address,string,uint256)"](
+        assetKey,
+        user1.address,
+        "temporary",
+        duration
+      );
+
+      // Should have access immediately after authorization
+      await expect(accessManagement.connect(user1).getAccess(assetKey))
+        .to.emit(accessManagement, "AccessLog")
+        .withArgs(user1.address, assetKey, true);
+    });
+
+    it("Should deny access after temporary authorization expires", async function () {
+      const duration = 2; // 2 seconds
+
+      await accessManagement["addAuthorization(string,address,string,uint256)"](
+        assetKey,
+        user1.address,
+        "temporary",
+        duration
+      );
+
+      // Should have access initially
+      const accessBefore = await accessManagement.connect(user1).getAccess.staticCall(assetKey);
+      expect(accessBefore).to.equal(true);
+
+      // Fast forward time by 3 seconds
+      await ethers.provider.send("evm_increaseTime", [3]);
+      await ethers.provider.send("evm_mine");
+
+      // Should not have access after expiration
+      await expect(accessManagement.connect(user1).getAccess(assetKey))
+        .to.emit(accessManagement, "AccessLog")
+        .withArgs(user1.address, assetKey, false);
+    });
+
+    it("Should prevent expired users from adding authorizations", async function () {
+      const duration = 2; // 2 seconds
+
+      // Give user1 temporary admin access
+      await accessManagement["addAuthorization(string,address,string,uint256)"](
+        assetKey,
+        user1.address,
+        "temporary",
+        duration
+      );
+
+      // user1 should be able to add authorization initially
+      await accessManagement.connect(user1).addAuthorization(assetKey, user2.address, "permanent");
+
+      // Fast forward time by 3 seconds
+      await ethers.provider.send("evm_increaseTime", [3]);
+      await ethers.provider.send("evm_mine");
+
+      // user1 should not be able to add authorization after expiration
+      await expect(
+        accessManagement.connect(user1).addAuthorization(assetKey, user3.address, "permanent")
+      ).to.be.revertedWith("Only the owner or admins can add authorizations.");
+    });
+
+    it("Should prevent expired users from removing authorizations", async function () {
+      const duration = 2; // 2 seconds
+
+      // Give user1 temporary admin access
+      await accessManagement["addAuthorization(string,address,string,uint256)"](
+        assetKey,
+        user1.address,
+        "temporary",
+        duration
+      );
+
+      // Add user2 as permanent user
+      await accessManagement.addAuthorization(assetKey, user2.address, "permanent");
+
+      // Fast forward time by 3 seconds
+      await ethers.provider.send("evm_increaseTime", [3]);
+      await ethers.provider.send("evm_mine");
+
+      // user1 should not be able to remove authorization after expiration
+      await expect(
+        accessManagement.connect(user1).removeAuthorization(assetKey, user2.address)
+      ).to.be.revertedWith("Only the owner or admins can remove authorizations.");
+    });
+
+    it("Should allow permanent roles without expiration", async function () {
+      // Add permanent authorization without duration
+      await accessManagement.addAuthorization(assetKey, user1.address, "permanent");
+
+      // Should have access immediately
+      const accessBefore = await accessManagement.connect(user1).getAccess.staticCall(assetKey);
+      expect(accessBefore).to.equal(true);
+
+      // Fast forward time by 1 hour
+      await ethers.provider.send("evm_increaseTime", [3600]);
+      await ethers.provider.send("evm_mine");
+
+      // Should still have access after time passes
+      const accessAfter = await accessManagement.connect(user1).getAccess.staticCall(assetKey);
+      expect(accessAfter).to.equal(true);
+    });
+
+    it("Should allow admin roles without expiration", async function () {
+      // Add admin authorization without duration
+      await accessManagement.addAuthorization(assetKey, admin.address, "admin");
+
+      // Should have access immediately
+      const accessBefore = await accessManagement.connect(admin).getAccess.staticCall(assetKey);
+      expect(accessBefore).to.equal(true);
+
+      // Fast forward time by 1 hour
+      await ethers.provider.send("evm_increaseTime", [3600]);
+      await ethers.provider.send("evm_mine");
+
+      // Should still have access after time passes
+      const accessAfter = await accessManagement.connect(admin).getAccess.staticCall(assetKey);
+      expect(accessAfter).to.equal(true);
+    });
+  });
+
   describe("Complete Workflow", function () {
     it("Should support a complete asset lifecycle", async function () {
       const assetKey = "WORKFLOW-ASSET";
@@ -314,7 +473,7 @@ describe("AccessManagement", function () {
       await accessManagement.connect(admin).addAuthorization(assetKey, user1.address, "permanent");
 
       // Admin grants access to user2
-      await accessManagement.connect(admin).addAuthorization(assetKey, user2.address, "temporary");
+      await accessManagement.connect(admin).addAuthorization(assetKey, user2.address, "permanent");
 
       // Verify all can access (using staticCall to get return value without executing)
       const ownerAccess = await accessManagement.getAccess.staticCall(assetKey);

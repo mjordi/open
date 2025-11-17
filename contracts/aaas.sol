@@ -6,6 +6,7 @@ contract AccessManagement {
     struct Authorization {
         string role;
         bool active;
+        uint256 expiresAt; // Unix timestamp, 0 for permanent access
         uint index;
     }
 
@@ -47,9 +48,20 @@ contract AccessManagement {
     }
 
     function addAuthorization(string memory assetKey, address authorizationKey, string memory authorizationRole) public returns(bool success) {
+        return addAuthorization(assetKey, authorizationKey, authorizationRole, 0);
+    }
+
+    function addAuthorization(string memory assetKey, address authorizationKey, string memory authorizationRole, uint256 duration) public returns(bool success) {
         require(authorizationKey != address(0), "Invalid address");
         require(bytes(authorizationRole).length > 0, "Role cannot be empty");
-        require(assetStructs[assetKey].owner == msg.sender || assetStructs[assetKey].authorizationStructs[msg.sender].active, "Only the owner or admins can add authorizations.");
+        require(assetStructs[assetKey].owner == msg.sender || isAuthorized(assetKey, msg.sender), "Only the owner or admins can add authorizations.");
+
+        // Calculate expiration time
+        uint256 expiresAt = 0;
+        if (keccak256(abi.encodePacked(authorizationRole)) == keccak256(abi.encodePacked("temporary"))) {
+            require(duration > 0, "Temporary roles must have expiration duration");
+            expiresAt = block.timestamp + duration;
+        }
 
         // Only push if not already in the list
         if (!assetStructs[assetKey].authorizationStructs[authorizationKey].active) {
@@ -58,12 +70,13 @@ contract AccessManagement {
 
         assetStructs[assetKey].authorizationStructs[authorizationKey].role = authorizationRole;
         assetStructs[assetKey].authorizationStructs[authorizationKey].active = true;
+        assetStructs[assetKey].authorizationStructs[authorizationKey].expiresAt = expiresAt;
         emit AuthorizationCreate(authorizationKey, assetKey, authorizationRole);
         return true;
     }
 
     function removeAuthorization(string memory assetKey, address authorizationKey) public returns(bool success) {
-        require(assetStructs[assetKey].owner == msg.sender || assetStructs[assetKey].authorizationStructs[msg.sender].active, "Only the owner or admins can remove authorizations.");
+        require(assetStructs[assetKey].owner == msg.sender || isAuthorized(assetKey, msg.sender), "Only the owner or admins can remove authorizations.");
         assetStructs[assetKey].authorizationStructs[authorizationKey].role =  '';
         assetStructs[assetKey].authorizationStructs[authorizationKey].active =  false;
         emit AuthorizationRemove(authorizationKey, assetKey);
@@ -90,8 +103,15 @@ contract AccessManagement {
         return assetStructs[assetKey].authorizationList[authorizationRow];
     }
 
+    function isAuthorized(string memory assetKey, address user) internal view returns(bool) {
+        Authorization memory auth = assetStructs[assetKey].authorizationStructs[user];
+        if (!auth.active) return false;
+        if (auth.expiresAt > 0 && auth.expiresAt < block.timestamp) return false;
+        return true;
+    }
+
     function getAccess(string memory assetKey) public returns (bool success) {
-        if (assetStructs[assetKey].owner == msg.sender || assetStructs[assetKey].authorizationStructs[msg.sender].active){
+        if (assetStructs[assetKey].owner == msg.sender || isAuthorized(assetKey, msg.sender)){
             emit AccessLog(msg.sender, assetKey, true);
             return true;
         } else {

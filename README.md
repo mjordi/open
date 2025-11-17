@@ -38,21 +38,43 @@ OPEN is a proof-of-concept application demonstrating how blockchain technology c
 
 ```
 /
-├── contracts/           # Smart contracts (Solidity 0.8.20)
-│   ├── aaas.sol        # Main AccessManagement smart contract
-│   ├── AssetTracker.sol # Alternative asset tracking contract with UUID system
-│   └── RoleBasedAcl.sol # Role-based access control template
-├── test/               # Comprehensive test suites (87 tests)
-│   ├── AccessManagement.test.js  # 32 tests for main contract
-│   ├── AssetTracker.test.js      # 22 tests for asset tracker
-│   └── RoleBasedAcl.test.js      # 33 tests for RBAC
-├── hardhat.config.js   # Hardhat configuration
-├── package.json        # Node.js dependencies
-├── index.html          # Web interface
-├── user2.js            # Main application logic and Web3 integration
-├── abi_aaas.js        # Smart contract ABI definition
-├── aaas.css           # Custom styling
-└── assets/            # Images and icons
+├── contracts/                    # Smart contracts (Solidity 0.8.20)
+│   ├── aaas.sol                 # Main AccessManagement smart contract
+│   ├── AssetTracker.sol         # Alternative asset tracking contract with UUID system
+│   └── RoleBasedAcl.sol         # Role-based access control template
+├── test/                        # Comprehensive test suites (87 tests)
+│   ├── AccessManagement.test.js # 32 tests for main contract
+│   ├── AssetTracker.test.js     # 22 tests for asset tracker
+│   └── RoleBasedAcl.test.js     # 33 tests for RBAC
+├── frontend/                    # Frontend application
+│   ├── src/
+│   │   ├── js/                 # JavaScript source files
+│   │   │   └── app.js          # Main application logic and Web3 integration
+│   │   ├── css/                # Stylesheets
+│   │   │   └── styles.css      # Custom styling
+│   │   └── generated/          # Auto-generated from contracts (gitignored)
+│   │       ├── abi.js          # Smart contract ABI definition
+│   │       └── bytecode.js     # Contract bytecode
+│   ├── public/                 # Static assets
+│   │   ├── index.html          # Web interface
+│   │   └── assets/
+│   │       ├── images/         # Logo and images
+│   │       └── icons/          # Favicon
+│   └── dist/                   # Built files for deployment (gitignored)
+├── scripts/                     # Build and deployment scripts
+│   ├── generate-frontend-artifacts.js  # Generate ABI/bytecode from contracts
+│   └── build-frontend.js        # Build frontend for deployment
+├── docs/                        # Documentation
+│   ├── DEVELOPMENT.md          # Development guide
+│   ├── TESTING.md              # Testing notes
+│   ├── IMPROVEMENTS.md         # Improvements tracking
+│   └── AGENTS.md               # AI agents guide
+├── .github/workflows/           # GitHub Actions
+│   └── deploy-pages.yml        # Automated deployment to GitHub Pages
+├── hardhat.config.js            # Hardhat configuration
+├── package.json                 # Node.js dependencies and scripts
+├── .env.example                 # Environment variables template
+└── .gitignore                   # Git ignore rules
 ```
 
 ## Getting Started
@@ -80,42 +102,54 @@ git clone <repository-url>
 cd open
 ```
 
-2. Install dependencies for smart contract development and testing:
+2. Install dependencies:
 ```bash
 npm install
 ```
 
-3. Compile the smart contracts:
+3. Build the project (compiles contracts and generates frontend artifacts):
 ```bash
-npx hardhat compile
+npm run build
 ```
 
 4. Run the test suite (87 tests):
 ```bash
-npx hardhat test
+npm test
 ```
 
-5. For frontend usage, open `index.html` in a web browser, or serve it using a local web server:
+5. Serve the frontend locally:
 ```bash
-# Using Python 3
-python -m http.server 8000
-
-# Using Node.js http-server
-npx http-server -p 8000
+npm run serve
 ```
 
 6. Navigate to `http://localhost:8000` in your browser
 
 7. Connect your MetaMask wallet when prompted
 
+### Available Scripts
+
+- `npm run compile` - Compile smart contracts
+- `npm run generate` - Generate frontend artifacts (ABI/bytecode) from compiled contracts
+- `npm run build` - Full build (compile + generate + build frontend)
+- `npm test` - Run all tests
+- `npm run coverage` - Generate test coverage report
+- `npm run serve` - Serve frontend locally on port 8000
+- `npm run clean` - Clean build artifacts
+
 ### Configuration
 
-The default smart contract address is configured in `user2.js`:
+The default smart contract address is configured in `frontend/src/js/app.js`:
 ```javascript
 const contractAddress = "0x1614c607e0e36d210196941b954f9e5128f3e0f5";
 ```
 
-To use your own deployed contract, update this address after deploying the `aaas.sol` contract.
+To use your own deployed contract:
+1. Deploy the contract using Hardhat
+2. Update the address in `frontend/src/js/app.js`
+3. Run `npm run generate` to update the ABI
+4. Rebuild with `npm run build`
+
+For network configuration (testnets, mainnet), copy `.env.example` to `.env` and configure your RPC URLs and private keys.
 
 ## Testing
 
@@ -260,8 +294,8 @@ Tested with:
 - Requires MetaMask browser extension
 - Transaction costs gas fees (ETH)
 - No backend server (purely client-side)
-- Hardcoded contract address in frontend (update manually after deployment)
-- Frontend needs ABI regeneration after contract changes
+- Contract address must be updated manually in frontend after deployment
+- Frontend artifacts are auto-generated but require running build scripts
 
 ## Recent Improvements
 
@@ -271,6 +305,10 @@ Tested with:
 - ✅ **Fixed encoding issues** in AssetTracker.sol
 - ✅ **Fixed struct initialization bug** in AssetTracker.sol
 - ✅ **Modern syntax** with proper visibility modifiers and memory keywords
+- ✅ **Restructured project** with organized frontend, scripts, and documentation directories
+- ✅ **Automated build process** with ABI/bytecode generation from compiled contracts
+- ✅ **Replaced vendor libraries** with CDN links for better performance and security
+- ✅ **GitHub Pages deployment** with automated CI/CD workflow
 
 ## Future Enhancements
 

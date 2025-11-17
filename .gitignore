@@ -33,3 +33,14 @@ package-lock.json
 cache/
 artifacts/
 *.log
+
+# Frontend build artifacts
+frontend/dist/
+frontend/src/generated/
+
+# Environment variables
+.env
+.env.local
+
+# macOS
+.DS_Store

@@ -3,9 +3,13 @@
   "version": "1.0.0",
   "description": "Solidity smart contracts for access management",
   "scripts": {
-    "test": "hardhat test",
-    "coverage": "hardhat coverage",
-    "compile": "hardhat compile"
+    "test": "npx hardhat test",
+    "coverage": "npx hardhat coverage",
+    "compile": "npx hardhat compile",
+    "generate": "node scripts/generate-frontend-artifacts.js",
+    "build": "npm run compile && npm run generate && node scripts/build-frontend.js",
+    "clean": "npx hardhat clean && rm -rf frontend/dist frontend/src/generated",
+    "serve": "npx http-server frontend/public -p 8000"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",

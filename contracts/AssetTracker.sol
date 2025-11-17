@@ -21,6 +21,11 @@ contract AssetTracker {
     event RejectTransfer(address from, address to, string uuid, string message);
 
     function createAsset(string memory name, string memory description, string memory uuid, string memory manufacturer) public {
+        require(bytes(name).length > 0, "Name cannot be empty");
+        require(bytes(description).length > 0, "Description cannot be empty");
+        require(bytes(uuid).length > 0, "UUID cannot be empty");
+        require(bytes(manufacturer).length > 0, "Manufacturer cannot be empty");
+
         if(assetStore[uuid].initialized) {
             emit RejectCreate(msg.sender, uuid, "Asset with this UUID already exists.");
             return;
@@ -32,6 +37,9 @@ contract AssetTracker {
     }
 
     function transferAsset(address to, string memory uuid) public {
+        require(to != address(0), "Invalid recipient address");
+        require(bytes(uuid).length > 0, "UUID cannot be empty");
+
         if(!assetStore[uuid].initialized) {
             emit RejectTransfer(msg.sender, to, uuid, "No asset with this UUID exists");
             return;

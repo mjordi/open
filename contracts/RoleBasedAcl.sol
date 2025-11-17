@@ -19,11 +19,15 @@ contract RoleBasedAcl {
     }
 
     function assignRole(address entity, string memory role) public hasRole('superadmin') {
+        require(entity != address(0), "Invalid address");
+        require(bytes(role).length > 0, "Role cannot be empty");
         roles[entity][role] = true;
         emit RoleChange(entity, role);
     }
 
     function unassignRole(address entity, string memory role) public hasRole('superadmin') {
+        require(entity != address(0), "Invalid address");
+        require(bytes(role).length > 0, "Role cannot be empty");
         roles[entity][role] = false;
         emit RoleChange(entity, role);
     }

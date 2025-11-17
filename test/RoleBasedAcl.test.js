@@ -80,10 +80,10 @@ describe("RoleBasedAcl", function () {
       expect(await roleBasedAcl.isAssignedRole(user2.address, "admin")).to.equal(true);
     });
 
-    it("Should handle empty role string", async function () {
-      await roleBasedAcl.assignRole(user1.address, "");
-      const hasRole = await roleBasedAcl.isAssignedRole(user1.address, "");
-      expect(hasRole).to.equal(true);
+    it("Should reject empty role string", async function () {
+      await expect(
+        roleBasedAcl.assignRole(user1.address, "")
+      ).to.be.revertedWith("Role cannot be empty");
     });
 
     it("Should handle role strings with special characters", async function () {
@@ -270,10 +270,11 @@ describe("RoleBasedAcl", function () {
   });
 
   describe("Edge Cases", function () {
-    it("Should handle zero address", async function () {
+    it("Should reject zero address", async function () {
       const zeroAddress = ethers.ZeroAddress;
-      await roleBasedAcl.assignRole(zeroAddress, "admin");
-      expect(await roleBasedAcl.isAssignedRole(zeroAddress, "admin")).to.equal(true);
+      await expect(
+        roleBasedAcl.assignRole(zeroAddress, "admin")
+      ).to.be.revertedWith("Invalid address");
     });
 
     it("Should handle very long role names", async function () {

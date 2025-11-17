@@ -58,14 +58,28 @@ describe("AssetTracker", function () {
       expect(asset3[0]).to.equal("Asset 3");
     });
 
-    it("Should handle empty fields", async function () {
+    it("Should reject empty fields", async function () {
       const uuid = "UUID-006";
-      await assetTracker.createAsset("", "", uuid, "");
 
-      const asset = await assetTracker.getAssetByUUID(uuid);
-      expect(asset[0]).to.equal("");
-      expect(asset[1]).to.equal("");
-      expect(asset[2]).to.equal("");
+      // Test empty name
+      await expect(
+        assetTracker.createAsset("", "Description", uuid, "Manufacturer")
+      ).to.be.revertedWith("Name cannot be empty");
+
+      // Test empty description
+      await expect(
+        assetTracker.createAsset("Name", "", uuid, "Manufacturer")
+      ).to.be.revertedWith("Description cannot be empty");
+
+      // Test empty UUID
+      await expect(
+        assetTracker.createAsset("Name", "Description", "", "Manufacturer")
+      ).to.be.revertedWith("UUID cannot be empty");
+
+      // Test empty manufacturer
+      await expect(
+        assetTracker.createAsset("Name", "Description", uuid, "")
+      ).to.be.revertedWith("Manufacturer cannot be empty");
     });
 
     it("Should handle special characters in fields", async function () {

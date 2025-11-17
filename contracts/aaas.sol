@@ -28,6 +28,8 @@ contract AccessManagement {
 
 
     function newAsset(string memory assetKey, string memory assetDescription) public returns(bool success) {
+        require(bytes(assetKey).length > 0, "Asset key cannot be empty");
+        require(bytes(assetDescription).length > 0, "Description cannot be empty");
         if(assetStructs[assetKey].initialized) {
             emit RejectCreate(msg.sender, assetKey, "Asset with this Serial already exists.");
             return false;
@@ -45,8 +47,15 @@ contract AccessManagement {
     }
 
     function addAuthorization(string memory assetKey, address authorizationKey, string memory authorizationRole) public returns(bool success) {
+        require(authorizationKey != address(0), "Invalid address");
+        require(bytes(authorizationRole).length > 0, "Role cannot be empty");
         require(assetStructs[assetKey].owner == msg.sender || assetStructs[assetKey].authorizationStructs[msg.sender].active, "Only the owner or admins can add authorizations.");
-        assetStructs[assetKey].authorizationList.push(authorizationKey);
+
+        // Only push if not already in the list
+        if (!assetStructs[assetKey].authorizationStructs[authorizationKey].active) {
+            assetStructs[assetKey].authorizationList.push(authorizationKey);
+        }
+
         assetStructs[assetKey].authorizationStructs[authorizationKey].role = authorizationRole;
         assetStructs[assetKey].authorizationStructs[authorizationKey].active = true;
         emit AuthorizationCreate(authorizationKey, assetKey, authorizationRole);

@@ -81,17 +81,27 @@ OPEN is a proof-of-concept application demonstrating how blockchain technology c
 
 ### Prerequisites
 
-1. **MetaMask Browser Extension**
+1. **Node.js 20 LTS or higher**
+   - Install from [https://nodejs.org](https://nodejs.org)
+   - Hardhat requires Node.js 20 or higher (even-numbered LTS versions only)
+   - Verify installation: `node --version` (should be v20.x.x or higher)
+   - Optional: Use [nvm](https://github.com/nvm-sh/nvm) to manage Node.js versions
+     ```bash
+     nvm install 20
+     nvm use 20
+     ```
+
+2. **MetaMask Browser Extension**
    - Install MetaMask from [https://metamask.io](https://metamask.io)
    - Create or import an Ethereum wallet
    - Connect to your preferred network (Mainnet, Testnet, or local)
 
-2. **Ethereum Testnet ETH** (for testing)
+3. **Ethereum Testnet ETH** (for testing)
    - Get free testnet ETH from faucets like:
      - Sepolia: https://sepoliafaucet.com
      - Goerli: https://goerlifaucet.com
 
-3. **Web Server** (optional)
+4. **Web Server** (optional)
    - Any static file server (Python's `http.server`, Node's `http-server`, etc.)
 
 ### Installation

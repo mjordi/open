@@ -373,6 +373,68 @@ The project includes comprehensive tests for:
 
 **NEVER mark a task as complete without running and passing all tests first.** This is non-negotiable for maintaining the security and integrity of the blockchain contracts.
 
+### Documentation Update Requirements
+
+**CRITICAL**: All tasks involving code changes, configuration updates, or new features **MUST** include documentation updates before the task can be considered complete.
+
+#### Required Documentation Review
+
+Before marking any task as complete, verify that all relevant documentation files have been reviewed and updated:
+
+1. **README.md**: Update if changes affect:
+   - Installation instructions
+   - Prerequisites or requirements
+   - Usage instructions
+   - Features list
+   - Project structure
+   - Configuration steps
+
+2. **DEVELOPMENT.md**: Update if changes affect:
+   - Development environment setup
+   - Build process or scripts
+   - Testing procedures
+   - Code quality requirements
+   - Dependency versions
+
+3. **AGENTS.md**: Update if changes affect:
+   - Agent roles or permissions
+   - Access control logic
+   - Authorization workflows
+   - Security considerations
+   - Smart contract interactions
+
+4. **TESTING.md**: Update if changes affect:
+   - Test procedures
+   - Test coverage
+   - Testing tools or frameworks
+   - Test environment setup
+
+5. **IMPROVEMENTS.md**: Update if changes:
+   - Resolve existing issues
+   - Add new known issues
+   - Affect future enhancement plans
+
+#### Documentation Update Checklist
+
+- [ ] Identify all documentation files affected by the change
+- [ ] Update version numbers, dependencies, or requirements
+- [ ] Add or update code examples if applicable
+- [ ] Update configuration examples
+- [ ] Verify all cross-references between documentation files
+- [ ] Check for outdated information that contradicts the changes
+- [ ] Update table of contents if structure changed
+- [ ] Review for clarity and completeness
+
+#### Why This Matters
+
+- **Maintainability**: Outdated documentation leads to confusion and errors
+- **Onboarding**: New developers rely on accurate documentation
+- **Collaboration**: Team members need current information to work effectively
+- **Support**: Users depend on documentation to resolve issues
+- **Knowledge Transfer**: Documentation preserves institutional knowledge
+
+**A task is NOT complete until all relevant documentation has been updated to reflect the changes.** Incomplete documentation is a form of technical debt that compounds over time.
+
 ---
 
 ## Summary

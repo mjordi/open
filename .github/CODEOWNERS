@@ -1,0 +1,8 @@
+# This is a sample CODEOWNERS file. Replace the following with your actual owners.
+# These owners will be the default owners for everything in the repo.
+# Unless a later match takes precedence, they will be requested for review when someone opens a pull request.
+* @mjordi
+
+# Example: Assign specific owners for specific files or directories
+# /path/to/file @owner1 @owner2
+# /path/to/directory/ @owner1 @owner2 

@@ -18,8 +18,15 @@ OPEN is a proof-of-concept application demonstrating how blockchain technology c
 ## Technologies
 
 ### Smart Contracts
-- **Solidity 0.4.24**: Smart contract development language
+- **Solidity 0.8.20**: Smart contract development language (upgraded from 0.4.x)
+- **Hardhat**: Development environment for testing and deployment
 - **Ethereum**: Blockchain platform for deploying contracts
+
+### Testing
+- **Hardhat**: Testing framework and development environment
+- **Chai**: Assertion library for tests
+- **Ethers.js**: Library for interacting with Ethereum (v6)
+- **87 comprehensive tests** covering all contract functionality
 
 ### Frontend
 - **Web3.js**: Library for interacting with Ethereum blockchain
@@ -31,14 +38,21 @@ OPEN is a proof-of-concept application demonstrating how blockchain technology c
 
 ```
 /
-├── aaas.sol              # Main AccessManagement smart contract
-├── AssetTracker.sol      # Alternative asset tracking contract with UUID system
-├── RoleBasedAcl.sol      # Role-based access control template
-├── index.html            # Web interface
-├── user2.js              # Main application logic and Web3 integration
-├── abi_aaas.js          # Smart contract ABI definition
-├── aaas.css             # Custom styling
-└── assets/              # Images and icons
+├── contracts/           # Smart contracts (Solidity 0.8.20)
+│   ├── aaas.sol        # Main AccessManagement smart contract
+│   ├── AssetTracker.sol # Alternative asset tracking contract with UUID system
+│   └── RoleBasedAcl.sol # Role-based access control template
+├── test/               # Comprehensive test suites (87 tests)
+│   ├── AccessManagement.test.js  # 32 tests for main contract
+│   ├── AssetTracker.test.js      # 22 tests for asset tracker
+│   └── RoleBasedAcl.test.js      # 33 tests for RBAC
+├── hardhat.config.js   # Hardhat configuration
+├── package.json        # Node.js dependencies
+├── index.html          # Web interface
+├── user2.js            # Main application logic and Web3 integration
+├── abi_aaas.js        # Smart contract ABI definition
+├── aaas.css           # Custom styling
+└── assets/            # Images and icons
 ```
 
 ## Getting Started
@@ -66,7 +80,22 @@ git clone <repository-url>
 cd open
 ```
 
-2. Open `index.html` in a web browser, or serve it using a local web server:
+2. Install dependencies for smart contract development and testing:
+```bash
+npm install
+```
+
+3. Compile the smart contracts:
+```bash
+npx hardhat compile
+```
+
+4. Run the test suite (87 tests):
+```bash
+npx hardhat test
+```
+
+5. For frontend usage, open `index.html` in a web browser, or serve it using a local web server:
 ```bash
 # Using Python 3
 python -m http.server 8000
@@ -75,9 +104,9 @@ python -m http.server 8000
 npx http-server -p 8000
 ```
 
-3. Navigate to `http://localhost:8000` in your browser
+6. Navigate to `http://localhost:8000` in your browser
 
-4. Connect your MetaMask wallet when prompted
+7. Connect your MetaMask wallet when prompted
 
 ### Configuration
 
@@ -87,6 +116,48 @@ const contractAddress = "0x1614c607e0e36d210196941b954f9e5128f3e0f5";
 ```
 
 To use your own deployed contract, update this address after deploying the `aaas.sol` contract.
+
+## Testing
+
+The project includes a comprehensive test suite with 87 tests covering all smart contract functionality:
+
+### Run All Tests
+```bash
+npx hardhat test
+```
+
+### Test Coverage by Contract
+- **AccessManagement (32 tests)**: Asset creation, authorization management, access control, edge cases
+- **AssetTracker (22 tests)**: Asset creation, transfers, ownership verification, edge cases
+- **RoleBasedAcl (33 tests)**: Role assignment, unassignment, access control, modifiers
+
+### Example Test Output
+```
+  AccessManagement
+    ✔ Should create a new asset successfully
+    ✔ Should allow owner to add authorization
+    ✔ Should grant access to authorized user
+    ... (32 tests total)
+
+  AssetTracker
+    ✔ Should create a new asset successfully
+    ✔ Should transfer asset successfully
+    ... (22 tests total)
+
+  RoleBasedAcl
+    ✔ Should allow creator to assign roles
+    ✔ Should correctly identify assigned roles
+    ... (33 tests total)
+
+  87 passing (5s)
+```
+
+All tests verify:
+- Correct functionality with valid inputs
+- Proper error handling with invalid inputs
+- Event emission verification
+- Access control enforcement
+- Edge case handling (empty strings, special characters, etc.)
 
 ## Usage
 
@@ -188,19 +259,30 @@ Tested with:
 
 - Requires MetaMask browser extension
 - Transaction costs gas fees (ETH)
-- Solidity version 0.4.24 (consider upgrading to latest version)
 - No backend server (purely client-side)
-- Hardcoded contract address (update manually after deployment)
+- Hardcoded contract address in frontend (update manually after deployment)
+- Frontend needs ABI regeneration after contract changes
+
+## Recent Improvements
+
+- ✅ **Upgraded to Solidity 0.8.20** with built-in overflow/underflow protection
+- ✅ **Added comprehensive test suite** with 87 tests covering all functionality
+- ✅ **Implemented Hardhat** development and testing framework
+- ✅ **Fixed encoding issues** in AssetTracker.sol
+- ✅ **Fixed struct initialization bug** in AssetTracker.sol
+- ✅ **Modern syntax** with proper visibility modifiers and memory keywords
 
 ## Future Enhancements
 
-- Upgrade to latest Solidity version (0.8.x)
 - Add role expiration timestamps for temporary roles
 - Implement batch authorization operations
 - Add asset transfer functionality
 - Create admin dashboard for contract management
 - Add event listeners for real-time updates
 - Implement pagination for asset lists
+- Upgrade frontend to use Ethers.js instead of Web3.js
+- Add deployment scripts using Hardhat
+- Implement gas optimization analysis tools
 
 ## Contributing
 

@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Solidity smart contracts for access management",
   "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "test": "npx hardhat test",
     "coverage": "npx hardhat coverage",

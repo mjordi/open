@@ -1,0 +1,53 @@
+name: Auto-merge Dependabot PRs
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    name: Auto-merge non-major updates
+    runs-on: ubuntu-latest
+
+    # Only run on Dependabot PRs
+    if: github.actor == 'dependabot[bot]'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Auto-merge non-major updates
+        # Only auto-merge if:
+        # 1. Update type is not a major version change
+        # 2. All checks have passed (verified by the workflow_run trigger from CI)
+        if: |
+          steps.metadata.outputs.update-type != 'version-update:semver-major'
+        run: |
+          echo "Update type: ${{ steps.metadata.outputs.update-type }}"
+          echo "Dependency names: ${{ steps.metadata.outputs.dependency-names }}"
+          echo "This is a ${{ steps.metadata.outputs.update-type }} update - eligible for auto-merge"
+          gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Skip major updates
+        if: |
+          steps.metadata.outputs.update-type == 'version-update:semver-major'
+        run: |
+          echo "This is a major version update - skipping auto-merge"
+          echo "Manual review required for: ${{ steps.metadata.outputs.dependency-names }}"

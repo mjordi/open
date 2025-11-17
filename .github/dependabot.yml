@@ -1,0 +1,28 @@
+version: 2
+updates:
+  # Enable version updates for npm
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Group all dependencies updates into a single PR
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+    # Allow Dependabot to open pull requests
+    open-pull-requests-limit: 10
+    # Add labels to PRs
+    labels:
+      - "dependencies"
+      - "automated"
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "github-actions"
+      - "dependencies"
+      - "automated"

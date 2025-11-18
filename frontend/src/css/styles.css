@@ -310,3 +310,123 @@ body {
 #event-log::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
+
+/* ==================== Explorer Links ==================== */
+
+.explorer-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.explorer-link:hover {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
+.explorer-link i {
+    font-size: 0.85em;
+    opacity: 0.7;
+}
+
+.explorer-link:hover i {
+    opacity: 1;
+}
+
+.tx-link code,
+.address-link code {
+    background-color: #f8f9fa;
+    padding: 0.15rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.875em;
+    color: inherit;
+}
+
+/* ==================== Transaction History ==================== */
+
+#tx-history-container {
+    scroll-behavior: smooth;
+}
+
+#tx-history-container .list-group-item {
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+}
+
+#tx-history-container .list-group-item:hover {
+    background-color: #f8f9fa;
+    border-left-color: var(--primary-color);
+}
+
+#tx-history-container .badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Transaction status indicators */
+.badge.bg-warning {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* Filter section styling */
+#tx-history-container + .card-body .bg-light {
+    background-color: #f8f9fa !important;
+}
+
+/* Custom scrollbar for transaction history */
+#tx-history-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+#tx-history-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+#tx-history-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+#tx-history-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Transaction list items */
+.tx-history-item {
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.tx-history-item:last-child {
+    border-bottom: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .explorer-link {
+        font-size: 0.875rem;
+    }
+
+    .tx-link code,
+    .address-link code {
+        font-size: 0.75em;
+    }
+
+    #tx-history-container .badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+}

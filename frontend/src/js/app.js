@@ -2,6 +2,24 @@
  * Access Management DApp - Modernized with ethers.js
  */
 
+// Import modules
+import { getExplorerConfig, hasExplorer } from './network-config.js';
+import {
+    createTxHashLink,
+    createAddressLink,
+    getTxExplorerUrl,
+    getAddressExplorerUrl,
+    truncateHash as truncateHashUtil
+} from './explorer-utils.js';
+import {
+    saveTransaction,
+    updateTransaction,
+    getAllTransactions,
+    createTransaction,
+    TxStatus,
+    TxType
+} from './transaction-storage.js';
+
 // Global state
 const AppState = {
     provider: null,
@@ -54,7 +72,7 @@ function showNotification(message, type = 'info', duration = 5000) {
 /**
  * Add event to log
  */
-function addEventToLog(eventName, message, type = 'info') {
+function addEventToLog(eventName, message, type = 'info', txHash = null, blockNumber = null) {
     const eventLog = document.getElementById('event-log');
 
     // Remove empty state message
@@ -70,6 +88,17 @@ function addEventToLog(eventName, message, type = 'info') {
     };
 
     const timestamp = new Date().toLocaleTimeString();
+
+    // Build additional info HTML
+    let additionalInfo = '';
+    if (txHash && AppState.network) {
+        const txLink = createTxHashLink(txHash, AppState.network.chainId);
+        additionalInfo += `<div class="mt-1"><small class="text-muted">Tx: ${txLink}</small></div>`;
+    }
+    if (blockNumber) {
+        additionalInfo += `<div class="mt-1"><small class="text-muted">Block: #${blockNumber.toLocaleString()}</small></div>`;
+    }
+
     const eventHTML = `
         <div class="list-group-item event-item fade-in">
             <div class="d-flex align-items-start">
@@ -82,6 +111,7 @@ function addEventToLog(eventName, message, type = 'info') {
                         <span class="event-timestamp">${timestamp}</span>
                     </div>
                     <div class="text-muted small">${message}</div>
+                    ${additionalInfo}
                 </div>
             </div>
         </div>
@@ -305,9 +335,14 @@ async function connectToContract(address) {
 function setupContractEvents() {
     if (!AppState.contract) return;
 
+    // Remove all existing listeners to prevent duplicates
+    AppState.contract.removeAllListeners();
+
     // AssetCreate event
-    AppState.contract.on('AssetCreate', (assetKey, assetDescription, account, event) => {
-        console.log('AssetCreate event:', { assetKey, assetDescription, account });
+    // In ethers.js v6, indexed parameters come first, then non-indexed
+    // Event signature: event AssetCreate(address indexed account, string indexed assetKey, string assetDescription)
+    AppState.contract.on('AssetCreate', (account, assetKey, assetDescription) => {
+        console.log('AssetCreate event:', { account, assetKey, assetDescription });
         addEventToLog(
             'Asset Created',
             `Asset "${assetKey}" (${assetDescription}) created by ${truncateAddress(account)}`,
@@ -318,8 +353,9 @@ function setupContractEvents() {
     });
 
     // RejectCreate event
-    AppState.contract.on('RejectCreate', (message, assetKey, account, event) => {
-        console.log('RejectCreate event:', { message, assetKey, account });
+    // Event signature: event RejectCreate(address indexed account, string indexed assetKey, string message)
+    AppState.contract.on('RejectCreate', (account, assetKey, message) => {
+        console.log('RejectCreate event:', { account, assetKey, message });
         addEventToLog(
             'Asset Creation Rejected',
             `${message} - Serial: ${assetKey}, Owner: ${truncateAddress(account)}`,
@@ -328,8 +364,9 @@ function setupContractEvents() {
     });
 
     // AuthorizationCreate event
-    AppState.contract.on('AuthorizationCreate', (assetKey, account, authorizationRole, event) => {
-        console.log('AuthorizationCreate event:', { assetKey, account, authorizationRole });
+    // Event signature: event AuthorizationCreate(address indexed account, string indexed assetKey, string authorizationRole)
+    AppState.contract.on('AuthorizationCreate', (account, assetKey, authorizationRole) => {
+        console.log('AuthorizationCreate event:', { account, assetKey, authorizationRole });
         addEventToLog(
             'Authorization Granted',
             `Role "${authorizationRole}" granted for asset "${assetKey}" to ${truncateAddress(account)}`,
@@ -339,8 +376,9 @@ function setupContractEvents() {
     });
 
     // AuthorizationRemove event
-    AppState.contract.on('AuthorizationRemove', (assetKey, account, event) => {
-        console.log('AuthorizationRemove event:', { assetKey, account });
+    // Event signature: event AuthorizationRemove(address indexed account, string indexed assetKey)
+    AppState.contract.on('AuthorizationRemove', (account, assetKey) => {
+        console.log('AuthorizationRemove event:', { account, assetKey });
         addEventToLog(
             'Authorization Revoked',
             `Authorization removed for asset "${assetKey}" from ${truncateAddress(account)}`,
@@ -350,8 +388,9 @@ function setupContractEvents() {
     });
 
     // AccessLog event
-    AppState.contract.on('AccessLog', (assetKey, account, accessGranted, event) => {
-        console.log('AccessLog event:', { assetKey, account, accessGranted });
+    // Event signature: event AccessLog(address indexed account, string indexed assetKey, bool accessGranted)
+    AppState.contract.on('AccessLog', (account, assetKey, accessGranted) => {
+        console.log('AccessLog event:', { account, assetKey, accessGranted });
         if (accessGranted) {
             addEventToLog(
                 'Access Granted',
@@ -611,12 +650,52 @@ async function deployContract(e) {
 
         // Deploy
         const contract = await factory.deploy();
+
+        // Get deployment transaction
+        const deployTx = contract.deploymentTransaction();
+
+        if (deployTx) {
+            // Save transaction to history
+            const txRecord = createTransaction({
+                hash: deployTx.hash,
+                type: TxType.DEPLOY,
+                status: TxStatus.PENDING,
+                from: AppState.userAddress,
+                to: null,
+                chainId: AppState.network.chainId,
+                description: 'Deploying AccessManagement contract',
+                metadata: {}
+            });
+            saveTransaction(txRecord);
+
+            showNotification('Deployment transaction sent. Waiting for confirmation...', 'info');
+            addEventToLog('Deployment Sent', 'Waiting for contract deployment...', 'info', deployTx.hash);
+        }
+
         await contract.waitForDeployment();
 
         const address = await contract.getAddress();
 
-        showNotification(`Contract deployed successfully at ${address}`, 'success');
-        addEventToLog('Contract Deployed', `New contract deployed at ${address}`, 'success');
+        // Update transaction if we have the hash
+        if (deployTx) {
+            const receipt = await AppState.provider.getTransactionReceipt(deployTx.hash);
+            if (receipt) {
+                updateTransaction(deployTx.hash, {
+                    status: TxStatus.CONFIRMED,
+                    blockNumber: receipt.blockNumber,
+                    contractAddress: address
+                });
+            }
+
+            showNotification(`Contract deployed successfully at ${address}`, 'success');
+            addEventToLog('Contract Deployed', `New contract deployed at ${address}`, 'success', deployTx.hash, receipt?.blockNumber);
+
+            // Dispatch custom event for transaction history update
+            window.dispatchEvent(new CustomEvent('transactionUpdate'));
+        } else {
+            showNotification(`Contract deployed successfully at ${address}`, 'success');
+            addEventToLog('Contract Deployed', `New contract deployed at ${address}`, 'success');
+        }
 
         // Update contract address input
         document.getElementById('contract-address').value = address;
@@ -672,16 +751,42 @@ async function addAsset(e) {
 
         const tx = await AppState.contract.newAsset(assetKey, assetDescription);
 
+        // Save transaction to history
+        const txRecord = createTransaction({
+            hash: tx.hash,
+            type: TxType.ADD_ASSET,
+            status: TxStatus.PENDING,
+            from: AppState.userAddress,
+            to: AppState.contractAddress,
+            contractAddress: AppState.contractAddress,
+            chainId: AppState.network.chainId,
+            description: `Creating asset "${assetKey}"`,
+            metadata: { assetKey, assetDescription }
+        });
+        saveTransaction(txRecord);
+
         showNotification('Transaction sent. Waiting for confirmation...', 'info');
-        addEventToLog('Transaction Sent', `Creating asset "${assetKey}"`, 'info');
+        addEventToLog('Transaction Sent', `Creating asset "${assetKey}"`, 'info', tx.hash);
 
         const receipt = await tx.wait();
 
         if (receipt.status === 1) {
+            // Update transaction status
+            updateTransaction(tx.hash, {
+                status: TxStatus.CONFIRMED,
+                blockNumber: receipt.blockNumber
+            });
+
             showNotification('Asset created successfully!', 'success');
+            addEventToLog('Asset Created', `Asset "${assetKey}" created successfully`, 'success', tx.hash, receipt.blockNumber);
+
+            // Dispatch custom event for transaction history update
+            window.dispatchEvent(new CustomEvent('transactionUpdate'));
+
             e.target.reset();
             e.target.classList.remove('was-validated');
         } else {
+            updateTransaction(tx.hash, { status: TxStatus.FAILED });
             throw new Error('Transaction failed');
         }
 
@@ -740,16 +845,42 @@ async function addAuthorization(e) {
 
         const tx = await AppState.contract.addAuthorization(assetKey, address, role);
 
+        // Save transaction to history
+        const txRecord = createTransaction({
+            hash: tx.hash,
+            type: TxType.GRANT_ACCESS,
+            status: TxStatus.PENDING,
+            from: AppState.userAddress,
+            to: AppState.contractAddress,
+            contractAddress: AppState.contractAddress,
+            chainId: AppState.network.chainId,
+            description: `Adding ${role} authorization for ${truncateAddress(address)}`,
+            metadata: { assetKey, address, role }
+        });
+        saveTransaction(txRecord);
+
         showNotification('Transaction sent. Waiting for confirmation...', 'info');
-        addEventToLog('Transaction Sent', `Adding ${role} authorization for ${truncateAddress(address)}`, 'info');
+        addEventToLog('Transaction Sent', `Adding ${role} authorization for ${truncateAddress(address)}`, 'info', tx.hash);
 
         const receipt = await tx.wait();
 
         if (receipt.status === 1) {
+            // Update transaction status
+            updateTransaction(tx.hash, {
+                status: TxStatus.CONFIRMED,
+                blockNumber: receipt.blockNumber
+            });
+
             showNotification('Authorization added successfully!', 'success');
+            addEventToLog('Authorization Added', `${role} granted to ${truncateAddress(address)}`, 'success', tx.hash, receipt.blockNumber);
+
+            // Dispatch custom event for transaction history update
+            window.dispatchEvent(new CustomEvent('transactionUpdate'));
+
             e.target.reset();
             e.target.classList.remove('was-validated');
         } else {
+            updateTransaction(tx.hash, { status: TxStatus.FAILED });
             throw new Error('Transaction failed');
         }
 
@@ -838,13 +969,39 @@ async function accessAsset(e) {
 
         const tx = await AppState.contract.getAccess(assetKey);
 
+        // Save transaction to history
+        const txRecord = createTransaction({
+            hash: tx.hash,
+            type: TxType.ACCESS_REQUEST,
+            status: TxStatus.PENDING,
+            from: AppState.userAddress,
+            to: AppState.contractAddress,
+            contractAddress: AppState.contractAddress,
+            chainId: AppState.network.chainId,
+            description: `Requesting access to asset "${assetKey}"`,
+            metadata: { assetKey }
+        });
+        saveTransaction(txRecord);
+
         showNotification('Access request sent. Waiting for confirmation...', 'info');
+        addEventToLog('Access Request', `Requesting access to "${assetKey}"`, 'info', tx.hash);
 
         const receipt = await tx.wait();
 
         if (receipt.status === 1) {
+            // Update transaction status
+            updateTransaction(tx.hash, {
+                status: TxStatus.CONFIRMED,
+                blockNumber: receipt.blockNumber
+            });
+
             showNotification('Access request processed. Check event log for result.', 'success');
+            addEventToLog('Access Processed', `Access request for "${assetKey}" completed`, 'success', tx.hash, receipt.blockNumber);
+
+            // Dispatch custom event for transaction history update
+            window.dispatchEvent(new CustomEvent('transactionUpdate'));
         } else {
+            updateTransaction(tx.hash, { status: TxStatus.FAILED });
             throw new Error('Transaction failed');
         }
 
@@ -852,6 +1009,7 @@ async function accessAsset(e) {
         console.error('Failed to request access:', error);
         const errorMsg = error.reason || error.message;
         showNotification(`Failed to request access: ${errorMsg}`, 'error');
+        addEventToLog('Access Request Failed', errorMsg, 'error');
     } finally {
         setButtonLoading(button, false);
     }
@@ -896,16 +1054,42 @@ async function removeAuthorization(e) {
 
         const tx = await AppState.contract.removeAuthorization(assetKey, address);
 
+        // Save transaction to history
+        const txRecord = createTransaction({
+            hash: tx.hash,
+            type: TxType.REVOKE_ACCESS,
+            status: TxStatus.PENDING,
+            from: AppState.userAddress,
+            to: AppState.contractAddress,
+            contractAddress: AppState.contractAddress,
+            chainId: AppState.network.chainId,
+            description: `Removing authorization for ${truncateAddress(address)}`,
+            metadata: { assetKey, address }
+        });
+        saveTransaction(txRecord);
+
         showNotification('Transaction sent. Waiting for confirmation...', 'info');
-        addEventToLog('Transaction Sent', `Removing authorization for ${truncateAddress(address)}`, 'info');
+        addEventToLog('Transaction Sent', `Removing authorization for ${truncateAddress(address)}`, 'info', tx.hash);
 
         const receipt = await tx.wait();
 
         if (receipt.status === 1) {
+            // Update transaction status
+            updateTransaction(tx.hash, {
+                status: TxStatus.CONFIRMED,
+                blockNumber: receipt.blockNumber
+            });
+
             showNotification('Authorization removed successfully!', 'success');
+            addEventToLog('Authorization Removed', `Authorization revoked for ${truncateAddress(address)}`, 'success', tx.hash, receipt.blockNumber);
+
+            // Dispatch custom event for transaction history update
+            window.dispatchEvent(new CustomEvent('transactionUpdate'));
+
             e.target.reset();
             e.target.classList.remove('was-validated');
         } else {
+            updateTransaction(tx.hash, { status: TxStatus.FAILED });
             throw new Error('Transaction failed');
         }
 
@@ -916,6 +1100,127 @@ async function removeAuthorization(e) {
         addEventToLog('Remove Authorization Failed', errorMsg, 'error');
     } finally {
         setButtonLoading(button, false);
+    }
+}
+
+// ==================== Transaction History Management ====================
+
+/**
+ * Render transaction history
+ */
+function renderTransactionHistory(filters = { type: 'all', status: 'all' }) {
+    const container = document.getElementById('tx-history-container');
+    let transactions = getAllTransactions();
+
+    // Apply filters
+    if (filters.type !== 'all') {
+        transactions = transactions.filter(tx => tx.type === filters.type);
+    }
+    if (filters.status !== 'all') {
+        transactions = transactions.filter(tx => tx.status === filters.status);
+    }
+
+    // Show empty state if no transactions
+    if (transactions.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted py-5">
+                <i class="bi bi-inbox" style="font-size: 2.5rem;"></i>
+                <p class="mt-3">No transactions found</p>
+                <p class="small">Try adjusting your filters</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Build transaction list HTML
+    const txListHTML = transactions.map(tx => {
+        const statusBadge = getStatusBadge(tx.status);
+        const typeLabel = formatTxType(tx.type);
+        const timestamp = new Date(tx.timestamp).toLocaleString();
+        const txLink = AppState.network ? createTxHashLink(tx.hash, tx.chainId) : truncateHashUtil(tx.hash);
+        const blockInfo = tx.blockNumber ? `#${tx.blockNumber.toLocaleString()}` : 'Pending';
+
+        return `
+            <div class="list-group-item list-group-item-action">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center mb-2">
+                            ${statusBadge}
+                            <span class="badge bg-secondary ms-2">${typeLabel}</span>
+                        </div>
+                        <p class="mb-1">${tx.description}</p>
+                        <small class="text-muted">
+                            <div>Tx: ${txLink}</div>
+                            <div class="mt-1">Block: ${blockInfo} • ${timestamp}</div>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = `<div class="list-group list-group-flush">${txListHTML}</div>`;
+}
+
+/**
+ * Get status badge HTML
+ */
+function getStatusBadge(status) {
+    const badges = {
+        pending: '<span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split"></i> Pending</span>',
+        confirmed: '<span class="badge bg-success"><i class="bi bi-check-circle"></i> Confirmed</span>',
+        failed: '<span class="badge bg-danger"><i class="bi bi-x-circle"></i> Failed</span>'
+    };
+    return badges[status] || badges.pending;
+}
+
+/**
+ * Format transaction type for display
+ */
+function formatTxType(type) {
+    const labels = {
+        deploy: 'Deploy Contract',
+        add_asset: 'Add Asset',
+        grant_access: 'Grant Access',
+        revoke_access: 'Revoke Access',
+        access_request: 'Access Request',
+        other: 'Other'
+    };
+    return labels[type] || 'Unknown';
+}
+
+/**
+ * Export transaction history as JSON
+ */
+function exportTransactionHistory() {
+    const transactions = getAllTransactions();
+    if (transactions.length === 0) {
+        showNotification('No transactions to export', 'warning');
+        return;
+    }
+
+    const dataStr = JSON.stringify(transactions, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `transaction-history-${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showNotification('Transaction history exported successfully', 'success');
+}
+
+/**
+ * Clear transaction history
+ */
+function clearTransactionHistory() {
+    if (confirm('Are you sure you want to clear all transaction history? This cannot be undone.')) {
+        clearAllTransactions();
+        renderTransactionHistory();
+        showNotification('Transaction history cleared', 'info');
     }
 }
 
@@ -1005,6 +1310,38 @@ window.addEventListener('load', async () => {
                 No events yet. Interact with the contract to see activity.
             </div>
         `;
+    });
+
+    // Transaction history event listeners
+    renderTransactionHistory(); // Initial render
+
+    document.getElementById('filter-tx-type').addEventListener('change', (e) => {
+        const typeFilter = e.target.value;
+        const statusFilter = document.getElementById('filter-tx-status').value;
+        renderTransactionHistory({ type: typeFilter, status: statusFilter });
+    });
+
+    document.getElementById('filter-tx-status').addEventListener('change', (e) => {
+        const statusFilter = e.target.value;
+        const typeFilter = document.getElementById('filter-tx-type').value;
+        renderTransactionHistory({ type: typeFilter, status: statusFilter });
+    });
+
+    document.getElementById('reset-filters').addEventListener('click', () => {
+        document.getElementById('filter-tx-type').value = 'all';
+        document.getElementById('filter-tx-status').value = 'all';
+        renderTransactionHistory();
+    });
+
+    document.getElementById('export-tx').addEventListener('click', exportTransactionHistory);
+
+    document.getElementById('clear-tx-history').addEventListener('click', clearTransactionHistory);
+
+    // Listen for transaction updates
+    window.addEventListener('transactionUpdate', () => {
+        const typeFilter = document.getElementById('filter-tx-type').value;
+        const statusFilter = document.getElementById('filter-tx-status').value;
+        renderTransactionHistory({ type: typeFilter, status: statusFilter });
     });
 
     // Listen for account changes

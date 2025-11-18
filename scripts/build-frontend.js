@@ -57,6 +57,24 @@ fs.copyFileSync(
 console.log('✓ Copied app.js');
 
 fs.copyFileSync(
+    path.join(SRC_DIR, 'js/network-config.js'),
+    path.join(DIST_DIR, 'js/network-config.js')
+);
+console.log('✓ Copied network-config.js');
+
+fs.copyFileSync(
+    path.join(SRC_DIR, 'js/explorer-utils.js'),
+    path.join(DIST_DIR, 'js/explorer-utils.js')
+);
+console.log('✓ Copied explorer-utils.js');
+
+fs.copyFileSync(
+    path.join(SRC_DIR, 'js/transaction-storage.js'),
+    path.join(DIST_DIR, 'js/transaction-storage.js')
+);
+console.log('✓ Copied transaction-storage.js');
+
+fs.copyFileSync(
     path.join(SRC_DIR, 'generated/abi.js'),
     path.join(DIST_DIR, 'js/abi.js')
 );
@@ -84,5 +102,14 @@ htmlContent = htmlContent
     .replace('../src/generated/bytecode.js', 'js/bytecode.js');
 fs.writeFileSync(path.join(DIST_DIR, 'index.html'), htmlContent);
 console.log('✓ Updated paths in index.html');
+
+// Update module import paths in app.js for dist
+let appJsContent = fs.readFileSync(path.join(DIST_DIR, 'js/app.js'), 'utf8');
+appJsContent = appJsContent
+    .replace('./network-config.js', './network-config.js')
+    .replace('./explorer-utils.js', './explorer-utils.js')
+    .replace('./transaction-storage.js', './transaction-storage.js');
+fs.writeFileSync(path.join(DIST_DIR, 'js/app.js'), appJsContent);
+console.log('✓ Updated module paths in app.js');
 
 console.log('\n✓ Frontend built successfully in frontend/dist/');

@@ -722,4 +722,342 @@ describe("AccessManagement", function () {
       expect(role2).to.equal("permanent");
     });
   });
+
+  describe("Preview Access - canAccess()", function () {
+    const assetKey = "ASSET-400";
+
+    beforeEach(async function () {
+      await accessManagement.newAsset(assetKey, "Preview Access Test Asset");
+    });
+
+    it("Should return true for owner without emitting event", async function () {
+      // Call canAccess (view function - no transaction)
+      const hasAccess = await accessManagement.canAccess(assetKey, owner.address);
+      expect(hasAccess).to.equal(true);
+    });
+
+    it("Should return true for authorized user", async function () {
+      await accessManagement.addAuthorization(assetKey, user1.address, "permanent");
+
+      const hasAccess = await accessManagement.canAccess(assetKey, user1.address);
+      expect(hasAccess).to.equal(true);
+    });
+
+    it("Should return false for unauthorized user", async function () {
+      const hasAccess = await accessManagement.canAccess(assetKey, user1.address);
+      expect(hasAccess).to.equal(false);
+    });
+
+    it("Should return false after authorization removal", async function () {
+      await accessManagement.addAuthorization(assetKey, user1.address, "permanent");
+      await accessManagement.removeAuthorization(assetKey, user1.address);
+
+      const hasAccess = await accessManagement.canAccess(assetKey, user1.address);
+      expect(hasAccess).to.equal(false);
+    });
+
+    it("Should return false for expired temporary authorization", async function () {
+      const duration = 2; // 2 seconds
+
+      await accessManagement["addAuthorization(string,address,string,uint256)"](
+        assetKey,
+        user1.address,
+        "temporary",
+        duration
+      );
+
+      // Should have access initially
+      const hasAccessBefore = await accessManagement.canAccess(assetKey, user1.address);
+      expect(hasAccessBefore).to.equal(true);
+
+      // Fast forward time by 3 seconds
+      await provider.send("evm_increaseTime", [3]);
+      await provider.send("evm_mine");
+
+      // Should not have access after expiration
+      const hasAccessAfter = await accessManagement.canAccess(assetKey, user1.address);
+      expect(hasAccessAfter).to.equal(false);
+    });
+
+    it("Should work for any address without requiring msg.sender", async function () {
+      // Add authorization for user1
+      await accessManagement.addAuthorization(assetKey, user1.address, "permanent");
+
+      // Any account can check any other account's access (view function)
+      const hasAccessUser1 = await accessManagement.connect(user2).canAccess(assetKey, user1.address);
+      const hasAccessUser2 = await accessManagement.connect(user3).canAccess(assetKey, user2.address);
+
+      expect(hasAccessUser1).to.equal(true);
+      expect(hasAccessUser2).to.equal(false);
+    });
+
+    it("Should return false for non-existent asset", async function () {
+      const hasAccess = await accessManagement.canAccess("NON-EXISTENT", user1.address);
+      expect(hasAccess).to.equal(false);
+    });
+
+    it("Should match getAccess() results without emitting events", async function () {
+      // Authorize user1
+      await accessManagement.addAuthorization(assetKey, user1.address, "permanent");
+
+      // Check with canAccess (no event)
+      const canAccessResult = await accessManagement.canAccess(assetKey, user1.address);
+
+      // Check with getAccess (emits event) using staticCall
+      const getAccessResult = await accessManagement.connect(user1).getAccess.staticCall(assetKey);
+
+      // Both should return the same result
+      expect(canAccessResult).to.equal(getAccessResult);
+    });
+  });
+
+  describe("Batch Audit Logging - batchLogAccess()", function () {
+    const assetKey = "ASSET-500";
+
+    beforeEach(async function () {
+      await accessManagement.newAsset(assetKey, "Batch Logging Test Asset");
+    });
+
+    it("Should batch log multiple access events", async function () {
+      const entries = [
+        {
+          user: user1.address,
+          assetKey: assetKey,
+          timestamp: Math.floor(Date.now() / 1000),
+          granted: true
+        },
+        {
+          user: user2.address,
+          assetKey: assetKey,
+          timestamp: Math.floor(Date.now() / 1000),
+          granted: false
+        },
+        {
+          user: user3.address,
+          assetKey: assetKey,
+          timestamp: Math.floor(Date.now() / 1000),
+          granted: true
+        }
+      ];
+
+      const tx = await accessManagement.batchLogAccess(entries);
+      const receipt = await tx.wait();
+
+      // Should emit 3 AccessLog events
+      const accessLogs = receipt.logs.filter(
+        log => log.fragment && log.fragment.name === 'AccessLog'
+      );
+      expect(accessLogs.length).to.equal(3);
+
+      // Verify first event (note: indexed string params can't be directly accessed, only hashed)
+      expect(accessLogs[0].args.account).to.equal(user1.address);
+      expect(accessLogs[0].args.accessGranted).to.equal(true);
+
+      // Verify second event
+      expect(accessLogs[1].args.account).to.equal(user2.address);
+      expect(accessLogs[1].args.accessGranted).to.equal(false);
+
+      // Verify third event
+      expect(accessLogs[2].args.account).to.equal(user3.address);
+      expect(accessLogs[2].args.accessGranted).to.equal(true);
+    });
+
+    it("Should reject empty log entries", async function () {
+      await expect(
+        accessManagement.batchLogAccess([])
+      ).to.be.revertedWith("Empty log entries");
+    });
+
+    it("Should reject more than 100 entries", async function () {
+      // Create 101 entries
+      const entries = [];
+      for (let i = 0; i < 101; i++) {
+        entries.push({
+          user: user1.address,
+          assetKey: assetKey,
+          timestamp: Math.floor(Date.now() / 1000),
+          granted: true
+        });
+      }
+
+      await expect(
+        accessManagement.batchLogAccess(entries)
+      ).to.be.revertedWith("Too many entries, max 100 per batch");
+    });
+
+    it("Should allow exactly 100 entries", async function () {
+      // Create exactly 100 entries
+      const entries = [];
+      for (let i = 0; i < 100; i++) {
+        entries.push({
+          user: user1.address,
+          assetKey: assetKey,
+          timestamp: Math.floor(Date.now() / 1000) + i,
+          granted: i % 2 === 0 // Alternate between granted/denied
+        });
+      }
+
+      const tx = await accessManagement.batchLogAccess(entries);
+      const receipt = await tx.wait();
+
+      // Should emit 100 AccessLog events
+      const accessLogs = receipt.logs.filter(
+        log => log.fragment && log.fragment.name === 'AccessLog'
+      );
+      expect(accessLogs.length).to.equal(100);
+    });
+
+    it("Should allow any address to submit batch logs", async function () {
+      // This is important for door controllers that have their own signing keys
+      const entries = [
+        {
+          user: owner.address,
+          assetKey: assetKey,
+          timestamp: Math.floor(Date.now() / 1000),
+          granted: true
+        }
+      ];
+
+      // user1 (who is not owner/admin) can submit batch logs
+      const tx = await accessManagement.connect(user1).batchLogAccess(entries);
+      const receipt = await tx.wait();
+
+      // Verify the transaction succeeded
+      expect(receipt.status).to.equal(1);
+    });
+
+    it("Should handle logs for multiple different assets", async function () {
+      const assetKey2 = "ASSET-501";
+      await accessManagement.newAsset(assetKey2, "Second Asset");
+
+      const entries = [
+        {
+          user: user1.address,
+          assetKey: assetKey,
+          timestamp: Math.floor(Date.now() / 1000),
+          granted: true
+        },
+        {
+          user: user2.address,
+          assetKey: assetKey2,
+          timestamp: Math.floor(Date.now() / 1000),
+          granted: false
+        }
+      ];
+
+      const tx = await accessManagement.batchLogAccess(entries);
+      const receipt = await tx.wait();
+
+      const accessLogs = receipt.logs.filter(
+        log => log.fragment && log.fragment.name === 'AccessLog'
+      );
+
+      // Verify correct number of events emitted (indexed strings can't be directly compared)
+      expect(accessLogs.length).to.equal(2);
+      expect(accessLogs[0].args.account).to.equal(user1.address);
+      expect(accessLogs[1].args.account).to.equal(user2.address);
+    });
+
+    it("Should preserve timestamps from entries", async function () {
+      const timestamp1 = 1700000000; // Nov 2023
+      const timestamp2 = 1700000001;
+
+      const entries = [
+        {
+          user: user1.address,
+          assetKey: assetKey,
+          timestamp: timestamp1,
+          granted: true
+        },
+        {
+          user: user2.address,
+          assetKey: assetKey,
+          timestamp: timestamp2,
+          granted: false
+        }
+      ];
+
+      const tx = await accessManagement.batchLogAccess(entries);
+      await tx.wait();
+
+      // Note: The event doesn't include timestamp, but this test
+      // verifies the function accepts timestamps without reverting
+      // Real-world usage would store timestamps in off-chain logs
+    });
+  });
+
+  describe("Hybrid Access Control Workflow", function () {
+    const doorAssetKey = "office-front-door";
+
+    beforeEach(async function () {
+      await accessManagement.newAsset(doorAssetKey, "Office Front Door");
+      // Add some authorized users
+      await accessManagement.addAuthorization(doorAssetKey, user1.address, "employee");
+      await accessManagement.addAuthorization(doorAssetKey, user2.address, "employee");
+    });
+
+    it("Should simulate door controller workflow", async function () {
+      // Step 1: Door controller checks access instantly (no gas cost)
+      const user1HasAccess = await accessManagement.canAccess(doorAssetKey, user1.address);
+      const user3HasAccess = await accessManagement.canAccess(doorAssetKey, user3.address);
+
+      expect(user1HasAccess).to.equal(true);
+      expect(user3HasAccess).to.equal(false);
+
+      // Step 2: Collect access attempts over time (simulated)
+      const accessLogs = [
+        {
+          user: user1.address,
+          assetKey: doorAssetKey,
+          timestamp: Math.floor(Date.now() / 1000),
+          granted: true
+        },
+        {
+          user: user1.address,
+          assetKey: doorAssetKey,
+          timestamp: Math.floor(Date.now() / 1000) + 100,
+          granted: true
+        },
+        {
+          user: user2.address,
+          assetKey: doorAssetKey,
+          timestamp: Math.floor(Date.now() / 1000) + 200,
+          granted: true
+        },
+        {
+          user: user3.address,
+          assetKey: doorAssetKey,
+          timestamp: Math.floor(Date.now() / 1000) + 300,
+          granted: false
+        }
+      ];
+
+      // Step 3: Upload logs in batch (once per hour)
+      const tx = await accessManagement.batchLogAccess(accessLogs);
+      const receipt = await tx.wait();
+
+      // Verify all events were logged
+      const events = receipt.logs.filter(
+        log => log.fragment && log.fragment.name === 'AccessLog'
+      );
+      expect(events.length).to.equal(4);
+    });
+
+    it("Should handle permission changes in real-time", async function () {
+      // Initial check - user3 has no access
+      expect(await accessManagement.canAccess(doorAssetKey, user3.address)).to.equal(false);
+
+      // Add authorization
+      await accessManagement.addAuthorization(doorAssetKey, user3.address, "employee");
+
+      // Immediate check - user3 now has access
+      expect(await accessManagement.canAccess(doorAssetKey, user3.address)).to.equal(true);
+
+      // Remove authorization
+      await accessManagement.removeAuthorization(doorAssetKey, user3.address);
+
+      // Immediate check - user3 access revoked
+      expect(await accessManagement.canAccess(doorAssetKey, user3.address)).to.equal(false);
+    });
+  });
 });

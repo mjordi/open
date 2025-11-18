@@ -8,7 +8,7 @@ OPEN is a proof-of-concept application demonstrating how blockchain technology c
 
 ## Demo
 
-Live demo available at: [GitHub Pages](https://yourusername.github.io/open) *(update with your actual GitHub Pages URL)*
+Live demo: **https://mjordi.github.io/open**
 
 ## Installation
 
@@ -70,6 +70,33 @@ All actions are executed through MetaMask transactions on the blockchain.
 - **MetaMask Integration** - Seamless wallet connection for transaction signing
 - **Comprehensive Testing** - 87 tests covering all contract functionality
 
+## Project Structure
+
+```
+/
+├── contracts/              # Smart contracts (Solidity 0.8.20)
+│   ├── aaas.sol           # Main AccessManagement contract
+│   ├── AssetTracker.sol   # Asset tracking with UUID system
+│   └── RoleBasedAcl.sol   # Role-based access control
+├── test/                   # Comprehensive test suites (87 tests)
+│   ├── AccessManagement.test.js
+│   ├── AssetTracker.test.js
+│   └── RoleBasedAcl.test.js
+├── frontend/
+│   ├── public/            # Static assets
+│   │   └── index.html     # Web interface
+│   └── src/
+│       ├── js/app.js      # Main application logic
+│       ├── css/styles.css # Styling
+│       └── generated/     # Auto-generated from contracts
+├── scripts/               # Build and deployment scripts
+│   ├── generate-frontend-artifacts.js
+│   └── build-frontend.js
+├── docs/                  # Documentation
+├── .github/workflows/     # GitHub Actions CI/CD
+└── hardhat.config.js      # Hardhat configuration
+```
+
 ## Tech Stack / Built With
 
 **Smart Contracts:**
@@ -88,7 +115,9 @@ All actions are executed through MetaMask transactions on the blockchain.
 
 ## License
 
-[Add your license here - e.g., MIT, Apache 2.0, GPL-3.0]
+MIT License - see [LICENSE](LICENSE) file for details
+
+This project is licensed under the MIT License, allowing you to freely use, modify, and distribute this software for any purpose, including commercial applications, with proper attribution.
 
 ---
 

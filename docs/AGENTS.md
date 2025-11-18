@@ -32,7 +32,7 @@ The OPEN system implements a hierarchical access control model with multiple age
 
 **Key Characteristics**:
 - Ethereum address: Stored in `Asset.owner` field
-- Becomes owner by calling `newAsset()` function
+- Becomes owner by calling `newAsset()` function or receiving via `transferOwnership()`
 - Highest level of control over their specific asset
 
 **Capabilities**:
@@ -40,13 +40,14 @@ The OPEN system implements a hierarchical access control model with multiple age
 - Grant access to any Ethereum address (`addAuthorization()`)
 - Revoke access from any address (`removeAuthorization()`)
 - Assign any role (Admin, Permanent, Temporary)
+- Transfer asset ownership to another address (`transferOwnership()`)
+- Use batch operations for efficient authorization management
 - Automatic full access to their own assets
 - Cannot be removed from their own asset
 
 **Limitations**:
-- Only controls assets they create
+- Only controls assets they create or receive via transfer
 - Cannot modify or access other owners' assets (unless explicitly authorized)
-- Cannot transfer ownership (not implemented)
 
 **Smart Contract Reference**:
 - Owner assignment: `aaas.sol:34`
@@ -112,29 +113,31 @@ The OPEN system implements a hierarchical access control model with multiple age
 
 ### 5. Temporary User
 
-**Description**: An authorized agent with temporary access rights (though expiration is not yet enforced by the contract).
+**Description**: An authorized agent with time-limited temporary access rights that automatically expire.
 
 **Key Characteristics**:
 - Role assigned by Asset Owner or Admin
 - Role string: `"temporary"`
-- Intended for short-term or conditional access
+- **Time-limited access with automatic expiration** (implemented with duration parameter)
+- Requires expiration duration when assigned
 
 **Capabilities**:
-- Access the authorized asset (`getAccess()`)
+- Access the authorized asset (`getAccess()`) until expiration
 - Verify their role (`getAssetAuthorization()`)
-- View asset information
+- View asset information while access is valid
 
 **Limitations**:
 - Cannot grant or revoke access to others
 - Cannot modify asset properties
-- Can be removed by owner or admin
-- **Note**: Time-based expiration is not currently implemented in the smart contract
+- Can be removed by owner or admin before expiration
+- **Access automatically expires after specified duration**
+- Expired users cannot perform any actions on the asset
 
-**Smart Contract Reference**: `aaas.sol:46-54`
+**Smart Contract Reference**: `aaas.sol` (with expiration implementation)
 
 **Typical Use Case**: Contractor, temporary worker, guest user, or time-limited access scenarios.
 
-**Implementation Note**: The current contract version marks users as temporary but does not automatically revoke access after a time period. This would need to be implemented in a future version.
+**Implementation Note**: Temporary roles now enforce time-based expiration. When adding a temporary authorization, you must specify a duration (in seconds). Access is automatically revoked when `block.timestamp` exceeds the expiration time.
 
 ---
 
@@ -274,18 +277,26 @@ The OPEN system implements a hierarchical access control model with multiple age
 4. Verify you have the correct role for your needs
 5. Report any access issues immediately
 
+## Implemented Enhancements
+
+The following enhancements have been successfully implemented:
+
+1. ✅ **Ownership Transfer**: Asset ownership can be transferred to another address (see IMPROVEMENTS.md #13)
+2. ✅ **Time-Based Expiration**: Automatic expiration for temporary roles with duration parameter (see IMPROVEMENTS.md #5, #12)
+3. ✅ **Batch Operations**: Gas-efficient batch authorization management (see IMPROVEMENTS.md #14)
+
 ## Future Enhancements
 
 Potential improvements to the agent system:
 
-1. **Ownership Transfer**: Ability to transfer asset ownership to another address
-2. **Time-Based Expiration**: Automatic revocation for temporary roles
-3. **Multi-Signature Requirements**: Require multiple admins to approve critical actions
-4. **Role Hierarchies**: More granular permission levels
-5. **Delegation Limits**: Restrict what admins can do (e.g., cannot create other admins)
-6. **Access Request Workflow**: Users can request access, pending owner/admin approval
-7. **Audit Dashboard**: View all authorization changes and access attempts
-8. **Emergency Revocation**: Quick revocation of all access in case of security breach
+1. **Multi-Signature Requirements**: Require multiple admins to approve critical actions
+2. **Role Hierarchies**: More granular permission levels (e.g., read-only, write-only)
+3. **Role Enumeration**: Use Solidity enums instead of strings for role validation
+4. **Delegation Limits**: Restrict what admins can do (e.g., cannot create other admins)
+5. **Access Request Workflow**: Users can request access, pending owner/admin approval
+6. **Audit Dashboard**: View all authorization changes and access attempts
+7. **Emergency Revocation**: Quick revocation of all access in case of security breach
+8. **Role Templates**: Predefined role bundles for common use cases
 
 ## Smart Contract Integration
 
@@ -312,11 +323,36 @@ await contract.methods.addAuthorization(assetKey, userAddress, "admin").send({fr
 // Grant permanent access
 await contract.methods.addAuthorization(assetKey, userAddress, "permanent").send({from: ownerAddress});
 
-// Grant temporary access
-await contract.methods.addAuthorization(assetKey, userAddress, "temporary").send({from: ownerAddress});
+// Grant temporary access (with 7-day expiration)
+const duration = 7 * 24 * 60 * 60; // 7 days in seconds
+await contract.methods.addAuthorization(assetKey, userAddress, "temporary", duration).send({from: ownerAddress});
 
 // Revoke access
 await contract.methods.removeAuthorization(assetKey, userAddress).send({from: ownerAddress});
+
+// Transfer ownership
+await contract.methods.transferOwnership(assetKey, newOwnerAddress).send({from: ownerAddress});
+
+// Batch add authorizations
+await contract.methods.addAuthorizationBatch(
+    assetKey,
+    [addr1, addr2, addr3],
+    ["admin", "permanent", "permanent"]
+).send({from: ownerAddress});
+
+// Batch add authorizations with durations
+await contract.methods.addAuthorizationBatchWithDuration(
+    assetKey,
+    [addr1, addr2],
+    ["temporary", "temporary"],
+    [86400, 604800] // 1 day, 7 days in seconds
+).send({from: ownerAddress});
+
+// Batch remove authorizations
+await contract.methods.removeAuthorizationBatch(
+    assetKey,
+    [addr1, addr2, addr3]
+).send({from: ownerAddress});
 ```
 
 ## Events and Logging
@@ -327,6 +363,7 @@ All agent actions emit events that can be monitored:
 - **AuthorizationCreate**: When an agent gains access
 - **AuthorizationRemove**: When an agent loses access
 - **AccessLog**: When an agent attempts to access an asset
+- **OwnershipTransferred**: When asset ownership is transferred to a new owner
 
 These events provide an immutable audit trail of all agent activities in the system.
 

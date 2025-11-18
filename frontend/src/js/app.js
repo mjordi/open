@@ -335,9 +335,14 @@ async function connectToContract(address) {
 function setupContractEvents() {
     if (!AppState.contract) return;
 
+    // Remove all existing listeners to prevent duplicates
+    AppState.contract.removeAllListeners();
+
     // AssetCreate event
-    AppState.contract.on('AssetCreate', (assetKey, assetDescription, account, event) => {
-        console.log('AssetCreate event:', { assetKey, assetDescription, account });
+    // In ethers.js v6, indexed parameters come first, then non-indexed
+    // Event signature: event AssetCreate(address indexed account, string indexed assetKey, string assetDescription)
+    AppState.contract.on('AssetCreate', (account, assetKey, assetDescription) => {
+        console.log('AssetCreate event:', { account, assetKey, assetDescription });
         addEventToLog(
             'Asset Created',
             `Asset "${assetKey}" (${assetDescription}) created by ${truncateAddress(account)}`,
@@ -348,8 +353,9 @@ function setupContractEvents() {
     });
 
     // RejectCreate event
-    AppState.contract.on('RejectCreate', (message, assetKey, account, event) => {
-        console.log('RejectCreate event:', { message, assetKey, account });
+    // Event signature: event RejectCreate(address indexed account, string indexed assetKey, string message)
+    AppState.contract.on('RejectCreate', (account, assetKey, message) => {
+        console.log('RejectCreate event:', { account, assetKey, message });
         addEventToLog(
             'Asset Creation Rejected',
             `${message} - Serial: ${assetKey}, Owner: ${truncateAddress(account)}`,
@@ -358,8 +364,9 @@ function setupContractEvents() {
     });
 
     // AuthorizationCreate event
-    AppState.contract.on('AuthorizationCreate', (assetKey, account, authorizationRole, event) => {
-        console.log('AuthorizationCreate event:', { assetKey, account, authorizationRole });
+    // Event signature: event AuthorizationCreate(address indexed account, string indexed assetKey, string authorizationRole)
+    AppState.contract.on('AuthorizationCreate', (account, assetKey, authorizationRole) => {
+        console.log('AuthorizationCreate event:', { account, assetKey, authorizationRole });
         addEventToLog(
             'Authorization Granted',
             `Role "${authorizationRole}" granted for asset "${assetKey}" to ${truncateAddress(account)}`,
@@ -369,8 +376,9 @@ function setupContractEvents() {
     });
 
     // AuthorizationRemove event
-    AppState.contract.on('AuthorizationRemove', (assetKey, account, event) => {
-        console.log('AuthorizationRemove event:', { assetKey, account });
+    // Event signature: event AuthorizationRemove(address indexed account, string indexed assetKey)
+    AppState.contract.on('AuthorizationRemove', (account, assetKey) => {
+        console.log('AuthorizationRemove event:', { account, assetKey });
         addEventToLog(
             'Authorization Revoked',
             `Authorization removed for asset "${assetKey}" from ${truncateAddress(account)}`,
@@ -380,8 +388,9 @@ function setupContractEvents() {
     });
 
     // AccessLog event
-    AppState.contract.on('AccessLog', (assetKey, account, accessGranted, event) => {
-        console.log('AccessLog event:', { assetKey, account, accessGranted });
+    // Event signature: event AccessLog(address indexed account, string indexed assetKey, bool accessGranted)
+    AppState.contract.on('AccessLog', (account, assetKey, accessGranted) => {
+        console.log('AccessLog event:', { account, assetKey, accessGranted });
         if (accessGranted) {
             addEventToLog(
                 'Access Granted',
@@ -1000,6 +1009,7 @@ async function accessAsset(e) {
         console.error('Failed to request access:', error);
         const errorMsg = error.reason || error.message;
         showNotification(`Failed to request access: ${errorMsg}`, 'error');
+        addEventToLog('Access Request Failed', errorMsg, 'error');
     } finally {
         setButtonLoading(button, false);
     }

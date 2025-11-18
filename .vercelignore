@@ -13,9 +13,6 @@ artifacts
 cache
 coverage
 
-# Smart contracts (not needed for frontend deployment)
-contracts
-
 # Documentation
 *.md
 docs

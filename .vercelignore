@@ -15,7 +15,6 @@ coverage
 
 # Smart contracts (not needed for frontend deployment)
 contracts
-scripts
 
 # Documentation
 *.md

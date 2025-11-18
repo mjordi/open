@@ -7,6 +7,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,9 +28,26 @@ try {
     const artifactPath = path.join(ARTIFACTS_DIR, CONTRACT_FILE, `${CONTRACT_NAME}.json`);
 
     if (!fs.existsSync(artifactPath)) {
-        console.error(`Error: Contract artifact not found at ${artifactPath}`);
-        console.error('Please run "npm run compile" first');
-        process.exit(1);
+        console.log('Contract artifacts not found. Compiling contracts...');
+        try {
+            // Run Hardhat compilation with --force to ensure compilation happens
+            execSync('npx hardhat compile --force', {
+                stdio: 'inherit',
+                cwd: path.join(__dirname, '..')
+            });
+            console.log('✓ Contracts compiled successfully');
+        } catch (compileError) {
+            console.error('Error: Failed to compile contracts');
+            console.error('Please ensure Hardhat is properly configured and contracts are valid');
+            process.exit(1);
+        }
+
+        // Check again if artifact exists after compilation
+        if (!fs.existsSync(artifactPath)) {
+            console.error(`Error: Contract artifact still not found at ${artifactPath}`);
+            console.error('Please check your contract name and file path');
+            process.exit(1);
+        }
     }
 
     const artifact = JSON.parse(fs.readFileSync(artifactPath, 'utf8'));

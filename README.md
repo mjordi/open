@@ -30,7 +30,7 @@ npm install
 # Build the project (compiles contracts + generates frontend)
 npm run build
 
-# Run tests (87 comprehensive tests)
+# Run tests
 npm test
 
 # Serve the frontend locally
@@ -46,7 +46,7 @@ Navigate to `http://localhost:8000` and connect your MetaMask wallet.
 npm run compile    # Compile smart contracts
 npm run generate   # Generate frontend artifacts (ABI/bytecode)
 npm run build      # Full build (compile + generate + build frontend)
-npm test           # Run all 87 tests
+npm test           # Run all tests
 npm run serve      # Serve frontend on port 8000
 npm run clean      # Clean build artifacts
 ```
@@ -68,7 +68,7 @@ All actions are executed through MetaMask transactions on the blockchain.
 - **Access Verification** - Verify permissions in a tamper-proof, transparent manner
 - **Immutable Audit Trail** - All access attempts and changes logged on-chain
 - **MetaMask Integration** - Seamless wallet connection for transaction signing
-- **Comprehensive Testing** - 87 tests covering all contract functionality
+- **Comprehensive Testing** - Full test coverage for all contract functionality
 
 ## Project Structure
 
@@ -78,7 +78,7 @@ All actions are executed through MetaMask transactions on the blockchain.
 │   ├── aaas.sol           # Main AccessManagement contract
 │   ├── AssetTracker.sol   # Asset tracking with UUID system
 │   └── RoleBasedAcl.sol   # Role-based access control
-├── test/                   # Comprehensive test suites (87 tests)
+├── test/                   # Comprehensive test suites
 │   ├── AccessManagement.test.js
 │   ├── AssetTracker.test.js
 │   └── RoleBasedAcl.test.js
@@ -111,13 +111,11 @@ All actions are executed through MetaMask transactions on the blockchain.
 
 **Testing:**
 - Hardhat + Chai + Ethers.js v6
-- 87 comprehensive tests across 3 contracts
+- Comprehensive test coverage for all contracts
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details
-
-This project is licensed under the MIT License, allowing you to freely use, modify, and distribute this software for any purpose, including commercial applications, with proper attribution.
+[MIT](https://choosealicense.com/licenses/mit/) - see [LICENSE](LICENSE) file for details
 
 ---
 

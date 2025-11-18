@@ -277,14 +277,6 @@ The OPEN system implements a hierarchical access control model with multiple age
 4. Verify you have the correct role for your needs
 5. Report any access issues immediately
 
-## Implemented Enhancements
-
-The following enhancements have been successfully implemented:
-
-1. ✅ **Ownership Transfer**: Asset ownership can be transferred to another address (see IMPROVEMENTS.md #13)
-2. ✅ **Time-Based Expiration**: Automatic expiration for temporary roles with duration parameter (see IMPROVEMENTS.md #5, #12)
-3. ✅ **Batch Operations**: Gas-efficient batch authorization management (see IMPROVEMENTS.md #14)
-
 ## Future Enhancements
 
 Potential improvements to the agent system:

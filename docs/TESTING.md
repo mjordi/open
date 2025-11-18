@@ -4,17 +4,15 @@ This document outlines the testing strategy and procedures for the OPEN blockcha
 
 ## Overview
 
-The project includes comprehensive automated testing for all smart contracts using Hardhat, Chai, and Ethers.js. All 87 tests pass consistently, covering functionality, edge cases, and error handling.
+The project includes comprehensive automated testing for all smart contracts using Hardhat, Chai, and Ethers.js.
 
 ## Test Suite Overview
 
-### Total Tests: 87 (100% passing)
-
-| Contract | Tests | Coverage |
-|----------|-------|----------|
-| AccessManagement | 32 | Asset creation, authorization management, access control, edge cases |
-| AssetTracker | 22 | Asset creation, transfers, ownership verification, edge cases |
-| RoleBasedAcl | 33 | Role assignment, unassignment, access control, modifiers |
+| Contract | Coverage |
+|----------|----------|
+| AccessManagement | Asset creation, authorization management, access control, edge cases |
+| AssetTracker | Asset creation, transfers, ownership verification, edge cases |
+| RoleBasedAcl | Role assignment, unassignment, access control, modifiers |
 
 ## Running Tests
 
@@ -34,24 +32,24 @@ npx hardhat test
     ✓ Should create a new asset successfully
     ✓ Should allow owner to add authorization
     ✓ Should grant access to authorized user
-    ... (32 tests total)
+    ...
 
-  AssetTracker
+  AssetTraker
     ✓ Should create a new asset successfully
     ✓ Should transfer asset successfully
-    ... (22 tests total)
+    ...
 
   RoleBasedAcl
     ✓ Should allow creator to assign roles
     ✓ Should correctly identify assigned roles
-    ... (33 tests total)
+    ...
 
-  87 passing (5s)
+  XX passing (Xs)
 ```
 
 ## Test Coverage by Contract
 
-### AccessManagement Tests (32 tests)
+### AccessManagement Tests
 
 **Asset Creation**:
 - Creates new assets successfully
@@ -78,7 +76,7 @@ npx hardhat test
 - AuthorizationRemove events
 - AccessLog events
 
-### AssetTracker Tests (22 tests)
+### AssetTracker Tests
 
 **Asset Creation**:
 - Creates assets with UUID system
@@ -98,7 +96,7 @@ npx hardhat test
 - Returns false for non-owners
 - Handles non-existent assets
 
-### RoleBasedAcl Tests (33 tests)
+### RoleBasedAcl Tests
 
 **Role Assignment**:
 - Creator can assign roles
@@ -122,7 +120,7 @@ npx hardhat test
 ### Before Committing Code
 
 1. **Run All Tests**: Always run `npm test` before committing
-2. **Verify 100% Pass Rate**: All 87 tests must pass
+2. **Verify All Tests Pass**: Ensure all tests pass successfully
 3. **Check for Warnings**: Review console output for deprecation warnings
 4. **Update Tests**: Add tests for new functionality
 

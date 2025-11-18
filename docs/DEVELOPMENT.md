@@ -31,10 +31,7 @@ This document outlines the development practices and requirements for the OPEN b
 
 ### Current Testing Status
 
-The project has comprehensive automated testing with **87 tests** across all contracts:
-- **AccessManagement**: 32 tests
-- **AssetTracker**: 22 tests
-- **RoleBasedAcl**: 33 tests
+The project has comprehensive automated testing across all contracts.
 
 Run all tests with: `npm test`
 
@@ -78,7 +75,7 @@ The project includes comprehensive automated testing using Hardhat:
 
 #### Running Tests
 ```bash
-# Run all 87 tests
+# Run all tests
 npm test
 
 # Or directly with Hardhat
@@ -86,9 +83,9 @@ npx hardhat test
 ```
 
 #### Test Coverage
-- **AccessManagement**: 32 tests covering asset creation, authorization, access control, edge cases
-- **AssetTracker**: 22 tests covering asset creation, transfers, ownership verification
-- **RoleBasedAcl**: 33 tests covering role assignment, unassignment, access control
+- **AccessManagement**: Asset creation, authorization, access control, edge cases
+- **AssetTracker**: Asset creation, transfers, ownership verification
+- **RoleBasedAcl**: Role assignment, unassignment, access control
 
 #### Test Structure Example
 ```javascript

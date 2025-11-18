@@ -8,6 +8,11 @@
   },
   "scripts": {
     "test": "npx hardhat test",
+    "test:frontend": "vitest run",
+    "test:frontend:watch": "vitest",
+    "test:frontend:ui": "vitest --ui",
+    "test:frontend:coverage": "vitest run --coverage",
+    "test:all": "npm run test && npm run test:frontend",
     "compile": "npx hardhat compile",
     "generate": "node scripts/generate-frontend-artifacts.js",
     "build": "npm run compile && npm run generate && node scripts/build-frontend.js",
@@ -16,7 +21,11 @@
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.1",
-    "hardhat": "^3.0.15"
+    "@vitest/ui": "^4.0.10",
+    "happy-dom": "^20.0.10",
+    "hardhat": "^3.0.15",
+    "jsdom": "^27.2.0",
+    "vitest": "^4.0.10"
   },
   "overrides": {
     "glob": ">=11.1.0"

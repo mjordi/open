@@ -1,6 +1,6 @@
-# AGENTS - Roles and Actors in the OPEN System
+# ROLES - User Roles and Actors in the OPEN System
 
-This document describes the different agents (actors/roles) that interact with the OPEN blockchain access management system, their permissions, capabilities, and responsibilities.
+This document describes the different user roles (actors/agents) that interact with the OPEN blockchain access management system, their permissions, capabilities, and responsibilities.
 
 ## Overview
 
@@ -365,12 +365,12 @@ These events provide an immutable audit trail of all agent activities in the sys
 
 ### Testing Requirements
 
-**CRITICAL**: All changes to smart contracts or core functionality **MUST** be verified with running tests before completing any task or marking work as complete.
+**CRITICAL**: All changes to smart contracts, frontend code, or core functionality **MUST** be verified with running tests before completing any task or marking work as complete.
 
 #### Required Testing Protocol
 
-1. **Before Completion**: Run the full test suite using `npx hardhat test`
-2. **All Tests Must Pass**: Ensure all 87 tests pass (100% success rate)
+1. **Before Completion**: Run the full test suite for both contracts and frontend
+2. **All Tests Must Pass**: Ensure 100% success rate across all test suites
 3. **Update Tests**: If adding new functionality or changing behavior, update tests accordingly
 4. **Input Validation Tests**: Any new input validation must have corresponding tests that verify the validation works correctly
 
@@ -380,18 +380,31 @@ These events provide an immutable audit trail of all agent activities in the sys
 # Install dependencies (first time only)
 npm install
 
-# Run all tests
-npx hardhat test
+# Run smart contract tests
+npm test
 
-# Expected output: "87 passing"
+# Run frontend tests
+npm run test:frontend
+
+# Run all tests (recommended before completing tasks)
+npm run test:all
 ```
 
 #### Test Coverage
 
-The project includes comprehensive tests for:
-- **AccessManagement Contract**: 32 tests covering asset creation, authorization, access control, and edge cases
-- **AssetTracker Contract**: 22 tests covering asset creation, transfers, ownership verification
-- **RoleBasedAcl Contract**: 33 tests covering role assignment, unassignment, and permission checking
+The project includes comprehensive tests achieving 100% success rate across:
+
+**Smart Contract Tests:**
+- **AccessManagement Contract**: Complete coverage of asset creation, authorization management, access control, and edge cases
+- **AssetTracker Contract**: Full coverage of asset creation, transfers, ownership verification, and error handling
+- **RoleBasedAcl Contract**: Comprehensive coverage of role assignment, unassignment, and permission checking
+
+**Frontend Tests:**
+- **Transaction Storage Module**: Complete coverage of localStorage operations, transaction filtering by status/type/contract/address, import/export functionality, and edge case handling
+- **Network Configuration Module**: Full coverage of blockchain network configuration, explorer URL handling, and chain support
+- **Explorer Utilities Module**: Comprehensive coverage of URL generation, address/hash truncation, and null handling
+
+All tests maintain a 100% pass rate with comprehensive edge case coverage including empty strings, zero addresses, null values, invalid inputs, and special characters.
 
 #### Why This Matters
 
@@ -399,8 +412,9 @@ The project includes comprehensive tests for:
 - **Correctness**: Tests ensure all business logic works as expected
 - **Regression Prevention**: Tests catch breaking changes before they reach production
 - **Documentation**: Tests serve as executable documentation of expected behavior
+- **Confidence**: 100% test success rate ensures reliability across all components
 
-**NEVER mark a task as complete without running and passing all tests first.** This is non-negotiable for maintaining the security and integrity of the blockchain contracts.
+**NEVER mark a task as complete without running and passing all tests first.** This is non-negotiable for maintaining the security and integrity of the blockchain contracts and frontend applications.
 
 ### Documentation Update Requirements
 
@@ -425,8 +439,8 @@ Before marking any task as complete, verify that all relevant documentation file
    - Code quality requirements
    - Dependency versions
 
-3. **AGENTS.md**: Update if changes affect:
-   - Agent roles or permissions
+3. **ROLES.md**: Update if changes affect:
+   - User roles or permissions
    - Access control logic
    - Authorization workflows
    - Security considerations

@@ -1,175 +1,352 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Blockchain-based access management system">
     <meta name="author" content="">
     <link rel="icon" href="assets/icons/favicon.ico">
-    <title>OPEN</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <title>OPEN - Access Management</title>
+
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <!-- Custom Styles -->
     <link href="../src/css/styles.css" rel="stylesheet">
 </head>
 
 <body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm mb-4">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="#">
+                <img src="assets/images/logo_open_header.png" width="200" height="76" alt="OPEN Logo">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <span class="nav-link" id="network-badge">
+                            <i class="bi bi-circle-fill" id="network-indicator"></i>
+                            <span id="network-name">Disconnected</span>
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-link" id="account-info">
+                            <i class="bi bi-wallet2"></i>
+                            <span id="account-address">Not Connected</span>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
-    <div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom shadow-sm">
-        <h5 class="my-0 mr-md-auto font-weight-normal"><img src="assets/images/logo_open_header.png" width="200" height="76"></h5>
-        <nav class="my-2 my-md-0 mr-md-3">
-            <a class="p-2 text-dark" href="#">Test</a>
-        </nav>
-        <a class="btn btn-outline-primary" href="#">Sign up</a>
+    <!-- Notifications Container -->
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999">
+        <div id="notification-container"></div>
     </div>
 
-    <div class="pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center">
-        <h1 class="display-4">Solidity Access Management</h1>
-        <p class="lead">Add, check and remove access. Based on Blockchain.</p>
+    <!-- Header -->
+    <div class="container text-center mb-5">
+        <h1 class="display-4 fw-bold">Solidity Access Management</h1>
+        <p class="lead text-muted">Blockchain-based access control for your assets</p>
     </div>
+
+    <!-- Contract Configuration -->
+    <div class="container mb-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-gear"></i> Contract Configuration
+                </h5>
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-10">
+                        <label for="contract-address" class="form-label">Contract Address</label>
+                        <input type="text" class="form-control" id="contract-address"
+                               placeholder="0x..."
+                               value="0x1614c607e0e36d210196941b954f9e5128f3e0f5"
+                               aria-label="Smart contract address">
+                        <div class="form-text">Enter the deployed contract address or deploy a new one</div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-primary w-100" id="connect-contract">
+                            <i class="bi bi-plug"></i> Connect
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Actions -->
     <div class="container">
-        <div class="card-deck mb-2 text-center">
-            <div class="card mb-4 shadow-sm">
-                <div class="card-header">
-                    <h4 class="my-0 font-weight-normal">1) Deploy Smart Contract</h4>
-                </div>
-                <div class="card-body">
-                    <p>Needs to be done only once.</p>
-                    <form id="form_deploy">
-                        <button type="submit" class="btn btn-lg btn-block btn-primary">Submit</button>
-                    </form>
-                </div>
-            </div>
-            <div class="card mb-4 shadow-sm">
-                <div class="card-header">
-                    <h4 class="my-0 font-weight-normal">2) Add Asset</h4>
-                </div>
-                <div class="card-body">
-                    <form id="form_asset">
-                        <div class="form-group">
-                            <label for="assetKey">asset serial</label>
-                            <input type="text" class="form-control" id="assetKey" name="assetKey" value="123-456">
-                        </div>
-                        <div class="form-group">
-                            <label for="assetDescription">Asset Description</label>
-                            <input type="text" class="form-control" id="assetDescription" name="assetDescription" value="Front Door (Lock)">
-                        </div>
-                        <button type="submit" class="btn btn-lg btn-block btn-primary">Submit</button>
-                    </form>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
+            <!-- Deploy Contract -->
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-rocket-takeoff"></i> Deploy Contract
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">Deploy a new smart contract instance. Only needed once per deployment.</p>
+                        <form id="form_deploy">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <span class="btn-text">Deploy Contract</span>
+                                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
-            <div class="card mb-4 shadow-sm">
-                <div class="card-header">
-                    <h4 class="my-0 font-weight-normal">3) Add Authorization</h4>
+
+            <!-- Add Asset -->
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-plus-circle"></i> Add Asset
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="form_asset" class="needs-validation" novalidate>
+                            <div class="mb-3">
+                                <label for="assetKey" class="form-label">Asset Serial</label>
+                                <input type="text" class="form-control" id="assetKey" name="assetKey"
+                                       value="123-456" required aria-label="Asset serial number">
+                                <div class="invalid-feedback">Please provide an asset serial.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="assetDescription" class="form-label">Description</label>
+                                <input type="text" class="form-control" id="assetDescription"
+                                       name="assetDescription" value="Front Door (Lock)" required
+                                       aria-label="Asset description">
+                                <div class="invalid-feedback">Please provide a description.</div>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100">
+                                <span class="btn-text">Add Asset</span>
+                                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            </button>
+                        </form>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <form id="form_assign">
-                        <div class="form-group">
-                            <label for="assetKey_assing">asset serial</label>
-                            <input type="text" class="form-control" id="assetKey_assign" name="assetKey_assign" value="123-456">
-                        </div>
-                        <div class="form-group">
-                            <label for="address">address</label>
-                            <input type="text" class="form-control" id="address_assign" name="address_assign" value="0x46e2aB674C9a1F5A7846b22AcdBE268B85ce793f">
-                        </div>
-                        <div class="form-group">
-                            <label for="role_assign">role</label>
-                            <select id="role_assign" name="role_assign" class="form-control">
-                                <option selected>Choose...</option>
-                                <option>admin</option>
-                                <option>permenent</option>
-                                <option>temporary</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-lg btn-block btn-primary">Submit</button>
-                    </form>
+            </div>
+
+            <!-- Add Authorization -->
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-shield-plus"></i> Add Authorization
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="form_assign" class="needs-validation" novalidate>
+                            <div class="mb-3">
+                                <label for="assetKey_assign" class="form-label">Asset Serial</label>
+                                <input type="text" class="form-control" id="assetKey_assign"
+                                       name="assetKey_assign" value="123-456" required
+                                       aria-label="Asset serial number for authorization">
+                                <div class="invalid-feedback">Please provide an asset serial.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="address_assign" class="form-label">Wallet Address</label>
+                                <input type="text" class="form-control" id="address_assign"
+                                       name="address_assign"
+                                       value="0x46e2aB674C9a1F5A7846b22AcdBE268B85ce793f"
+                                       required pattern="^0x[a-fA-F0-9]{40}$"
+                                       aria-label="Ethereum wallet address">
+                                <div class="invalid-feedback">Please provide a valid Ethereum address.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="role_assign" class="form-label">Role</label>
+                                <select id="role_assign" name="role_assign" class="form-select" required
+                                        aria-label="Select authorization role">
+                                    <option value="" selected>Choose...</option>
+                                    <option value="admin">Admin</option>
+                                    <option value="permanent">Permanent</option>
+                                    <option value="temporary">Temporary</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a role.</div>
+                            </div>
+                            <button type="submit" class="btn btn-info w-100 text-white">
+                                <span class="btn-text">Grant Access</span>
+                                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Check Role -->
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-warning">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-search"></i> Check Role
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="form_isAssigned" class="needs-validation" novalidate>
+                            <div class="mb-3">
+                                <label for="assetKey_isAssigned" class="form-label">Asset Serial</label>
+                                <input type="text" class="form-control" id="assetKey_isAssigned"
+                                       name="assetKey" value="123-456" required
+                                       aria-label="Asset serial number to check">
+                                <div class="invalid-feedback">Please provide an asset serial.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="address_isAssigned" class="form-label">Wallet Address</label>
+                                <input type="text" class="form-control" id="address_isAssigned"
+                                       name="address"
+                                       value="0x46e2aB674C9a1F5A7846b22AcdBE268B85ce793f"
+                                       required pattern="^0x[a-fA-F0-9]{40}$"
+                                       aria-label="Ethereum wallet address to check">
+                                <div class="invalid-feedback">Please provide a valid Ethereum address.</div>
+                            </div>
+                            <button type="submit" class="btn btn-warning w-100">
+                                <span class="btn-text">Check Role</span>
+                                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Access Asset -->
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-unlock"></i> Access Asset
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="form_access" class="needs-validation" novalidate>
+                            <div class="mb-3">
+                                <label for="assetKey_access" class="form-label">Asset Serial</label>
+                                <input type="text" class="form-control" id="assetKey_access"
+                                       name="assetKey_access" value="123-456" required
+                                       aria-label="Asset serial number to access">
+                                <div class="invalid-feedback">Please provide an asset serial.</div>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <span class="btn-text">Request Access</span>
+                                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Remove Authorization -->
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-shield-minus"></i> Remove Authorization
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="form_unassign" class="needs-validation" novalidate>
+                            <div class="mb-3">
+                                <label for="assetKey_unassign" class="form-label">Asset Serial</label>
+                                <input type="text" class="form-control" id="assetKey_unassign"
+                                       name="assetKey_unassign" value="123-456" required
+                                       aria-label="Asset serial number to remove authorization">
+                                <div class="invalid-feedback">Please provide an asset serial.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="address_unassign" class="form-label">Wallet Address</label>
+                                <input type="text" class="form-control" id="address_unassign"
+                                       name="address_unassign"
+                                       value="0x46e2aB674C9a1F5A7846b22AcdBE268B85ce793f"
+                                       required pattern="^0x[a-fA-F0-9]{40}$"
+                                       aria-label="Ethereum wallet address to remove">
+                                <div class="invalid-feedback">Please provide a valid Ethereum address.</div>
+                            </div>
+                            <button type="submit" class="btn btn-danger w-100">
+                                <span class="btn-text">Revoke Access</span>
+                                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="card-deck mb-3 text-center">
-            <div class="card mb-4 shadow-sm">
-                <div class="card-header">
-                    <h4 class="my-0 font-weight-normal">4) Check Role</h4>
+
+        <!-- Assets Management Section -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-dark text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-list-ul"></i> Asset Management
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6>Registered Assets</h6>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="refresh-assets">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
                 </div>
-                <div class="card-body">
-                    <form id="form_isAssigned">
-                        <div class="form-group">
-                            <label for="assetKey_isAssigned">asset serial</label>
-                            <input type="text" class="form-control" id="assetKey_isAssigned" name="assetKey" value="123-456">
-                        </div>
-                        <div class="form-group">
-                            <label for="address_isAssigned">address</label>
-                            <input type="text" class="form-control" id="address_isAssigned" name="address" value="0x46e2aB674C9a1F5A7846b22AcdBE268B85ce793f">
-                        </div>
-                        <button type="submit" class="btn btn-lg btn-block btn-primary">Submit</button>
-                    </form>
+                <div id="assets-container">
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                        <p class="mt-2">Connect to a contract to view assets</p>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <div class="card mb-4 shadow-sm">
-                <div class="card-header">
-                    <h4 class="my-0 font-weight-normal">5) Access the Asset</h4>
-                </div>
-                <div class="card-body">
-                    <form id="form_access">
-
-                        <div class="form-group">
-                            <label for="assetKey_access">asset serial</label>
-                            <input type="text" class="form-control" id="assetKey_access" name="assetKey_access" value="123-456">
-                        </div>
-                        <button type="submit" class="btn btn-lg btn-block btn-primary">Submit</button>
-                    </form>
-                </div>
+        <!-- Event Log Section -->
+        <div class="card shadow-sm mb-5">
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-clock-history"></i> Event Log
+                </h5>
+                <button type="button" class="btn btn-sm btn-outline-light" id="clear-events">
+                    <i class="bi bi-trash"></i> Clear
+                </button>
             </div>
-
-            <div class="card mb-4 shadow-sm">
-                <div class="card-header">
-                    <h4 class="my-0 font-weight-normal">6) Remove Authorization</h4>
-                </div>
-                <div class="card-body">
-                    <form id="form_unassign">
-
-                        <div class="form-group">
-                            <label for="assetKey_unassign">asset serial</label>
-                            <input type="text" class="form-control" id="assetKey_unassign" name="assetKey_unassign"
-                                value="123-456">
-                        </div>
-                        <div class="form-group">
-                            <label for="address_unassign">address</label>
-                            <input type="text" class="form-control" id="address_unassign" name="address_unassign" value="0x46e2aB674C9a1F5A7846b22AcdBE268B85ce793f">
-                        </div>
-                        <button type="submit" class="btn btn-lg btn-block btn-primary">Submit</button>
-                    </form>
+            <div class="card-body p-0">
+                <div id="event-log" class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                    <div class="list-group-item text-center text-muted">
+                        No events yet. Interact with the contract to see activity.
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    <div id="log"></div>
 
+    <!-- Footer -->
+    <footer class="container text-center text-muted py-4 mb-5">
+        <p>Blockchain Access Management System</p>
+    </footer>
 
-    <!-- Bootstrap core JavaScript
-        ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
-        crossorigin="anonymous"></script>
-    <script>
-        window.jQuery || document.write('<script src="../../assets/js/vendor/jquery-slim.min.js"><\/script>')
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
-        crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
-        crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/holder/2.9.9/holder.min.js" integrity="sha512-O6R6IBONpEcZVYJAmSC+20vdsM07uFuGjFf0n/Zthm8sOFW+lAq/OK1WOL7khX7nJwkJR38+/lSeK71b1sCz0A==" crossorigin="anonymous"></script>
-    <script>
-        Holder.addTheme('thumb', {
-            bg: '#55595c',
-            fg: '#eceeef',
-            text: 'Thumbnail'
-        });
-    </script>
+    <!-- Bootstrap 5.3 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+            crossorigin="anonymous"></script>
+
+    <!-- Ethers.js -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
+
+    <!-- Contract artifacts -->
     <script src="../src/generated/bytecode.js"></script>
-    <script src="../src/js/app.js"></script>
     <script src="../src/generated/abi.js"></script>
 
+    <!-- App JavaScript -->
+    <script src="../src/js/app.js"></script>
 </body>
 
 </html>

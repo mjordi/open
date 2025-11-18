@@ -1,20 +1,312 @@
+/* Custom Styles for Access Management App */
+
+:root {
+    --primary-color: #0d6efd;
+    --success-color: #198754;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #0dcaf0;
+    --dark-color: #212529;
+}
+
 html {
-  font-size: 14px;
+    font-size: 14px;
 }
+
 @media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
+    html {
+        font-size: 16px;
+    }
 }
 
+body {
+    background-color: #f8f9fa;
+}
+
+/* Container */
 .container {
-  max-width: 960px;
+    max-width: 1200px;
 }
 
-.pricing-header {
-  max-width: 700px;
+/* Navigation */
+#network-indicator {
+    font-size: 0.5rem;
+    margin-right: 0.5rem;
+    color: #6c757d;
 }
 
-.card-deck .card {
-  min-width: 220px;
+#network-indicator.connected {
+    color: #198754;
+}
+
+#account-address {
+    font-family: 'Courier New', monospace;
+    font-size: 0.875rem;
+}
+
+/* Cards */
+.card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border: none;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.card-header {
+    font-weight: 600;
+    border-bottom: none;
+}
+
+/* Forms */
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Buttons */
+.btn {
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
+    position: relative;
+}
+
+.btn:disabled {
+    cursor: not-allowed;
+}
+
+.btn .spinner-border {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.15em;
+    margin-left: 0.5rem;
+}
+
+.btn.loading .btn-text {
+    opacity: 0.6;
+}
+
+.btn.loading .spinner-border {
+    display: inline-block !important;
+}
+
+/* Toast Notifications */
+.toast {
+    min-width: 300px;
+    border: none;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.toast-header {
+    font-weight: 600;
+    border-bottom: none;
+}
+
+.toast-success {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+.toast-error {
+    background-color: #f8d7da;
+    color: #842029;
+}
+
+.toast-info {
+    background-color: #cff4fc;
+    color: #055160;
+}
+
+.toast-warning {
+    background-color: #fff3cd;
+    color: #664d03;
+}
+
+/* Event Log */
+#event-log {
+    font-size: 0.9rem;
+}
+
+#event-log:empty::before {
+    content: "No events yet";
+    display: block;
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+}
+
+.event-item {
+    transition: background-color 0.3s ease;
+}
+
+.event-item:hover {
+    background-color: #f8f9fa;
+}
+
+.event-timestamp {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+.event-icon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.event-icon.success {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+.event-icon.error {
+    background-color: #f8d7da;
+    color: #842029;
+}
+
+.event-icon.info {
+    background-color: #cff4fc;
+    color: #055160;
+}
+
+/* Asset List */
+.asset-card {
+    border-left: 4px solid var(--primary-color);
+    transition: all 0.2s ease;
+}
+
+.asset-card:hover {
+    border-left-color: var(--success-color);
+    background-color: #f8f9fa;
+}
+
+.asset-owner {
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.authorization-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Loading States */
+.skeleton {
+    animation: skeleton-loading 1s linear infinite alternate;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .card-deck .card {
+        min-width: 100%;
+        margin-bottom: 1rem;
+    }
+
+    #account-address {
+        font-size: 0.7rem;
+    }
+
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .display-4 {
+        font-size: 2rem;
+    }
+}
+
+/* Utility Classes */
+.text-monospace {
+    font-family: 'Courier New', monospace;
+}
+
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Transaction Status */
+.tx-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.tx-status.pending {
+    background-color: #fff3cd;
+    color: #664d03;
+}
+
+.tx-status.confirmed {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+.tx-status.failed {
+    background-color: #f8d7da;
+    color: #842029;
+}
+
+/* Scrollbar Styling */
+#event-log::-webkit-scrollbar {
+    width: 8px;
+}
+
+#event-log::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+#event-log::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+#event-log::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }

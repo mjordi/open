@@ -1,454 +1,872 @@
-window.addEventListener('load', async () => {
+/**
+ * Access Management DApp - Modernized with ethers.js
+ */
 
-    //Detecting MetaMask
-    if (window.ethereum) {
-        window.web3 = new Web3(ethereum);
-        try {
-            // Request account access if needed
-            await ethereum.request({ method: 'eth_requestAccounts' });
-        } catch (error) {
-            // User denied account access...
-            var errorMsg = 'User denied account access!';
-            $('#log').text(errorMsg);
-            console.error(errorMsg, error);
-            return;
+// Global state
+const AppState = {
+    provider: null,
+    signer: null,
+    contract: null,
+    contractAddress: null,
+    userAddress: null,
+    network: null
+};
+
+// ==================== Utility Functions ====================
+
+/**
+ * Show toast notification
+ */
+function showNotification(message, type = 'info', duration = 5000) {
+    const container = document.getElementById('notification-container');
+    const toastId = `toast-${Date.now()}`;
+
+    const iconMap = {
+        success: 'check-circle-fill',
+        error: 'exclamation-triangle-fill',
+        warning: 'exclamation-circle-fill',
+        info: 'info-circle-fill'
+    };
+
+    const toastHTML = `
+        <div class="toast toast-${type} fade-in" id="${toastId}" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header toast-${type}">
+                <i class="bi bi-${iconMap[type]} me-2"></i>
+                <strong class="me-auto">${type.charAt(0).toUpperCase() + type.slice(1)}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        </div>
+    `;
+
+    container.insertAdjacentHTML('beforeend', toastHTML);
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, { autohide: true, delay: duration });
+    toast.show();
+
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+    });
+}
+
+/**
+ * Add event to log
+ */
+function addEventToLog(eventName, message, type = 'info') {
+    const eventLog = document.getElementById('event-log');
+
+    // Remove empty state message
+    const emptyState = eventLog.querySelector('.text-center');
+    if (emptyState) {
+        emptyState.remove();
+    }
+
+    const iconMap = {
+        success: 'check-circle',
+        error: 'x-circle',
+        info: 'info-circle'
+    };
+
+    const timestamp = new Date().toLocaleTimeString();
+    const eventHTML = `
+        <div class="list-group-item event-item fade-in">
+            <div class="d-flex align-items-start">
+                <div class="event-icon ${type} me-3">
+                    <i class="bi bi-${iconMap[type]}"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong>${eventName}</strong>
+                        <span class="event-timestamp">${timestamp}</span>
+                    </div>
+                    <div class="text-muted small">${message}</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    eventLog.insertAdjacentHTML('afterbegin', eventHTML);
+
+    // Keep only last 50 events
+    while (eventLog.children.length > 50) {
+        eventLog.lastChild.remove();
+    }
+}
+
+/**
+ * Truncate address for display
+ */
+function truncateAddress(address) {
+    if (!address) return 'Unknown';
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
+/**
+ * Set button loading state
+ */
+function setButtonLoading(button, loading) {
+    const spinner = button.querySelector('.spinner-border');
+    if (loading) {
+        button.classList.add('loading');
+        button.disabled = true;
+        spinner.classList.remove('d-none');
+    } else {
+        button.classList.remove('loading');
+        button.disabled = false;
+        spinner.classList.add('d-none');
+    }
+}
+
+/**
+ * Validate Ethereum address
+ */
+function isValidAddress(address) {
+    return /^0x[a-fA-F0-9]{40}$/.test(address);
+}
+
+// ==================== Blockchain Functions ====================
+
+/**
+ * Initialize wallet connection
+ */
+async function initializeWallet() {
+    try {
+        // Check for MetaMask/wallet
+        if (!window.ethereum) {
+            showNotification(
+                'MetaMask or another Web3 wallet is required. Please install one to continue.',
+                'error',
+                10000
+            );
+            return false;
         }
+
+        // Request account access
+        const accounts = await window.ethereum.request({
+            method: 'eth_requestAccounts'
+        });
+
+        if (!accounts || accounts.length === 0) {
+            showNotification('No accounts found. Please connect your wallet.', 'error');
+            return false;
+        }
+
+        // Create provider and signer
+        AppState.provider = new ethers.BrowserProvider(window.ethereum);
+        AppState.signer = await AppState.provider.getSigner();
+        AppState.userAddress = accounts[0];
+
+        // Get network info
+        const network = await AppState.provider.getNetwork();
+        AppState.network = {
+            chainId: Number(network.chainId),
+            name: getNetworkName(Number(network.chainId))
+        };
+
+        // Update UI
+        updateConnectionUI();
+
+        // Check for mainnet warning
+        if (AppState.network.chainId === 1) {
+            const proceed = confirm(
+                "⚠️ WARNING: You are on Ethereum Mainnet!\n\nTransactions will cost real ETH. Are you sure you want to continue?"
+            );
+            if (!proceed) {
+                showNotification('Application stopped - Connected to Mainnet', 'warning');
+                return false;
+            }
+        }
+
+        // Get and display balance
+        const balance = await AppState.provider.getBalance(AppState.userAddress);
+        const balanceInEth = ethers.formatEther(balance);
+        console.log(`Balance: ${balanceInEth} ETH`);
+
+        showNotification(
+            `Connected to ${AppState.network.name} as ${truncateAddress(AppState.userAddress)}`,
+            'success'
+        );
+
+        return true;
+    } catch (error) {
+        console.error('Failed to initialize wallet:', error);
+        showNotification(`Failed to connect wallet: ${error.message}`, 'error');
+        return false;
     }
-    // Legacy dapp browsers...
-    else if (window.web3) {
-        window.web3 = new Web3(web3.currentProvider);
+}
+
+/**
+ * Get network name from chain ID
+ */
+function getNetworkName(chainId) {
+    const networks = {
+        1: 'Mainnet',
+        3: 'Ropsten',
+        4: 'Rinkeby',
+        5: 'Goerli',
+        11155111: 'Sepolia',
+        1337: 'Local',
+        31337: 'Hardhat'
+    };
+    return networks[chainId] || `Unknown (${chainId})`;
+}
+
+/**
+ * Update connection UI
+ */
+function updateConnectionUI() {
+    const networkIndicator = document.getElementById('network-indicator');
+    const networkName = document.getElementById('network-name');
+    const accountAddress = document.getElementById('account-address');
+
+    if (AppState.userAddress) {
+        networkIndicator.classList.add('connected');
+        networkName.textContent = AppState.network.name;
+        accountAddress.textContent = truncateAddress(AppState.userAddress);
+    } else {
+        networkIndicator.classList.remove('connected');
+        networkName.textContent = 'Disconnected';
+        accountAddress.textContent = 'Not Connected';
     }
-    // Non-dapp browsers...
-    else {
-        var errorMsg = 'Non-Ethereum browser detected. You should consider trying MetaMask!';
-        $('#log').text(errorMsg);
-        console.log(errorMsg);
+}
+
+/**
+ * Connect to contract
+ */
+async function connectToContract(address) {
+    try {
+        if (!AppState.signer) {
+            showNotification('Please connect your wallet first', 'warning');
+            return false;
+        }
+
+        if (!isValidAddress(address)) {
+            showNotification('Invalid contract address', 'error');
+            return false;
+        }
+
+        // Create contract instance
+        AppState.contract = new ethers.Contract(
+            address,
+            contractABI, // From generated/abi.js
+            AppState.signer
+        );
+
+        AppState.contractAddress = address;
+
+        // Set up event listeners
+        setupContractEvents();
+
+        showNotification(`Connected to contract at ${truncateAddress(address)}`, 'success');
+        console.log('Contract connected:', address);
+
+        // Load assets
+        await loadAssets();
+
+        return true;
+    } catch (error) {
+        console.error('Failed to connect to contract:', error);
+        showNotification(`Failed to connect to contract: ${error.message}`, 'error');
+        return false;
+    }
+}
+
+/**
+ * Set up contract event listeners
+ */
+function setupContractEvents() {
+    if (!AppState.contract) return;
+
+    // AssetCreate event
+    AppState.contract.on('AssetCreate', (assetKey, assetDescription, account, event) => {
+        console.log('AssetCreate event:', { assetKey, assetDescription, account });
+        addEventToLog(
+            'Asset Created',
+            `Asset "${assetKey}" (${assetDescription}) created by ${truncateAddress(account)}`,
+            'success'
+        );
+        // Reload assets after a short delay
+        setTimeout(() => loadAssets(), 2000);
+    });
+
+    // RejectCreate event
+    AppState.contract.on('RejectCreate', (message, assetKey, account, event) => {
+        console.log('RejectCreate event:', { message, assetKey, account });
+        addEventToLog(
+            'Asset Creation Rejected',
+            `${message} - Serial: ${assetKey}, Owner: ${truncateAddress(account)}`,
+            'error'
+        );
+    });
+
+    // AuthorizationCreate event
+    AppState.contract.on('AuthorizationCreate', (assetKey, account, authorizationRole, event) => {
+        console.log('AuthorizationCreate event:', { assetKey, account, authorizationRole });
+        addEventToLog(
+            'Authorization Granted',
+            `Role "${authorizationRole}" granted for asset "${assetKey}" to ${truncateAddress(account)}`,
+            'success'
+        );
+        setTimeout(() => loadAssets(), 2000);
+    });
+
+    // AuthorizationRemove event
+    AppState.contract.on('AuthorizationRemove', (assetKey, account, event) => {
+        console.log('AuthorizationRemove event:', { assetKey, account });
+        addEventToLog(
+            'Authorization Revoked',
+            `Authorization removed for asset "${assetKey}" from ${truncateAddress(account)}`,
+            'info'
+        );
+        setTimeout(() => loadAssets(), 2000);
+    });
+
+    // AccessLog event
+    AppState.contract.on('AccessLog', (assetKey, account, accessGranted, event) => {
+        console.log('AccessLog event:', { assetKey, account, accessGranted });
+        if (accessGranted) {
+            addEventToLog(
+                'Access Granted',
+                `Access granted to ${truncateAddress(account)} for asset "${assetKey}"`,
+                'success'
+            );
+        } else {
+            addEventToLog(
+                'Access Denied',
+                `Access denied to ${truncateAddress(account)} for asset "${assetKey}"`,
+                'error'
+            );
+        }
+    });
+}
+
+/**
+ * Load and display all assets
+ */
+async function loadAssets() {
+    const container = document.getElementById('assets-container');
+
+    if (!AppState.contract) {
+        container.innerHTML = `
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                <p class="mt-2">Connect to a contract to view assets</p>
+            </div>
+        `;
         return;
     }
 
-    // Network Detection
     try {
-        const networkId = await web3.eth.net.getId();
-        const networkName = {
-            1: 'Mainnet',
-            3: 'Ropsten',
-            4: 'Rinkeby',
-            5: 'Goerli',
-            11155111: 'Sepolia',
-            1337: 'Local',
-            31337: 'Hardhat'
-        }[networkId] || 'Unknown';
+        // Show loading state
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 text-muted">Loading assets...</p>
+            </div>
+        `;
 
-        console.log("Connected to network:", networkName, "(ID:", networkId + ")");
+        const assetCount = await AppState.contract.getAssetCount();
+        const count = Number(assetCount);
 
-        if (networkId === 1) {
-            const proceed = confirm("⚠️ WARNING: You are on Ethereum Mainnet!\n\nTransactions will cost real ETH. Are you sure you want to continue?");
-            if (!proceed) {
-                $('#log').text('Application stopped - Connected to Mainnet');
-                return;
-            }
+        if (count === 0) {
+            container.innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                    <p class="mt-2">No assets registered yet</p>
+                </div>
+            `;
+            return;
         }
-    } catch (err) {
-        console.error("Error detecting network:", err);
+
+        const assets = [];
+        for (let i = 0; i < count; i++) {
+            const assetKey = await AppState.contract.getAssetAtIndex(i);
+            const assetData = await AppState.contract.getAsset(assetKey);
+
+            // Get authorization count
+            const authCount = await AppState.contract.getAssetAuthorizationCount(assetKey);
+
+            assets.push({
+                key: assetKey,
+                owner: assetData[0],
+                description: assetData[1],
+                initialized: assetData[2],
+                authorizationCount: Number(authCount)
+            });
+        }
+
+        // Render assets
+        let assetsHTML = '<div class="row g-3">';
+
+        for (const asset of assets) {
+            assetsHTML += `
+                <div class="col-12">
+                    <div class="card asset-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">
+                                        <i class="bi bi-key"></i> ${escapeHtml(asset.key)}
+                                    </h6>
+                                    <p class="text-muted mb-2">${escapeHtml(asset.description)}</p>
+                                    <div class="asset-owner">
+                                        <i class="bi bi-person"></i> Owner: ${truncateAddress(asset.owner)}
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-primary authorization-badge">
+                                        ${asset.authorizationCount} authorization${asset.authorizationCount !== 1 ? 's' : ''}
+                                    </span>
+                                    <button class="btn btn-sm btn-outline-secondary mt-2 view-auth-btn"
+                                            data-asset-key="${escapeHtml(asset.key)}">
+                                        <i class="bi bi-eye"></i> View
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        assetsHTML += '</div>';
+        container.innerHTML = assetsHTML;
+
+        // Add event listeners to view buttons
+        container.querySelectorAll('.view-auth-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const assetKey = e.currentTarget.dataset.assetKey;
+                await showAssetAuthorizations(assetKey);
+            });
+        });
+
+    } catch (error) {
+        console.error('Failed to load assets:', error);
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle"></i>
+                Failed to load assets: ${escapeHtml(error.message)}
+            </div>
+        `;
+    }
+}
+
+/**
+ * Show authorizations for an asset
+ */
+async function showAssetAuthorizations(assetKey) {
+    try {
+        const authCount = await AppState.contract.getAssetAuthorizationCount(assetKey);
+        const count = Number(authCount);
+
+        if (count === 0) {
+            showNotification(`No authorizations found for asset "${assetKey}"`, 'info');
+            return;
+        }
+
+        const authorizations = [];
+        for (let i = 0; i < count; i++) {
+            const address = await AppState.contract.getAssetAuthorizationAtIndex(assetKey, i);
+            const role = await AppState.contract.getAssetAuthorization(assetKey, address);
+            authorizations.push({ address, role });
+        }
+
+        let authHTML = `<strong>Authorizations for "${assetKey}":</strong><br><br>`;
+        authorizations.forEach(auth => {
+            authHTML += `<div class="mb-2">
+                <span class="badge bg-secondary">${auth.role}</span>
+                <code class="ms-2">${truncateAddress(auth.address)}</code>
+            </div>`;
+        });
+
+        // Show in notification
+        showNotification(authHTML, 'info', 10000);
+
+        // Also log to console with full details
+        console.table(authorizations);
+    } catch (error) {
+        console.error('Failed to load authorizations:', error);
+        showNotification(`Failed to load authorizations: ${error.message}`, 'error');
+    }
+}
+
+/**
+ * Escape HTML to prevent XSS
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ==================== Form Handlers ====================
+
+/**
+ * Deploy contract
+ */
+async function deployContract(e) {
+    e.preventDefault();
+    const button = e.target.querySelector('button[type="submit"]');
+
+    try {
+        setButtonLoading(button, true);
+
+        if (!AppState.signer) {
+            showNotification('Please connect your wallet first', 'warning');
+            return;
+        }
+
+        showNotification('Deploying contract... This may take a moment.', 'info');
+
+        // Create contract factory
+        const factory = new ethers.ContractFactory(
+            contractABI,
+            contractBytecode,
+            AppState.signer
+        );
+
+        // Deploy
+        const contract = await factory.deploy();
+        await contract.waitForDeployment();
+
+        const address = await contract.getAddress();
+
+        showNotification(`Contract deployed successfully at ${address}`, 'success');
+        addEventToLog('Contract Deployed', `New contract deployed at ${address}`, 'success');
+
+        // Update contract address input
+        document.getElementById('contract-address').value = address;
+
+        // Auto-connect to new contract
+        await connectToContract(address);
+
+    } catch (error) {
+        console.error('Deployment failed:', error);
+        showNotification(`Deployment failed: ${error.message}`, 'error');
+        addEventToLog('Deployment Failed', error.message, 'error');
+    } finally {
+        setButtonLoading(button, false);
+    }
+}
+
+/**
+ * Add asset
+ */
+async function addAsset(e) {
+    e.preventDefault();
+
+    if (!e.target.checkValidity()) {
+        e.target.classList.add('was-validated');
+        return;
     }
 
-    //Set User from Metamask
-    const accounts = await web3.eth.getAccounts();
-    var user1Address = accounts[0];
-    console.log("Metamask Account: " + user1Address);
+    const button = e.target.querySelector('button[type="submit"]');
+    const assetKey = document.getElementById('assetKey').value.trim();
+    const assetDescription = document.getElementById('assetDescription').value.trim();
+
     try {
-        const balance = await web3.eth.getBalance(user1Address);
-        console.log("Balance: " + web3.utils.fromWei(balance, "ether") + " ETH");
-    } catch (err) {
-        console.error("Error getting balance:", err);
-    }
+        setButtonLoading(button, true);
 
-    // Contract bytecode is loaded from contractBytecode.js
-
-    //Initiate Standard Smart Contract
-    var smartContract = web3.eth.contract(smartContractAbi);
-    var smartContractAddress = "0x1614c607e0e36d210196941b954f9e5128f3e0f5";
-    var smartContractInstance = smartContract.at(smartContractAddress);
-    console.log("Default Smart Contract Address: " + smartContractInstance.address);
-
-    //Deploy Smart Contract
-    $('#form_deploy').on('submit', async function (e) {
-        e.preventDefault();
-        try {
-            // Estimate gas for contract deployment
-            const gasEstimate = await web3.eth.estimateGas({
-                from: accounts[0],
-                data: contractBytecode
-            });
-            const gasWithBuffer = Math.floor(gasEstimate * 1.2); // Add 20% buffer
-            console.log(`Estimated gas: ${gasEstimate}, using: ${gasWithBuffer}`);
-
-            smartContractInstance = smartContract.new({
-                from: accounts[0],
-                data: contractBytecode,
-                gas: gasWithBuffer
-            }, function (error, contract) {
-                if (error) {
-                    console.error("Contract deployment failed:", error);
-                    alert("Failed to deploy contract: " + error.message);
-                    return;
-                }
-                console.log("Contract deployment transaction:", contract);
-                if (typeof contract.address !== 'undefined') {
-                    console.log('Contract mined! address: ' + contract.address + ' transactionHash: ' + contract.transactionHash);
-                    alert('Contract deployed at: ' + contract.address);
-                }
-            });
-        } catch (error) {
-            console.error("Error estimating gas:", error);
-            alert("Failed to estimate gas: " + error.message);
-        }
-    });
-
-    // Set up event watchers once at initialization (prevents memory leaks)
-    const assetCreateEvent = smartContractInstance.AssetCreate();
-    assetCreateEvent.watch(function (error, result) {
-        if (error) {
-            console.error("AssetCreate event error:", error);
+        if (!AppState.contract) {
+            showNotification('Please connect to a contract first', 'warning');
             return;
         }
-        console.log("The asset '" + result.args.assetKey + " / " + result.args.assetDescription + "' was created by " + result.args.account);
-    });
 
-    const rejectCreateEvent = smartContractInstance.RejectCreate();
-    rejectCreateEvent.watch(function (error, result) {
-        if (error) {
-            console.error("RejectCreate event error:", error);
-            return;
-        }
-        console.log(result.args.message + "Serial: " + result.args.assetKey + " / Owner: " + result.args.account);
-    });
+        const tx = await AppState.contract.newAsset(assetKey, assetDescription);
 
-    const authorizationCreateEvent = smartContractInstance.AuthorizationCreate();
-    authorizationCreateEvent.watch(function (error, result) {
-        if (error) {
-            console.error("AuthorizationCreate event error:", error);
-            return;
-        }
-        console.log("The role '" + result.args.authorizationRole + "' was added to the asset '" + result.args.assetKey + "' for " + result.args.account);
-    });
+        showNotification('Transaction sent. Waiting for confirmation...', 'info');
+        addEventToLog('Transaction Sent', `Creating asset "${assetKey}"`, 'info');
 
-    const authorizationRemoveEvent = smartContractInstance.AuthorizationRemove();
-    authorizationRemoveEvent.watch(function (error, result) {
-        if (error) {
-            console.error("AuthorizationRemove event error:", error);
-            return;
-        }
-        console.log("The role was removed from the asset '" + result.args.assetKey + "' for " + result.args.account);
-    });
+        const receipt = await tx.wait();
 
-    const accessLogEvent = smartContractInstance.AccessLog();
-    accessLogEvent.watch(function (error, result) {
-        if (error) {
-            console.error("AccessLog event error:", error);
-            return;
-        }
-        if (result.args.accessGranted) {
-            console.log("Access was granted to " + result.args.account + " for the Asset '" + result.args.assetKey + "'");
+        if (receipt.status === 1) {
+            showNotification('Asset created successfully!', 'success');
+            e.target.reset();
+            e.target.classList.remove('was-validated');
         } else {
-            console.log("Access was NOT granted to " + result.args.account + " for the Asset '" + result.args.assetKey + "'");
+            throw new Error('Transaction failed');
         }
-    });
 
-    //Add Asset
-    $('#form_asset').on('submit', async function (e) {
-        e.preventDefault();
-        const submitButton = $(this).find('button[type="submit"]');
-        const originalText = submitButton.text();
+    } catch (error) {
+        console.error('Failed to create asset:', error);
+        const errorMsg = error.reason || error.message;
+        showNotification(`Failed to create asset: ${errorMsg}`, 'error');
+        addEventToLog('Asset Creation Failed', errorMsg, 'error');
+    } finally {
+        setButtonLoading(button, false);
+    }
+}
 
-        try {
-            // Set loading state
-            submitButton.prop('disabled', true).text('Processing...');
+/**
+ * Add authorization
+ */
+async function addAuthorization(e) {
+    e.preventDefault();
 
-            console.log("Adding Asset to Smart Contract '" + smartContractInstance.address + "'... \n");
-
-            const txHash = await new Promise((resolve, reject) => {
-                smartContractInstance.newAsset($('#assetKey').val(), $('#assetDescription').val(), function (error, result) {
-                    if (error) {
-                        reject(error);
-                    } else {
-                        resolve(result);
-                    }
-                });
-            });
-
-            console.log("Asset creation transaction sent:", txHash);
-            submitButton.text('Waiting for confirmation...');
-
-            // Wait for transaction confirmation
-            const receipt = await waitForTransactionReceipt(txHash);
-
-            if (receipt && receipt.status) {
-                console.log("✓ Transaction confirmed in block:", receipt.blockNumber);
-                alert("✓ Asset created successfully!");
-            } else {
-                console.error("✗ Transaction failed");
-                alert("✗ Transaction failed. Please check the console for details.");
-            }
-        } catch (error) {
-            console.error("Failed to create asset:", error);
-            alert("Failed to create asset: " + error.message);
-        } finally {
-            // Reset button state
-            submitButton.prop('disabled', false).text(originalText);
-        }
-    });
-
-    //Add Authorization
-    $('#form_assign').on('submit', async function (e) {
-        e.preventDefault();
-        const submitButton = $(this).find('button[type="submit"]');
-        const originalText = submitButton.text();
-
-        try {
-            submitButton.prop('disabled', true).text('Processing...');
-
-            console.log("Assigning Role in Smart Contract '" + smartContractInstance.address + "'... \n");
-
-            const txHash = await new Promise((resolve, reject) => {
-                smartContractInstance.addAuthorization($('#assetKey_assign').val(), $('#address_assign').val(), $('#role_assign').val(), function (error, result) {
-                    if (error) {
-                        reject(error);
-                    } else {
-                        resolve(result);
-                    }
-                });
-            });
-
-            console.log("Authorization transaction sent:", txHash);
-            submitButton.text('Waiting for confirmation...');
-
-            const receipt = await waitForTransactionReceipt(txHash);
-
-            if (receipt && receipt.status) {
-                console.log("✓ Transaction confirmed in block:", receipt.blockNumber);
-                alert("✓ Authorization added successfully!");
-            } else {
-                console.error("✗ Transaction failed");
-                alert("✗ Transaction failed. Please check the console for details.");
-            }
-        } catch (error) {
-            console.error("Failed to add authorization:", error);
-            alert("Failed to add authorization: " + error.message);
-        } finally {
-            submitButton.prop('disabled', false).text(originalText);
-        }
-    });
-
-    //Check Role
-    $('#form_isAssigned').on('submit', function (e) {
-        e.preventDefault();
-        console.log("Checking Role in Smart Contract '" + smartContractInstance.address + "'... \n");
-        smartContractInstance.getAssetAuthorization($('#assetKey_isAssigned').val(), $('#address_isAssigned').val(), function (error, res) {
-            if (error) {
-                console.error("Failed to check authorization:", error);
-                alert("Failed to check authorization: " + error.message);
-                return;
-            }
-            console.log("Authorization role:", res);
-        });
-    });
-
-    //Access the Asset
-    $('#form_access').on('submit', function (e) {
-        e.preventDefault();
-        console.log("Try to access in Smart Contract '" + smartContractInstance.address + "'... \n");
-        smartContractInstance.getAccess($('#assetKey_access').val(), function (error, result) {
-            if (error) {
-                console.error("Failed to check access:", error);
-                alert("Failed to check access: " + error.message);
-                return;
-            }
-            console.log("Access check transaction sent:", result);
-        });
-    });
-
-    //Remove Authorization
-    $('#form_unassign').on('submit', async function (e) {
-        e.preventDefault();
-        const submitButton = $(this).find('button[type="submit"]');
-        const originalText = submitButton.text();
-
-        try {
-            submitButton.prop('disabled', true).text('Processing...');
-
-            console.log("Unassigning Role in Smart Contract '" + smartContractInstance.address + "'... \n");
-
-            const txHash = await new Promise((resolve, reject) => {
-                smartContractInstance.removeAuthorization($('#assetKey_unassign').val(), $('#address_unassign').val(), function (error, result) {
-                    if (error) {
-                        reject(error);
-                    } else {
-                        resolve(result);
-                    }
-                });
-            });
-
-            console.log("Remove authorization transaction sent:", txHash);
-            submitButton.text('Waiting for confirmation...');
-
-            const receipt = await waitForTransactionReceipt(txHash);
-
-            if (receipt && receipt.status) {
-                console.log("✓ Transaction confirmed in block:", receipt.blockNumber);
-                alert("✓ Authorization removed successfully!");
-            } else {
-                console.error("✗ Transaction failed");
-                alert("✗ Transaction failed. Please check the console for details.");
-            }
-        } catch (error) {
-            console.error("Failed to remove authorization:", error);
-            alert("Failed to remove authorization: " + error.message);
-        } finally {
-            submitButton.prop('disabled', false).text(originalText);
-        }
-    });
-
-    // Helper function to wait for transaction receipt
-    async function waitForTransactionReceipt(txHash, maxAttempts = 60) {
-        for (let i = 0; i < maxAttempts; i++) {
-            try {
-                const receipt = await web3.eth.getTransactionReceipt(txHash);
-                if (receipt) {
-                    return receipt;
-                }
-                // Wait 1 second before trying again
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            } catch (error) {
-                console.error("Error getting transaction receipt:", error);
-            }
-        }
-        console.warn("Transaction receipt not found after", maxAttempts, "attempts");
-        return null;
+    if (!e.target.checkValidity()) {
+        e.target.classList.add('was-validated');
+        return;
     }
 
-    // List all assets function
-    window.listAllAssets = async function() {
-        try {
-            console.log("Fetching all assets...");
-            const assetCount = await new Promise((resolve, reject) => {
-                smartContractInstance.getAssetCount(function (error, result) {
-                    if (error) reject(error);
-                    else resolve(result);
-                });
-            });
+    const button = e.target.querySelector('button[type="submit"]');
+    const assetKey = document.getElementById('assetKey_assign').value.trim();
+    const address = document.getElementById('address_assign').value.trim();
+    const role = document.getElementById('role_assign').value;
 
-            console.log(`Found ${assetCount} asset(s)`);
-            const assets = [];
+    try {
+        setButtonLoading(button, true);
 
-            for (let i = 0; i < assetCount; i++) {
-                const assetKey = await new Promise((resolve, reject) => {
-                    smartContractInstance.getAssetAtIndex(i, function (error, result) {
-                        if (error) reject(error);
-                        else resolve(result);
-                    });
-                });
+        if (!AppState.contract) {
+            showNotification('Please connect to a contract first', 'warning');
+            return;
+        }
 
-                const asset = await new Promise((resolve, reject) => {
-                    smartContractInstance.getAsset(assetKey, function (error, result) {
-                        if (error) reject(error);
-                        else resolve(result);
-                    });
-                });
+        if (!role || role === 'Choose...') {
+            showNotification('Please select a role', 'warning');
+            return;
+        }
 
-                assets.push({
-                    key: assetKey,
-                    owner: asset[0],
-                    description: asset[1],
-                    initialized: asset[2],
-                    authorizationCount: asset[3].toString()
-                });
+        const tx = await AppState.contract.addAuthorization(assetKey, address, role);
+
+        showNotification('Transaction sent. Waiting for confirmation...', 'info');
+        addEventToLog('Transaction Sent', `Adding ${role} authorization for ${truncateAddress(address)}`, 'info');
+
+        const receipt = await tx.wait();
+
+        if (receipt.status === 1) {
+            showNotification('Authorization added successfully!', 'success');
+            e.target.reset();
+            e.target.classList.remove('was-validated');
+        } else {
+            throw new Error('Transaction failed');
+        }
+
+    } catch (error) {
+        console.error('Failed to add authorization:', error);
+        const errorMsg = error.reason || error.message;
+        showNotification(`Failed to add authorization: ${errorMsg}`, 'error');
+        addEventToLog('Authorization Failed', errorMsg, 'error');
+    } finally {
+        setButtonLoading(button, false);
+    }
+}
+
+/**
+ * Check role
+ */
+async function checkRole(e) {
+    e.preventDefault();
+
+    if (!e.target.checkValidity()) {
+        e.target.classList.add('was-validated');
+        return;
+    }
+
+    const button = e.target.querySelector('button[type="submit"]');
+    const assetKey = document.getElementById('assetKey_isAssigned').value.trim();
+    const address = document.getElementById('address_isAssigned').value.trim();
+
+    try {
+        setButtonLoading(button, true);
+
+        if (!AppState.contract) {
+            showNotification('Please connect to a contract first', 'warning');
+            return;
+        }
+
+        const role = await AppState.contract.getAssetAuthorization(assetKey, address);
+
+        if (role && role !== '') {
+            showNotification(
+                `Role for ${truncateAddress(address)} on asset "${assetKey}": <strong>${role}</strong>`,
+                'success',
+                8000
+            );
+            addEventToLog('Role Check', `${truncateAddress(address)} has role "${role}" on asset "${assetKey}"`, 'info');
+        } else {
+            showNotification(
+                `No authorization found for ${truncateAddress(address)} on asset "${assetKey}"`,
+                'warning'
+            );
+            addEventToLog('Role Check', `No authorization found`, 'info');
+        }
+
+        console.log('Authorization role:', role);
+
+    } catch (error) {
+        console.error('Failed to check role:', error);
+        const errorMsg = error.reason || error.message;
+        showNotification(`Failed to check role: ${errorMsg}`, 'error');
+    } finally {
+        setButtonLoading(button, false);
+    }
+}
+
+/**
+ * Access asset
+ */
+async function accessAsset(e) {
+    e.preventDefault();
+
+    if (!e.target.checkValidity()) {
+        e.target.classList.add('was-validated');
+        return;
+    }
+
+    const button = e.target.querySelector('button[type="submit"]');
+    const assetKey = document.getElementById('assetKey_access').value.trim();
+
+    try {
+        setButtonLoading(button, true);
+
+        if (!AppState.contract) {
+            showNotification('Please connect to a contract first', 'warning');
+            return;
+        }
+
+        const tx = await AppState.contract.getAccess(assetKey);
+
+        showNotification('Access request sent. Waiting for confirmation...', 'info');
+
+        const receipt = await tx.wait();
+
+        if (receipt.status === 1) {
+            showNotification('Access request processed. Check event log for result.', 'success');
+        } else {
+            throw new Error('Transaction failed');
+        }
+
+    } catch (error) {
+        console.error('Failed to request access:', error);
+        const errorMsg = error.reason || error.message;
+        showNotification(`Failed to request access: ${errorMsg}`, 'error');
+    } finally {
+        setButtonLoading(button, false);
+    }
+}
+
+/**
+ * Remove authorization
+ */
+async function removeAuthorization(e) {
+    e.preventDefault();
+
+    if (!e.target.checkValidity()) {
+        e.target.classList.add('was-validated');
+        return;
+    }
+
+    const button = e.target.querySelector('button[type="submit"]');
+    const assetKey = document.getElementById('assetKey_unassign').value.trim();
+    const address = document.getElementById('address_unassign').value.trim();
+
+    try {
+        setButtonLoading(button, true);
+
+        if (!AppState.contract) {
+            showNotification('Please connect to a contract first', 'warning');
+            return;
+        }
+
+        const tx = await AppState.contract.removeAuthorization(assetKey, address);
+
+        showNotification('Transaction sent. Waiting for confirmation...', 'info');
+        addEventToLog('Transaction Sent', `Removing authorization for ${truncateAddress(address)}`, 'info');
+
+        const receipt = await tx.wait();
+
+        if (receipt.status === 1) {
+            showNotification('Authorization removed successfully!', 'success');
+            e.target.reset();
+            e.target.classList.remove('was-validated');
+        } else {
+            throw new Error('Transaction failed');
+        }
+
+    } catch (error) {
+        console.error('Failed to remove authorization:', error);
+        const errorMsg = error.reason || error.message;
+        showNotification(`Failed to remove authorization: ${errorMsg}`, 'error');
+        addEventToLog('Remove Authorization Failed', errorMsg, 'error');
+    } finally {
+        setButtonLoading(button, false);
+    }
+}
+
+// ==================== Event Listeners ====================
+
+window.addEventListener('load', async () => {
+    console.log('🚀 Access Management DApp Loading...');
+
+    // Initialize wallet connection
+    const connected = await initializeWallet();
+
+    if (connected) {
+        // Try to connect to default contract if address is present
+        const defaultAddress = document.getElementById('contract-address').value;
+        if (defaultAddress && isValidAddress(defaultAddress)) {
+            await connectToContract(defaultAddress);
+        }
+    }
+
+    // Connect contract button
+    document.getElementById('connect-contract').addEventListener('click', async () => {
+        const address = document.getElementById('contract-address').value.trim();
+        await connectToContract(address);
+    });
+
+    // Form submissions
+    document.getElementById('form_deploy').addEventListener('submit', deployContract);
+    document.getElementById('form_asset').addEventListener('submit', addAsset);
+    document.getElementById('form_assign').addEventListener('submit', addAuthorization);
+    document.getElementById('form_isAssigned').addEventListener('submit', checkRole);
+    document.getElementById('form_access').addEventListener('submit', accessAsset);
+    document.getElementById('form_unassign').addEventListener('submit', removeAuthorization);
+
+    // Refresh assets button
+    document.getElementById('refresh-assets').addEventListener('click', loadAssets);
+
+    // Clear events button
+    document.getElementById('clear-events').addEventListener('click', () => {
+        const eventLog = document.getElementById('event-log');
+        eventLog.innerHTML = `
+            <div class="list-group-item text-center text-muted">
+                No events yet. Interact with the contract to see activity.
+            </div>
+        `;
+    });
+
+    // Listen for account changes
+    if (window.ethereum) {
+        window.ethereum.on('accountsChanged', async (accounts) => {
+            console.log('Account changed:', accounts[0]);
+            if (accounts.length === 0) {
+                showNotification('Wallet disconnected', 'warning');
+                AppState.userAddress = null;
+                updateConnectionUI();
+            } else {
+                location.reload(); // Reload to reinitialize with new account
             }
+        });
 
-            console.table(assets);
-            return assets;
-        } catch (error) {
-            console.error("Error listing assets:", error);
-            return [];
-        }
-    };
+        window.ethereum.on('chainChanged', () => {
+            console.log('Network changed, reloading...');
+            location.reload(); // Reload on network change
+        });
+    }
 
-    // List authorizations for an asset
-    window.listAssetAuthorizations = async function(assetKey) {
-        try {
-            console.log(`Fetching authorizations for asset: ${assetKey}`);
-            const authCount = await new Promise((resolve, reject) => {
-                smartContractInstance.getAssetAuthorizationCount(assetKey, function (error, result) {
-                    if (error) reject(error);
-                    else resolve(result);
-                });
-            });
-
-            console.log(`Found ${authCount} authorization(s)`);
-            const authorizations = [];
-
-            for (let i = 0; i < authCount; i++) {
-                const address = await new Promise((resolve, reject) => {
-                    smartContractInstance.getAssetAuthorizationAtIndex(assetKey, i, function (error, result) {
-                        if (error) reject(error);
-                        else resolve(result);
-                    });
-                });
-
-                const role = await new Promise((resolve, reject) => {
-                    smartContractInstance.getAssetAuthorization(assetKey, address, function (error, result) {
-                        if (error) reject(error);
-                        else resolve(result);
-                    });
-                });
-
-                authorizations.push({
-                    address: address,
-                    role: role
-                });
-            }
-
-            console.table(authorizations);
-            return authorizations;
-        } catch (error) {
-            console.error("Error listing authorizations:", error);
-            return [];
-        }
-    };
-
-    // Get event history for an asset
-    window.getAssetHistory = async function(assetKey) {
-        try {
-            console.log(`Fetching event history for asset: ${assetKey || 'all assets'}`);
-
-            const filter = assetKey ? { assetKey: assetKey } : {};
-
-            const events = await smartContractInstance.getPastEvents('allEvents', {
-                filter: filter,
-                fromBlock: 0,
-                toBlock: 'latest'
-            });
-
-            const history = events.map(event => ({
-                event: event.event,
-                block: event.blockNumber,
-                txHash: event.transactionHash,
-                args: event.returnValues
-            }));
-
-            console.log(`Found ${history.length} event(s)`);
-            console.table(history);
-            return history;
-        } catch (error) {
-            console.error("Error fetching event history:", error);
-            return [];
-        }
-    };
-
-    // Make functions available in console
-    console.log("\n=== Available Functions ===");
-    console.log("listAllAssets() - List all assets in the system");
-    console.log("listAssetAuthorizations(assetKey) - List all authorizations for an asset");
-    console.log("getAssetHistory(assetKey) - Get event history for an asset (or all if no key provided)");
-    console.log("===========================\n");
+    console.log('✅ DApp Ready');
+    console.log('\n=== Available Console Functions ===');
+    console.log('AppState - View current application state');
+    console.log('loadAssets() - Reload asset list');
+    console.log('====================================\n');
 });
+
+// Make functions available globally for debugging
+window.AppState = AppState;
+window.loadAssets = loadAssets;
+window.showAssetAuthorizations = showAssetAuthorizations;

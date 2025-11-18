@@ -34,7 +34,7 @@ try {
 
     const artifact = JSON.parse(fs.readFileSync(artifactPath, 'utf8'));
 
-    // Generate ABI file
+    // Generate ABI file (compatible with both legacy and modern usage)
     const abiContent = `/**
  * Auto-generated from compiled contract
  * Contract: ${CONTRACT_NAME}
@@ -42,12 +42,15 @@ try {
  */
 
 const contractABI = ${JSON.stringify(artifact.abi, null, 2)};
+
+// Legacy variable name for backward compatibility
+const smartContractAbi = contractABI;
 `;
 
     fs.writeFileSync(path.join(OUTPUT_DIR, 'abi.js'), abiContent);
     console.log('✓ Generated abi.js');
 
-    // Generate bytecode file
+    // Generate bytecode file (compatible with both legacy and modern usage)
     const bytecodeContent = `/**
  * Auto-generated from compiled contract
  * Contract: ${CONTRACT_NAME}

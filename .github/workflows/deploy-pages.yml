@@ -3,7 +3,15 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main
+      - master
+      - main  # Support both master and main branches
+    paths:
+      - 'frontend/**'
+      - 'scripts/generate-frontend-artifacts.js'
+      - 'scripts/build-frontend.js'
+      - 'contracts/**'
+      - 'hardhat.config.js'
+      - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages

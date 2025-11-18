@@ -27,7 +27,8 @@ const AppState = {
     contract: null,
     contractAddress: null,
     userAddress: null,
-    network: null
+    network: null,
+    loadAssetsTimeout: null
 };
 
 // ==================== Utility Functions ====================
@@ -157,15 +158,30 @@ function isValidAddress(address) {
 }
 
 /**
+ * Wait for transaction with timeout
+ * @param {Object} tx - Transaction object
+ * @param {number} timeout - Timeout in milliseconds (default: 5 minutes)
+ * @returns {Promise} Transaction receipt
+ */
+async function waitForTransactionWithTimeout(tx, timeout = 300000) {
+    return Promise.race([
+        tx.wait(),
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Transaction confirmation timeout')), timeout)
+        )
+    ]);
+}
+
+/**
  * Save contract address to localStorage (network-specific)
  */
 function saveContractAddress(address) {
     try {
-        if (!AppState.chainId) {
+        if (!AppState.network?.chainId) {
             console.warn('Cannot save contract address: chainId not available');
             return;
         }
-        const key = `open_contract_address_${AppState.chainId}`;
+        const key = `open_contract_address_${AppState.network.chainId}`;
         localStorage.setItem(key, address);
     } catch (error) {
         console.warn('Failed to save contract address to localStorage:', error);
@@ -177,11 +193,11 @@ function saveContractAddress(address) {
  */
 function loadContractAddress() {
     try {
-        if (!AppState.chainId) {
+        if (!AppState.network?.chainId) {
             console.warn('Cannot load contract address: chainId not available');
             return null;
         }
-        const key = `open_contract_address_${AppState.chainId}`;
+        const key = `open_contract_address_${AppState.network.chainId}`;
         return localStorage.getItem(key);
     } catch (error) {
         console.warn('Failed to load contract address from localStorage:', error);
@@ -284,6 +300,12 @@ function updateConnectionUI() {
     const networkName = document.getElementById('network-name');
     const accountAddress = document.getElementById('account-address');
 
+    // Check if DOM elements exist
+    if (!networkIndicator || !networkName || !accountAddress) {
+        console.warn('Connection UI elements not found in DOM');
+        return;
+    }
+
     if (AppState.userAddress) {
         networkIndicator.classList.add('connected');
         networkName.textContent = AppState.network.name;
@@ -368,8 +390,8 @@ function setupContractEvents() {
             `Asset "${assetKey}" (${assetDescription}) created by ${truncateAddress(account)}`,
             'success'
         );
-        // Reload assets after a short delay
-        setTimeout(() => loadAssets(), 2000);
+        // Reload assets with debouncing
+        scheduleLoadAssets();
     });
 
     // RejectCreate event
@@ -392,7 +414,7 @@ function setupContractEvents() {
             `Role "${authorizationRole}" granted for asset "${assetKey}" to ${truncateAddress(account)}`,
             'success'
         );
-        setTimeout(() => loadAssets(), 2000);
+        scheduleLoadAssets();
     });
 
     // AuthorizationRemove event
@@ -404,7 +426,7 @@ function setupContractEvents() {
             `Authorization removed for asset "${assetKey}" from ${truncateAddress(account)}`,
             'info'
         );
-        setTimeout(() => loadAssets(), 2000);
+        scheduleLoadAssets();
     });
 
     // AccessLog event
@@ -425,6 +447,16 @@ function setupContractEvents() {
             );
         }
     });
+}
+
+/**
+ * Schedule asset loading with debouncing to prevent race conditions
+ */
+function scheduleLoadAssets() {
+    if (AppState.loadAssetsTimeout) {
+        clearTimeout(AppState.loadAssetsTimeout);
+    }
+    AppState.loadAssetsTimeout = setTimeout(() => loadAssets(), 2000);
 }
 
 /**
@@ -560,10 +592,10 @@ async function showAssetAuthorizations(assetKey) {
             authorizations.push({ address, role });
         }
 
-        let authHTML = `<strong>Authorizations for "${assetKey}":</strong><br><br>`;
+        let authHTML = `<strong>Authorizations for "${escapeHtml(assetKey)}":</strong><br><br>`;
         authorizations.forEach(auth => {
             authHTML += `<div class="mb-2">
-                <span class="badge bg-secondary">${auth.role}</span>
+                <span class="badge bg-secondary">${escapeHtml(auth.role)}</span>
                 <code class="ms-2">${truncateAddress(auth.address)}</code>
             </div>`;
         });
@@ -788,7 +820,7 @@ async function addAsset(e) {
         showNotification('Transaction sent. Waiting for confirmation...', 'info');
         addEventToLog('Transaction Sent', `Creating asset "${assetKey}"`, 'info', tx.hash);
 
-        const receipt = await tx.wait();
+        const receipt = await waitForTransactionWithTimeout(tx);
 
         if (receipt.status === 1) {
             // Update transaction status
@@ -882,7 +914,7 @@ async function addAuthorization(e) {
         showNotification('Transaction sent. Waiting for confirmation...', 'info');
         addEventToLog('Transaction Sent', `Adding ${role} authorization for ${truncateAddress(address)}`, 'info', tx.hash);
 
-        const receipt = await tx.wait();
+        const receipt = await waitForTransactionWithTimeout(tx);
 
         if (receipt.status === 1) {
             // Update transaction status
@@ -1006,7 +1038,7 @@ async function accessAsset(e) {
         showNotification('Access request sent. Waiting for confirmation...', 'info');
         addEventToLog('Access Request', `Requesting access to "${assetKey}"`, 'info', tx.hash);
 
-        const receipt = await tx.wait();
+        const receipt = await waitForTransactionWithTimeout(tx);
 
         if (receipt.status === 1) {
             // Update transaction status
@@ -1091,7 +1123,7 @@ async function removeAuthorization(e) {
         showNotification('Transaction sent. Waiting for confirmation...', 'info');
         addEventToLog('Transaction Sent', `Removing authorization for ${truncateAddress(address)}`, 'info', tx.hash);
 
-        const receipt = await tx.wait();
+        const receipt = await waitForTransactionWithTimeout(tx);
 
         if (receipt.status === 1) {
             // Update transaction status

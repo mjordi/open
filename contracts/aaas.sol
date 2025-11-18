@@ -97,6 +97,7 @@ contract AccessManagement {
     function addAuthorization(string calldata assetKey, address authorizationKey, string calldata authorizationRole, uint256 duration) public returns(bool success) {
         require(authorizationKey != address(0), "Invalid address");
         require(bytes(authorizationRole).length > 0, "Role cannot be empty");
+        require(assetStructs[assetKey].initialized, "Asset does not exist");
         require(assetStructs[assetKey].owner == msg.sender || isAuthorized(assetKey, msg.sender), "Only the owner or admins can add authorizations.");
 
         // Calculate expiration time
@@ -125,8 +126,22 @@ contract AccessManagement {
     /// @return success True if authorization was removed successfully
     function removeAuthorization(string calldata assetKey, address authorizationKey) external returns(bool success) {
         require(assetStructs[assetKey].owner == msg.sender || isAuthorized(assetKey, msg.sender), "Only the owner or admins can remove authorizations.");
+
+        // Mark as inactive
         assetStructs[assetKey].authorizationStructs[authorizationKey].role =  '';
         assetStructs[assetKey].authorizationStructs[authorizationKey].active =  false;
+
+        // Remove from authorizationList array
+        address[] storage authList = assetStructs[assetKey].authorizationList;
+        for (uint i = 0; i < authList.length; i++) {
+            if (authList[i] == authorizationKey) {
+                // Replace with last element and pop
+                authList[i] = authList[authList.length - 1];
+                authList.pop();
+                break;
+            }
+        }
+
         emit AuthorizationRemove(authorizationKey, assetKey);
         return true;
     }
@@ -149,6 +164,7 @@ contract AccessManagement {
     /// @param row The index in the asset list
     /// @return assetkey The asset key at the specified index
     function getAssetAtIndex(uint row) external view returns(string memory assetkey) {
+        require(row < assetList.length, "Index out of bounds");
         return assetList[row];
     }
 
@@ -164,6 +180,7 @@ contract AccessManagement {
     /// @param authorizationRow The index in the authorization list
     /// @return authorizationKey The address at the specified index
     function getAssetAuthorizationAtIndex(string calldata assetKey, uint authorizationRow) external view returns(address authorizationKey) {
+        require(authorizationRow < assetStructs[assetKey].authorizationList.length, "Index out of bounds");
         return assetStructs[assetKey].authorizationList[authorizationRow];
     }
 
@@ -287,6 +304,8 @@ contract AccessManagement {
     ) internal {
         require(authorizationKey != address(0), "Invalid address");
         require(bytes(authorizationRole).length > 0, "Role cannot be empty");
+        require(assetStructs[assetKey].initialized, "Asset does not exist");
+        require(assetStructs[assetKey].owner == msg.sender || isAuthorized(assetKey, msg.sender), "Only the owner or admins can add authorizations.");
 
         // Calculate expiration time
         uint256 expiresAt = 0;

@@ -8,9 +8,9 @@ OPEN is a proof-of-concept application demonstrating how blockchain technology c
 
 ## Demo
 
-Live demo: **[Deploy to Vercel for live preview →](DEPLOYMENT.md)**
+Live demo: **[Deploy to Vercel for live preview →](docs/DEPLOYMENT.md)**
 
-> The frontend is deployed using Vercel with automatic PR previews. See [DEPLOYMENT.md](DEPLOYMENT.md) for setup instructions.
+> The frontend is deployed using Vercel with automatic PR previews. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for setup instructions.
 
 ## Installation
 

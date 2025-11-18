@@ -46,13 +46,7 @@ body {
 
 /* Cards */
 .card {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     border: none;
-}
-
-.card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
 }
 
 .card-header {
@@ -75,7 +69,6 @@ body {
 /* Buttons */
 .btn {
     font-weight: 500;
-    transition: all 0.2s ease-in-out;
     position: relative;
 }
 
@@ -144,11 +137,6 @@ body {
 }
 
 .event-item {
-    transition: background-color 0.3s ease;
-}
-
-.event-item:hover {
-    background-color: #f8f9fa;
 }
 
 .event-timestamp {
@@ -184,12 +172,6 @@ body {
 /* Asset List */
 .asset-card {
     border-left: 4px solid var(--primary-color);
-    transition: all 0.2s ease;
-}
-
-.asset-card:hover {
-    border-left-color: var(--success-color);
-    background-color: #f8f9fa;
 }
 
 .asset-owner {
@@ -307,33 +289,19 @@ body {
     border-radius: 4px;
 }
 
-#event-log::-webkit-scrollbar-thumb:hover {
-    background: #555;
-}
-
 /* ==================== Explorer Links ==================== */
 
 .explorer-link {
     color: var(--primary-color);
     text-decoration: none;
-    transition: all 0.2s ease;
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
 }
 
-.explorer-link:hover {
-    color: var(--primary-color);
-    text-decoration: underline;
-}
-
 .explorer-link i {
     font-size: 0.85em;
     opacity: 0.7;
-}
-
-.explorer-link:hover i {
-    opacity: 1;
 }
 
 .tx-link code,
@@ -352,13 +320,7 @@ body {
 }
 
 #tx-history-container .list-group-item {
-    transition: all 0.2s ease;
     border-left: 3px solid transparent;
-}
-
-#tx-history-container .list-group-item:hover {
-    background-color: #f8f9fa;
-    border-left-color: var(--primary-color);
 }
 
 #tx-history-container .badge {
@@ -398,10 +360,6 @@ body {
 #tx-history-container::-webkit-scrollbar-thumb {
     background: #888;
     border-radius: 4px;
-}
-
-#tx-history-container::-webkit-scrollbar-thumb:hover {
-    background: #555;
 }
 
 /* Transaction list items */

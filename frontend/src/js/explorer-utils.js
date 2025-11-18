@@ -6,6 +6,16 @@
 import { getExplorerBaseUrl, hasExplorer } from './network-config.js';
 
 /**
+ * Validate that a URL is safe (starts with http or https)
+ * @param {string} url - URL to validate
+ * @returns {boolean} True if URL is safe
+ */
+function isValidUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    return url.startsWith('http://') || url.startsWith('https://');
+}
+
+/**
  * Generate a transaction explorer URL
  * @param {string} txHash - Transaction hash
  * @param {number} chainId - Chain ID
@@ -61,7 +71,7 @@ export function getTokenExplorerUrl(tokenAddress, chainId) {
  * @returns {string} HTML string for the link
  */
 export function createExplorerLink(url, text, icon = 'box-arrow-up-right') {
-    if (!url) return text;
+    if (!url || !isValidUrl(url)) return text;
     return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="explorer-link">
         ${text} <i class="bi bi-${icon}"></i>
     </a>`;
@@ -78,7 +88,7 @@ export function createTxHashLink(txHash, chainId, truncate = true) {
     const url = getTxExplorerUrl(txHash, chainId);
     const displayHash = truncate ? truncateHash(txHash) : txHash;
 
-    if (!url) {
+    if (!url || !isValidUrl(url)) {
         return `<code class="tx-hash">${displayHash}</code>`;
     }
 
@@ -98,7 +108,7 @@ export function createAddressLink(address, chainId, truncate = true) {
     const url = getAddressExplorerUrl(address, chainId);
     const displayAddress = truncate ? truncateAddress(address) : address;
 
-    if (!url) {
+    if (!url || !isValidUrl(url)) {
         return `<code class="address">${displayAddress}</code>`;
     }
 

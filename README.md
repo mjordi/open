@@ -32,8 +32,11 @@ npm install
 # Build the project (compiles contracts + generates frontend)
 npm run build
 
-# Run tests
+# Run tests (smart contracts)
 npm test
+
+# Run frontend tests
+npm run test:frontend
 
 # Serve the frontend locally
 npm run serve
@@ -45,12 +48,15 @@ Navigate to `http://localhost:8000` and connect your MetaMask wallet.
 
 **Available Commands:**
 ```bash
-npm run compile    # Compile smart contracts
-npm run generate   # Generate frontend artifacts (ABI/bytecode)
-npm run build      # Full build (compile + generate + build frontend)
-npm test           # Run all tests
-npm run serve      # Serve frontend on port 8000
-npm run clean      # Clean build artifacts
+npm run compile              # Compile smart contracts
+npm run generate             # Generate frontend artifacts (ABI/bytecode)
+npm run build                # Full build (compile + generate + build frontend)
+npm test                     # Run smart contract tests
+npm run test:frontend        # Run frontend tests
+npm run test:frontend:watch  # Run frontend tests in watch mode
+npm run test:all             # Run both contract and frontend tests
+npm run serve                # Serve frontend on port 8000
+npm run clean                # Clean build artifacts
 ```
 
 **Basic Workflow:**
@@ -81,6 +87,7 @@ All actions are executed through MetaMask transactions on the blockchain.
 │   ├── AssetTracker.sol   # Asset tracking with UUID system
 │   └── RoleBasedAcl.sol   # Role-based access control
 ├── test/                   # Comprehensive test suites
+│   ├── frontend/           # Frontend JavaScript tests
 │   ├── AccessManagement.test.js
 │   ├── AssetTracker.test.js
 │   └── RoleBasedAcl.test.js
@@ -113,8 +120,9 @@ All actions are executed through MetaMask transactions on the blockchain.
 - Bootstrap Icons
 
 **Testing:**
-- Hardhat + Chai + Ethers.js v6
-- Comprehensive test coverage for all contracts
+- Smart Contracts: Hardhat + Chai + Ethers.js v6
+- Frontend: Vitest + happy-dom
+- Comprehensive test coverage for contracts and utilities
 
 ## License
 

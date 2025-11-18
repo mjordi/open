@@ -4,7 +4,9 @@ This document outlines the testing strategy and procedures for the OPEN blockcha
 
 ## Overview
 
-The project includes comprehensive automated testing for all smart contracts using Hardhat, Chai, and Ethers.js.
+The project includes comprehensive automated testing for both smart contracts and frontend JavaScript:
+- **Smart Contracts**: Hardhat, Chai, and Ethers.js
+- **Frontend**: Vitest and happy-dom
 
 ## Test Suite Overview
 
@@ -16,7 +18,7 @@ The project includes comprehensive automated testing for all smart contracts usi
 
 ## Running Tests
 
-### Run All Tests
+### Run Smart Contract Tests
 ```bash
 npm test
 ```
@@ -24,6 +26,26 @@ npm test
 Or directly with Hardhat:
 ```bash
 npx hardhat test
+```
+
+### Run Frontend Tests
+```bash
+# Run once
+npm run test:frontend
+
+# Run in watch mode (re-runs on file changes)
+npm run test:frontend:watch
+
+# Run with coverage report
+npm run test:frontend:coverage
+
+# Run with UI
+npm run test:frontend:ui
+```
+
+### Run All Tests (Contract + Frontend)
+```bash
+npm run test:all
 ```
 
 ### Expected Output
@@ -115,16 +137,39 @@ npx hardhat test
 - hasRole modifier works correctly
 - Prevents unauthorized role changes
 
+### Frontend Tests
+
+**Transaction Storage Module** (35 tests):
+- CRUD operations for localStorage-based transaction history
+- Transaction filtering by status, type, contract, and address
+- Import/export functionality
+- Edge cases: corrupted data, invalid JSON, null handling
+- Storage limit enforcement (max 100 transactions)
+
+**Network Configuration Module** (9 tests):
+- Network explorer configuration for various chains
+- Explorer URL generation for mainnet, testnets, and L2s
+- Currency symbol retrieval
+- Handling of local development networks (Hardhat, Ganache)
+
+**Explorer Utilities Module** (15 tests):
+- Transaction, address, block, and token URL generation
+- Hash and address truncation for display
+- Block number formatting
+- Null/undefined handling
+
+For detailed information about frontend tests, see `test/frontend/README.md`.
+
 ## Testing Best Practices
 
 ### Before Committing Code
 
-1. **Run All Tests**: Always run `npm test` before committing
-2. **Verify All Tests Pass**: Ensure all tests pass successfully
+1. **Run All Tests**: Always run `npm run test:all` (or both `npm test` and `npm run test:frontend`) before committing
+2. **Verify All Tests Pass**: Ensure all contract and frontend tests pass successfully
 3. **Check for Warnings**: Review console output for deprecation warnings
-4. **Update Tests**: Add tests for new functionality
+4. **Update Tests**: Add tests for new functionality (both contract and frontend if applicable)
 
-### Writing New Tests
+### Writing New Contract Tests
 
 ```javascript
 describe("Feature Name", function() {
@@ -156,6 +201,33 @@ describe("Feature Name", function() {
     });
 });
 ```
+
+### Writing New Frontend Tests
+
+```javascript
+import { describe, it, expect } from 'vitest';
+import { myFunction } from '../../frontend/src/js/my-module.js';
+
+describe('My Module', () => {
+  it('should perform expected behavior', () => {
+    // Arrange
+    const input = 'test-value';
+
+    // Act
+    const result = myFunction(input);
+
+    // Assert
+    expect(result).toBe(expectedValue);
+  });
+
+  it('should handle edge cases', () => {
+    expect(myFunction(null)).toBe(null);
+    expect(myFunction('')).toBe('');
+  });
+});
+```
+
+See `test/frontend/README.md` for more examples and best practices.
 
 ### Test Categories
 
@@ -216,12 +288,15 @@ Tested and working with:
 
 ## Continuous Integration
 
-GitHub Actions automatically runs all tests on:
-- Every push to main branch
-- Every pull request
-- Manual workflow dispatch
+GitHub Actions automatically runs all tests (contract + frontend) on:
+- Every pull request to main/master
+- Ensures code quality before merge
 
-See `.github/workflows/deploy-pages.yml` for CI configuration.
+The CI workflow runs:
+1. Smart contract tests (`npm test`)
+2. Frontend tests (`npm run test:frontend`)
+
+See `.github/workflows/ci.yml` for CI configuration.
 
 ## Debugging Failed Tests
 
@@ -270,12 +345,13 @@ Update tests when:
 ## Future Enhancements
 
 Potential testing improvements:
-- [ ] Add code coverage reporting
-- [ ] Implement frontend unit tests
+- [ ] Add code coverage reporting for smart contracts
+- [x] Implement frontend unit tests (✅ Completed with Vitest)
 - [ ] Add E2E tests with Cypress/Playwright
 - [ ] Gas cost optimization tests
 - [ ] Performance benchmarking
 - [ ] Integration tests with actual test networks
+- [ ] Expand frontend test coverage to include app.js DOM interactions
 
 ## Resources
 

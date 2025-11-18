@@ -17,5 +17,8 @@
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.1",
     "hardhat": "^3.0.15"
+  },
+  "overrides": {
+    "glob": ">=11.1.0"
   }
 }

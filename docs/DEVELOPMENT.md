@@ -6,16 +6,16 @@ This document outlines the development practices and requirements for the OPEN b
 
 ### Node.js Version
 
-**Required**: Node.js 20 LTS or higher
+**Required**: Node.js 22.10.0 or higher
 
-- Hardhat requires Node.js version 20 or higher (even-numbered LTS versions only)
+- Hardhat 3 requires Node.js version 22.10.0 or higher (even-numbered LTS versions only)
 - Node.js 18 reached end-of-life in April 2025 and is no longer supported
 - Install Node.js from [https://nodejs.org](https://nodejs.org)
-- Verify your version: `node --version`
+- Verify your version: `node --version` (should be v22.10.0 or higher)
 - For version management, use [nvm](https://github.com/nvm-sh/nvm):
   ```bash
-  nvm install 20
-  nvm use 20
+  nvm install 22
+  nvm use 22
   ```
 
 **Why even-numbered versions only?**
@@ -31,11 +31,13 @@ This document outlines the development practices and requirements for the OPEN b
 
 ### Current Testing Status
 
-**Note**: As documented in [IMPROVEMENTS.md Issue #22](IMPROVEMENTS.md#22-no-unit-tests), this project currently lacks automated unit tests. This is a known limitation that should be addressed.
+The project has comprehensive automated testing across all contracts.
+
+Run all tests with: `npm test`
 
 ### Verification Methods
 
-Until automated tests are implemented, all changes must be verified through:
+All changes must be verified through:
 
 #### 1. Manual Testing Checklist
 
@@ -67,13 +69,26 @@ Before committing:
 - [ ] Proper error handling implemented
 - [ ] Code follows existing patterns and conventions
 
-### Future: Automated Testing
+### Automated Testing
 
-When implementing automated tests (see IMPROVEMENTS.md #22), the following should be included:
+The project includes comprehensive automated testing using Hardhat:
 
-#### Smart Contract Tests
+#### Running Tests
+```bash
+# Run all tests
+npm test
+
+# Or directly with Hardhat
+npx hardhat test
+```
+
+#### Test Coverage
+- **AccessManagement**: Asset creation, authorization, access control, edge cases
+- **AssetTracker**: Asset creation, transfers, ownership verification
+- **RoleBasedAcl**: Role assignment, unassignment, access control
+
+#### Test Structure Example
 ```javascript
-// Example test structure with Hardhat
 describe("AccessManagement", function() {
     it("Should create a new asset", async function() {
         const [owner] = await ethers.getSigners();
@@ -89,8 +104,8 @@ describe("AccessManagement", function() {
 });
 ```
 
-#### Frontend Tests
-- Unit tests for JavaScript functions
+#### Future Frontend Tests
+- Unit tests for JavaScript functions (not yet implemented)
 - Integration tests for Web3 interactions
 - End-to-end tests for user workflows
 

@@ -105,9 +105,10 @@ All actions are executed through MetaMask transactions on the blockchain.
 - Ethereum blockchain
 
 **Frontend:**
-- Web3.js (Ethereum interaction)
-- Bootstrap 4.1.3 (UI framework)
-- jQuery 3.2.1
+- Ethers.js v6 (Ethereum interaction)
+- Bootstrap 5.3 (responsive UI framework)
+- Vanilla JavaScript (no jQuery dependency)
+- Bootstrap Icons
 
 **Testing:**
 - Hardhat + Chai + Ethers.js v6

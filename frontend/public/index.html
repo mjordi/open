@@ -71,10 +71,16 @@
                 <div class="row g-3 align-items-end">
                     <div class="col-md-10">
                         <label for="contract-address" class="form-label">Contract Address</label>
-                        <input type="text" class="form-control" id="contract-address"
-                               placeholder="0x..."
-                               value="0x1614c607e0e36d210196941b954f9e5128f3e0f5"
-                               aria-label="Smart contract address">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="contract-address"
+                                   placeholder="0x..."
+                                   value="0x1614c607e0e36d210196941b954f9e5128f3e0f5"
+                                   aria-label="Smart contract address">
+                            <button class="btn btn-outline-secondary" type="button" id="copy-address"
+                                    title="Copy address to clipboard">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
                         <div class="form-text">Enter the deployed contract address or deploy a new one</div>
                     </div>
                     <div class="col-md-2">

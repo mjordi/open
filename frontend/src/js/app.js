@@ -126,6 +126,29 @@ function isValidAddress(address) {
     return /^0x[a-fA-F0-9]{40}$/.test(address);
 }
 
+/**
+ * Save contract address to localStorage
+ */
+function saveContractAddress(address) {
+    try {
+        localStorage.setItem('open_contract_address', address);
+    } catch (error) {
+        console.warn('Failed to save contract address to localStorage:', error);
+    }
+}
+
+/**
+ * Load contract address from localStorage
+ */
+function loadContractAddress() {
+    try {
+        return localStorage.getItem('open_contract_address');
+    } catch (error) {
+        console.warn('Failed to load contract address from localStorage:', error);
+        return null;
+    }
+}
+
 // ==================== Blockchain Functions ====================
 
 /**
@@ -255,6 +278,9 @@ async function connectToContract(address) {
         );
 
         AppState.contractAddress = address;
+
+        // Save to localStorage
+        saveContractAddress(address);
 
         // Set up event listeners
         setupContractEvents();
@@ -503,6 +529,43 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+/**
+ * Estimate and display gas cost
+ * @param {Function} txFunction - Function that returns transaction promise
+ * @param {string} actionName - Name of the action for display
+ * @returns {Object|null} - Gas estimate details or null if estimation fails
+ */
+async function estimateGas(txFunction, actionName = 'transaction') {
+    try {
+        // Get gas estimate
+        const gasEstimate = await txFunction();
+        const gasLimit = gasEstimate;
+
+        // Get current gas price
+        const feeData = await AppState.provider.getFeeData();
+        const gasPrice = feeData.gasPrice || feeData.maxFeePerGas;
+
+        // Calculate total cost in ETH
+        const totalCostWei = gasLimit * gasPrice;
+        const totalCostEth = ethers.formatEther(totalCostWei);
+
+        console.log(`⛽ Gas Estimate for ${actionName}:`);
+        console.log(`  Gas Limit: ${gasLimit.toString()}`);
+        console.log(`  Gas Price: ${ethers.formatUnits(gasPrice, 'gwei')} Gwei`);
+        console.log(`  Estimated Cost: ${totalCostEth} ETH`);
+
+        return {
+            gasLimit,
+            gasPrice,
+            totalCostWei,
+            totalCostEth
+        };
+    } catch (error) {
+        console.warn(`Failed to estimate gas for ${actionName}:`, error);
+        return null;
+    }
+}
+
 // ==================== Form Handlers ====================
 
 /**
@@ -520,14 +583,31 @@ async function deployContract(e) {
             return;
         }
 
-        showNotification('Deploying contract... This may take a moment.', 'info');
-
         // Create contract factory
         const factory = new ethers.ContractFactory(
             contractABI,
             contractBytecode,
             AppState.signer
         );
+
+        // Estimate gas
+        showNotification('Estimating gas cost...', 'info', 3000);
+        const gasEstimate = await estimateGas(
+            async () => await factory.getDeployTransaction().then(tx =>
+                AppState.provider.estimateGas({ ...tx, from: AppState.userAddress })
+            ),
+            'contract deployment'
+        );
+
+        if (gasEstimate) {
+            showNotification(
+                `Estimated cost: ${parseFloat(gasEstimate.totalCostEth).toFixed(6)} ETH. Deploying...`,
+                'info',
+                5000
+            );
+        } else {
+            showNotification('Deploying contract... This may take a moment.', 'info');
+        }
 
         // Deploy
         const contract = await factory.deploy();
@@ -574,6 +654,20 @@ async function addAsset(e) {
         if (!AppState.contract) {
             showNotification('Please connect to a contract first', 'warning');
             return;
+        }
+
+        // Estimate gas
+        const gasEstimate = await estimateGas(
+            async () => await AppState.contract.newAsset.estimateGas(assetKey, assetDescription),
+            'add asset'
+        );
+
+        if (gasEstimate) {
+            showNotification(
+                `Estimated cost: ${parseFloat(gasEstimate.totalCostEth).toFixed(6)} ETH`,
+                'info',
+                3000
+            );
         }
 
         const tx = await AppState.contract.newAsset(assetKey, assetDescription);
@@ -628,6 +722,20 @@ async function addAuthorization(e) {
         if (!role || role === 'Choose...') {
             showNotification('Please select a role', 'warning');
             return;
+        }
+
+        // Estimate gas
+        const gasEstimate = await estimateGas(
+            async () => await AppState.contract.addAuthorization.estimateGas(assetKey, address, role),
+            'add authorization'
+        );
+
+        if (gasEstimate) {
+            showNotification(
+                `Estimated cost: ${parseFloat(gasEstimate.totalCostEth).toFixed(6)} ETH`,
+                'info',
+                3000
+            );
         }
 
         const tx = await AppState.contract.addAuthorization(assetKey, address, role);
@@ -772,6 +880,20 @@ async function removeAuthorization(e) {
             return;
         }
 
+        // Estimate gas
+        const gasEstimate = await estimateGas(
+            async () => await AppState.contract.removeAuthorization.estimateGas(assetKey, address),
+            'remove authorization'
+        );
+
+        if (gasEstimate) {
+            showNotification(
+                `Estimated cost: ${parseFloat(gasEstimate.totalCostEth).toFixed(6)} ETH`,
+                'info',
+                3000
+            );
+        }
+
         const tx = await AppState.contract.removeAuthorization(assetKey, address);
 
         showNotification('Transaction sent. Waiting for confirmation...', 'info');
@@ -806,10 +928,19 @@ window.addEventListener('load', async () => {
     const connected = await initializeWallet();
 
     if (connected) {
-        // Try to connect to default contract if address is present
-        const defaultAddress = document.getElementById('contract-address').value;
-        if (defaultAddress && isValidAddress(defaultAddress)) {
-            await connectToContract(defaultAddress);
+        // Load saved contract address from localStorage
+        const savedAddress = loadContractAddress();
+        const inputField = document.getElementById('contract-address');
+
+        // If no default address in input, use saved address
+        if ((!inputField.value || inputField.value.trim() === '') && savedAddress) {
+            inputField.value = savedAddress;
+        }
+
+        // Try to connect to contract if address is present
+        const addressToConnect = inputField.value.trim();
+        if (addressToConnect && isValidAddress(addressToConnect)) {
+            await connectToContract(addressToConnect);
         }
     }
 
@@ -817,6 +948,42 @@ window.addEventListener('load', async () => {
     document.getElementById('connect-contract').addEventListener('click', async () => {
         const address = document.getElementById('contract-address').value.trim();
         await connectToContract(address);
+    });
+
+    // Copy address button
+    document.getElementById('copy-address').addEventListener('click', async () => {
+        const addressInput = document.getElementById('contract-address');
+        const address = addressInput.value.trim();
+
+        if (!address) {
+            showNotification('No address to copy', 'warning');
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(address);
+            const button = document.getElementById('copy-address');
+            const icon = button.querySelector('i');
+
+            // Change icon to checkmark temporarily
+            icon.classList.remove('bi-clipboard');
+            icon.classList.add('bi-check2');
+            button.classList.remove('btn-outline-secondary');
+            button.classList.add('btn-success');
+
+            showNotification('Address copied to clipboard!', 'success', 2000);
+
+            // Reset icon after 2 seconds
+            setTimeout(() => {
+                icon.classList.remove('bi-check2');
+                icon.classList.add('bi-clipboard');
+                button.classList.remove('btn-success');
+                button.classList.add('btn-outline-secondary');
+            }, 2000);
+        } catch (error) {
+            console.error('Failed to copy address:', error);
+            showNotification('Failed to copy address. Please copy manually.', 'error');
+        }
     });
 
     // Form submissions

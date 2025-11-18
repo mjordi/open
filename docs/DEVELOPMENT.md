@@ -71,23 +71,38 @@ Before committing:
 
 ### Automated Testing
 
-The project includes comprehensive automated testing using Hardhat:
+The project includes comprehensive automated testing for both smart contracts and frontend:
 
 #### Running Tests
 ```bash
-# Run all tests
+# Run smart contract tests
 npm test
 
-# Or directly with Hardhat
-npx hardhat test
+# Run frontend tests
+npm run test:frontend
+
+# Run all tests (contracts + frontend)
+npm run test:all
+
+# Run frontend tests in watch mode
+npm run test:frontend:watch
 ```
 
 #### Test Coverage
+
+**Smart Contracts:**
 - **AccessManagement**: Asset creation, authorization, access control, edge cases
 - **AssetTracker**: Asset creation, transfers, ownership verification
 - **RoleBasedAcl**: Role assignment, unassignment, access control
 
-#### Test Structure Example
+**Frontend JavaScript:**
+- **Transaction Storage**: localStorage operations, filtering, import/export (35 tests)
+- **Network Configuration**: Explorer configs, chain support (9 tests)
+- **Explorer Utilities**: URL generation, truncation helpers (15 tests)
+
+#### Test Structure Examples
+
+**Contract Tests:**
 ```javascript
 describe("AccessManagement", function() {
     it("Should create a new asset", async function() {
@@ -104,10 +119,21 @@ describe("AccessManagement", function() {
 });
 ```
 
-#### Future Frontend Tests
-- Unit tests for JavaScript functions (not yet implemented)
-- Integration tests for Web3 interactions
-- End-to-end tests for user workflows
+**Frontend Tests:**
+```javascript
+import { describe, it, expect } from 'vitest';
+import { truncateAddress } from '../../frontend/src/js/explorer-utils.js';
+
+describe('Explorer Utilities', () => {
+  it('should truncate Ethereum addresses', () => {
+    const address = '0x1234567890123456789012345678901234567890';
+    const truncated = truncateAddress(address);
+    expect(truncated).toBe('0x1234...7890');
+  });
+});
+```
+
+See `test/frontend/README.md` for frontend testing documentation.
 
 ## Development Workflow
 

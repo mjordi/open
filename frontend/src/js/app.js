@@ -157,22 +157,32 @@ function isValidAddress(address) {
 }
 
 /**
- * Save contract address to localStorage
+ * Save contract address to localStorage (network-specific)
  */
 function saveContractAddress(address) {
     try {
-        localStorage.setItem('open_contract_address', address);
+        if (!AppState.chainId) {
+            console.warn('Cannot save contract address: chainId not available');
+            return;
+        }
+        const key = `open_contract_address_${AppState.chainId}`;
+        localStorage.setItem(key, address);
     } catch (error) {
         console.warn('Failed to save contract address to localStorage:', error);
     }
 }
 
 /**
- * Load contract address from localStorage
+ * Load contract address from localStorage (network-specific)
  */
 function loadContractAddress() {
     try {
-        return localStorage.getItem('open_contract_address');
+        if (!AppState.chainId) {
+            console.warn('Cannot load contract address: chainId not available');
+            return null;
+        }
+        const key = `open_contract_address_${AppState.chainId}`;
+        return localStorage.getItem(key);
     } catch (error) {
         console.warn('Failed to load contract address from localStorage:', error);
         return null;
@@ -297,6 +307,16 @@ async function connectToContract(address) {
 
         if (!isValidAddress(address)) {
             showNotification('Invalid contract address', 'error');
+            return false;
+        }
+
+        // Validate that a contract exists at this address
+        const provider = AppState.signer.provider;
+        const code = await provider.getCode(address);
+
+        if (code === '0x') {
+            showNotification('No contract found at this address. Please deploy a contract first.', 'error');
+            console.error('No contract deployed at address:', address);
             return false;
         }
 

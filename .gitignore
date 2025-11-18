@@ -37,6 +37,9 @@ types/
 # Frontend build artifacts
 frontend/dist/
 frontend/src/generated/
+# Exception: Allow ABI and bytecode files needed for deployment
+!frontend/src/generated/abi.js
+!frontend/src/generated/bytecode.js
 
 # Environment variables
 .env

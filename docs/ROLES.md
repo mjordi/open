@@ -1,6 +1,6 @@
-# AGENTS - Roles and Actors in the OPEN System
+# ROLES - User Roles and Actors in the OPEN System
 
-This document describes the different agents (actors/roles) that interact with the OPEN blockchain access management system, their permissions, capabilities, and responsibilities.
+This document describes the different user roles (actors/agents) that interact with the OPEN blockchain access management system, their permissions, capabilities, and responsibilities.
 
 ## Overview
 
@@ -425,8 +425,8 @@ Before marking any task as complete, verify that all relevant documentation file
    - Code quality requirements
    - Dependency versions
 
-3. **AGENTS.md**: Update if changes affect:
-   - Agent roles or permissions
+3. **ROLES.md**: Update if changes affect:
+   - User roles or permissions
    - Access control logic
    - Authorization workflows
    - Security considerations

@@ -203,7 +203,7 @@ Update documentation when:
 Files to consider:
 - README.md - User-facing documentation
 - IMPROVEMENTS.md - Known issues and future work
-- AGENTS.md - System roles and permissions
+- ROLES.md - System roles and permissions
 - This file (DEVELOPMENT.md) - Development practices
 
 ## Getting Help

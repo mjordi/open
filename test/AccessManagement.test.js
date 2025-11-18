@@ -919,9 +919,11 @@ describe("AccessManagement", function () {
       ];
 
       // user1 (who is not owner/admin) can submit batch logs
-      await expect(
-        accessManagement.connect(user1).batchLogAccess(entries)
-      ).to.not.be.revertedWith();
+      const tx = await accessManagement.connect(user1).batchLogAccess(entries);
+      const receipt = await tx.wait();
+
+      // Verify the transaction succeeded
+      expect(receipt.status).to.equal(1);
     });
 
     it("Should handle logs for multiple different assets", async function () {

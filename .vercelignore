@@ -1,0 +1,37 @@
+# Dependencies
+node_modules
+package-lock.json
+
+# Test files
+test
+tests
+*.test.js
+*.spec.js
+
+# Build artifacts
+artifacts
+cache
+coverage
+
+# Smart contracts (not needed for frontend deployment)
+contracts
+scripts
+
+# Documentation
+*.md
+docs
+
+# Git
+.git
+.github
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Environment files
+.env
+.env.*
+!.env.example

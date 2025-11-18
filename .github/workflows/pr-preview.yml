@@ -38,11 +38,44 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: Checkout gh-pages branch
-        uses: actions/checkout@v5
-        with:
-          ref: gh-pages
-          path: gh-pages-branch
+      - name: Checkout gh-pages branch (or create if doesn't exist)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Check if gh-pages branch exists
+          if git ls-remote --heads origin gh-pages | grep -q gh-pages; then
+            echo "gh-pages branch exists, checking out..."
+            git clone --depth 1 --branch gh-pages https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git gh-pages-branch
+          else
+            echo "gh-pages branch does not exist, creating new one..."
+            mkdir -p gh-pages-branch
+            cd gh-pages-branch
+            git init
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+
+            # Create initial index.html
+            cat > index.html << 'INDEXEOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Access Management - GitHub Pages</title>
+            <meta http-equiv="refresh" content="0; url=./previews.html">
+          </head>
+          <body>
+            <p>Redirecting to <a href="./previews.html">PR Previews</a>...</p>
+          </body>
+          </html>
+          INDEXEOF
+
+            git add index.html
+            git commit -m "Initial gh-pages commit"
+            git branch -M gh-pages
+
+            # Add remote with authentication
+            git remote add origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+            cd ..
+          fi
 
       - name: Prepare preview directory
         run: |
@@ -112,12 +145,27 @@ jobs:
 
       - name: Commit and push to gh-pages
         working-directory: gh-pages-branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "Deploy preview for PR #${{ github.event.pull_request.number }}" || exit 0
-          git push
+
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Deploy preview for PR #${{ github.event.pull_request.number }}"
+
+            # Set up remote if not already configured
+            if ! git remote | grep -q origin; then
+              git remote add origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+            fi
+
+            # Push to gh-pages branch
+            git push origin gh-pages
+          fi
 
       - name: Comment on PR
         uses: actions/github-script@v7

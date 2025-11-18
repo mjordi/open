@@ -25,6 +25,15 @@ contract AccessManagement {
         bool initialized;      // Whether this asset has been created
     }
 
+    /// @notice Access log entry for batch audit logging
+    /// @dev Used by IoT devices to submit multiple access logs in one transaction
+    struct AccessLogEntry {
+        address user;          // User who attempted access
+        string assetKey;       // Asset that was accessed
+        uint256 timestamp;     // When the access occurred (Unix timestamp)
+        bool granted;          // Whether access was granted
+    }
+
     mapping(string => Asset) assetStructs;  // Mapping from asset key to Asset
     string[] assetList;  // List of all asset keys
 
@@ -191,6 +200,35 @@ contract AccessManagement {
             emit AccessLog(msg.sender, assetKey, false);
             return false;
         }
+    }
+
+    /// @notice Checks if a user can access an asset without creating an audit trail
+    /// @dev View function - free to call off-chain, ideal for IoT devices and UI state management
+    /// @dev Does NOT emit events or modify state, making it gas-free when called off-chain
+    /// @param assetKey The unique identifier of the asset
+    /// @param user The address to check
+    /// @return bool True if user is owner or has valid non-expired authorization
+    function canAccess(string calldata assetKey, address user)
+        external view returns(bool) {
+        return assetStructs[assetKey].owner == user || isAuthorized(assetKey, user);
+    }
+
+    /// @notice Batch log multiple access events in a single transaction
+    /// @dev More gas-efficient than calling getAccess() multiple times
+    /// @dev Intended for IoT devices (e.g., door controllers) to periodically upload access logs
+    /// @dev Caller is responsible for ensuring log integrity and accuracy
+    /// @param entries Array of access log entries to record
+    /// @return success True if all logs were recorded successfully
+    function batchLogAccess(AccessLogEntry[] calldata entries)
+        external returns(bool success) {
+        require(entries.length > 0, "Empty log entries");
+        require(entries.length <= 100, "Too many entries, max 100 per batch");
+
+        for (uint i = 0; i < entries.length; i++) {
+            emit AccessLog(entries[i].user, entries[i].assetKey, entries[i].granted);
+        }
+
+        return true;
     }
 
     /// @notice Transfers ownership of an asset to a new owner

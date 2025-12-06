@@ -15,7 +15,7 @@ OPEN is a blockchain-based access management system implementing role-based acce
 - **Development Framework**: Hardhat
 - **Blockchain Interaction**: Web3.js
 - **Frontend**: Vanilla JavaScript (no framework)
-- **Node Version**: >=22.10.0
+- **Node Version**: >=24.0.0
 
 ## Build and Setup
 
@@ -111,7 +111,7 @@ npx hardhat clean
 
 ### Common Issues
 - **Artifacts missing**: Run `npm run generate`
-- **Tests failing**: Ensure you're using Node >= 22.10.0
+- **Tests failing**: Ensure you're using Node >= 24.0.0
 - **MetaMask not connecting**: Check network is localhost:8545, Chain ID 31337
 - **Contract not found**: Redeploy contracts after restarting Hardhat node
 

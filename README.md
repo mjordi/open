@@ -15,7 +15,7 @@ Live demo: **[Deploy to Vercel for live preview →](docs/DEPLOYMENT.md)**
 ## Installation
 
 **Prerequisites:**
-- Node.js 22.10.0 or higher ([Download](https://nodejs.org))
+- Node.js 24.0.0 or higher ([Download](https://nodejs.org))
 - [MetaMask](https://metamask.io) browser extension
 - Testnet ETH from [Sepolia Faucet](https://sepoliafaucet.com) (for testing)
 

@@ -4,7 +4,6 @@
   "framework": null,
   "installCommand": "npm install",
   "devCommand": "npm run serve",
-  "nodeVersion": "24.x",
   "rewrites": [
     {
       "source": "/(.*)",

@@ -6,16 +6,16 @@ This document outlines the development practices and requirements for the OPEN b
 
 ### Node.js Version
 
-**Required**: Node.js 22.10.0 or higher
+**Required**: Node.js 24.0.0 or higher
 
-- Hardhat 3 requires Node.js version 22.10.0 or higher (even-numbered LTS versions only)
+- Hardhat 3 requires Node.js version 24.0.0 or higher (even-numbered LTS versions only)
 - Node.js 18 reached end-of-life in April 2025 and is no longer supported
 - Install Node.js from [https://nodejs.org](https://nodejs.org)
-- Verify your version: `node --version` (should be v22.10.0 or higher)
+- Verify your version: `node --version` (should be v24.0.0 or higher)
 - For version management, use [nvm](https://github.com/nvm-sh/nvm):
   ```bash
-  nvm install 22
-  nvm use 22
+  nvm install 24
+  nvm use 24
   ```
 
 **Why even-numbered versions only?**

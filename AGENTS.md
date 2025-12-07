@@ -121,7 +121,12 @@ npx hardhat clean
 - Contracts directory must NOT be in .vercelignore (needed for compilation)
 - Scripts directory must NOT be in .vercelignore (needed for artifact generation)
 - Build command: `npm run build` (compiles contracts and generates artifacts)
-- Output directory: `frontend`
+- Output directory: `frontend/dist`
+- Install command: `npm install`
+- Framework preset: Other (no framework)
+- Dev command: `npm run serve` (local development only, NOT for deployment)
+- All settings are defined in `vercel.json` and should match Project Settings
+- **IMPORTANT**: Production deployments should NOT have overrides - they should use settings from `vercel.json`
 
 ### Security Considerations
 - **Private Keys**: Never commit .env files or private keys

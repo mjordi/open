@@ -20,10 +20,10 @@
     "serve": "npx http-server frontend/public -p 8000"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.1",
-    "@vitest/ui": "^4.0.14",
+    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.2",
+    "@vitest/ui": "^4.0.15",
     "happy-dom": "^20.0.11",
-    "hardhat": "^3.0.16",
+    "hardhat": "^3.0.17",
     "jsdom": "^27.2.0",
     "vitest": "^4.0.10"
   },

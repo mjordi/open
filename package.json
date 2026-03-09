@@ -22,8 +22,8 @@
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.3",
     "@vitest/ui": "^4.0.18",
-    "happy-dom": "^20.7.0",
-    "hardhat": "^3.1.10",
+    "happy-dom": "^20.8.3",
+    "hardhat": "^3.1.11",
     "jsdom": "^28.1.0",
     "vitest": "^4.0.10"
   },

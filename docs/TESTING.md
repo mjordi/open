@@ -23,9 +23,12 @@ The project includes comprehensive automated testing for both smart contracts an
 npm test
 ```
 
-Or directly with Hardhat:
+`npm test` now preloads the Solidity compiler cache before running Hardhat. This avoids transient `HHE905` failures in environments where Node.js cannot directly reach `binaries.soliditylang.org` but `curl` is available.
+
+Or directly with Hardhat (contract test files only):
 ```bash
-npx hardhat test
+node scripts/prepare-solc-cache.js
+npx hardhat test test/*.test.js
 ```
 
 ### Run Frontend Tests

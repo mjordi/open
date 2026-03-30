@@ -7,7 +7,7 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "test": "npx hardhat test",
+    "test": "node scripts/prepare-solc-cache.js && npx hardhat test test/*.test.js",
     "test:frontend": "vitest run",
     "test:frontend:watch": "vitest",
     "test:frontend:ui": "vitest --ui",

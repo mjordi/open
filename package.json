@@ -20,14 +20,20 @@
     "serve": "npx http-server frontend/public -p 8000"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.4",
+    "@nomicfoundation/hardhat-ethers": "^4.0.10",
+    "@nomicfoundation/hardhat-ethers-chai-matchers": "^3.0.7",
+    "@nomicfoundation/hardhat-mocha": "^3.0.18",
     "@vitest/ui": "^4.1.5",
+    "chai": "^6.2.2",
+    "ethers": "^6.16.0",
     "happy-dom": "^20.9.0",
     "hardhat": "^3.4.4",
     "jsdom": "^29.1.1",
     "vitest": "^4.0.10"
   },
   "overrides": {
-    "glob": ">=11.1.0"
+    "diff": "^8.0.3",
+    "glob": ">=11.1.0",
+    "serialize-javascript": "^7.0.5"
   }
 }

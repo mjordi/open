@@ -103,13 +103,4 @@ htmlContent = htmlContent
 fs.writeFileSync(path.join(DIST_DIR, 'index.html'), htmlContent);
 console.log('✓ Updated paths in index.html');
 
-// Update module import paths in app.js for dist
-let appJsContent = fs.readFileSync(path.join(DIST_DIR, 'js/app.js'), 'utf8');
-appJsContent = appJsContent
-    .replace('./network-config.js', './network-config.js')
-    .replace('./explorer-utils.js', './explorer-utils.js')
-    .replace('./transaction-storage.js', './transaction-storage.js');
-fs.writeFileSync(path.join(DIST_DIR, 'js/app.js'), appJsContent);
-console.log('✓ Updated module paths in app.js');
-
 console.log('\n✓ Frontend built successfully in frontend/dist/');

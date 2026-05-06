@@ -3,12 +3,8 @@
  */
 
 // Import modules
-import { getExplorerConfig, hasExplorer } from './network-config.js';
 import {
-    createTxHashLink,
-    createAddressLink,
     getTxExplorerUrl,
-    getAddressExplorerUrl,
     truncateHash as truncateHashUtil
 } from './explorer-utils.js';
 import {
@@ -39,29 +35,48 @@ const AppState = {
 function showNotification(message, type = 'info', duration = 5000) {
     const container = document.getElementById('notification-container');
     const toastId = `toast-${Date.now()}`;
-
     const iconMap = {
         success: 'check-circle-fill',
         error: 'exclamation-triangle-fill',
         warning: 'exclamation-circle-fill',
         info: 'info-circle-fill'
     };
+    const toastType = iconMap[type] ? type : 'info';
 
-    const toastHTML = `
-        <div class="toast toast-${type} fade-in" id="${toastId}" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header toast-${type}">
-                <i class="bi bi-${iconMap[type]} me-2"></i>
-                <strong class="me-auto">${type.charAt(0).toUpperCase() + type.slice(1)}</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-            <div class="toast-body">
-                ${message}
-            </div>
-        </div>
-    `;
+    const toastElement = document.createElement('div');
+    toastElement.className = `toast toast-${toastType} fade-in`;
+    toastElement.id = toastId;
+    toastElement.setAttribute('role', 'alert');
+    toastElement.setAttribute('aria-live', 'assertive');
+    toastElement.setAttribute('aria-atomic', 'true');
 
-    container.insertAdjacentHTML('beforeend', toastHTML);
-    const toastElement = document.getElementById(toastId);
+    const header = document.createElement('div');
+    header.className = `toast-header toast-${toastType}`;
+
+    const icon = document.createElement('i');
+    icon.className = `bi bi-${iconMap[toastType]} me-2`;
+    header.appendChild(icon);
+
+    const title = document.createElement('strong');
+    title.className = 'me-auto';
+    title.textContent = toastType.charAt(0).toUpperCase() + toastType.slice(1);
+    header.appendChild(title);
+
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'btn-close';
+    closeButton.setAttribute('data-bs-dismiss', 'toast');
+    closeButton.setAttribute('aria-label', 'Close');
+    header.appendChild(closeButton);
+
+    const body = document.createElement('div');
+    body.className = 'toast-body';
+    body.style.whiteSpace = 'pre-line';
+    body.textContent = message;
+
+    toastElement.append(header, body);
+    container.appendChild(toastElement);
+
     const toast = new bootstrap.Toast(toastElement, { autohide: true, delay: duration });
     toast.show();
 
@@ -87,42 +102,129 @@ function addEventToLog(eventName, message, type = 'info', txHash = null, blockNu
         error: 'x-circle',
         info: 'info-circle'
     };
+    const eventType = iconMap[type] ? type : 'info';
 
     const timestamp = new Date().toLocaleTimeString();
 
-    // Build additional info HTML
-    let additionalInfo = '';
+    const item = document.createElement('div');
+    item.className = 'list-group-item event-item fade-in';
+
+    const row = document.createElement('div');
+    row.className = 'd-flex align-items-start';
+
+    const iconWrapper = document.createElement('div');
+    iconWrapper.className = `event-icon ${eventType} me-3`;
+
+    const icon = document.createElement('i');
+    icon.className = `bi bi-${iconMap[eventType]}`;
+    iconWrapper.appendChild(icon);
+
+    const content = document.createElement('div');
+    content.className = 'flex-grow-1';
+
+    const header = document.createElement('div');
+    header.className = 'd-flex justify-content-between align-items-center mb-1';
+
+    const title = document.createElement('strong');
+    title.textContent = eventName;
+
+    const time = document.createElement('span');
+    time.className = 'event-timestamp';
+    time.textContent = timestamp;
+
+    header.append(title, time);
+
+    const messageElement = document.createElement('div');
+    messageElement.className = 'text-muted small';
+    messageElement.textContent = message;
+
+    content.append(header, messageElement);
+
     if (txHash && AppState.network) {
-        const txLink = createTxHashLink(txHash, AppState.network.chainId);
-        additionalInfo += `<div class="mt-1"><small class="text-muted">Tx: ${txLink}</small></div>`;
+        const txInfo = document.createElement('div');
+        txInfo.className = 'mt-1';
+
+        const txText = document.createElement('small');
+        txText.className = 'text-muted';
+        txText.append('Tx: ', createTxHashElement(txHash, AppState.network.chainId));
+
+        txInfo.appendChild(txText);
+        content.appendChild(txInfo);
     }
+
     if (blockNumber) {
-        additionalInfo += `<div class="mt-1"><small class="text-muted">Block: #${blockNumber.toLocaleString()}</small></div>`;
+        const blockInfo = document.createElement('div');
+        blockInfo.className = 'mt-1';
+
+        const blockText = document.createElement('small');
+        blockText.className = 'text-muted';
+        blockText.textContent = `Block: #${blockNumber.toLocaleString()}`;
+
+        blockInfo.appendChild(blockText);
+        content.appendChild(blockInfo);
     }
 
-    const eventHTML = `
-        <div class="list-group-item event-item fade-in">
-            <div class="d-flex align-items-start">
-                <div class="event-icon ${type} me-3">
-                    <i class="bi bi-${iconMap[type]}"></i>
-                </div>
-                <div class="flex-grow-1">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <strong>${eventName}</strong>
-                        <span class="event-timestamp">${timestamp}</span>
-                    </div>
-                    <div class="text-muted small">${message}</div>
-                    ${additionalInfo}
-                </div>
-            </div>
-        </div>
-    `;
-
-    eventLog.insertAdjacentHTML('afterbegin', eventHTML);
+    row.append(iconWrapper, content);
+    item.appendChild(row);
+    eventLog.prepend(item);
 
     // Keep only last 50 events
     while (eventLog.children.length > 50) {
         eventLog.lastChild.remove();
+    }
+}
+
+/**
+ * Create a safe transaction hash display element
+ */
+function createTxHashElement(txHash, chainId, truncate = true) {
+    const displayHash = truncate ? truncateHashUtil(txHash) : txHash;
+    const code = document.createElement('code');
+    code.textContent = displayHash || '';
+
+    if (!isValidTxHash(txHash)) {
+        code.className = 'tx-hash';
+        return code;
+    }
+
+    const url = getTxExplorerUrl(encodeURIComponent(txHash), chainId);
+    if (!isSafeExplorerUrl(url)) {
+        code.className = 'tx-hash';
+        return code;
+    }
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.className = 'explorer-link tx-link';
+    link.title = txHash || '';
+    link.appendChild(code);
+    link.append(' ');
+
+    const icon = document.createElement('i');
+    icon.className = 'bi bi-box-arrow-up-right';
+    link.appendChild(icon);
+
+    return link;
+}
+
+/**
+ * Validate transaction hashes before using them in explorer URLs
+ */
+function isValidTxHash(txHash) {
+    return /^0x[a-fA-F0-9]{64}$/.test(txHash);
+}
+
+/**
+ * Validate explorer URLs before assigning them to link hrefs
+ */
+function isSafeExplorerUrl(url) {
+    try {
+        const parsed = new URL(url);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+        return false;
     }
 }
 
@@ -592,16 +694,14 @@ async function showAssetAuthorizations(assetKey) {
             authorizations.push({ address, role });
         }
 
-        let authHTML = `<strong>Authorizations for "${escapeHtml(assetKey)}":</strong><br><br>`;
-        authorizations.forEach(auth => {
-            authHTML += `<div class="mb-2">
-                <span class="badge bg-secondary">${escapeHtml(auth.role)}</span>
-                <code class="ms-2">${truncateAddress(auth.address)}</code>
-            </div>`;
-        });
+        const authText = [
+            `Authorizations for "${assetKey}":`,
+            '',
+            ...authorizations.map(auth => `${auth.role}: ${truncateAddress(auth.address)}`)
+        ].join('\n');
 
         // Show in notification
-        showNotification(authHTML, 'info', 10000);
+        showNotification(authText, 'info', 10000);
 
         // Also log to console with full details
         console.table(authorizations);
@@ -973,7 +1073,7 @@ async function checkRole(e) {
 
         if (role && role !== '') {
             showNotification(
-                `Role for ${truncateAddress(address)} on asset "${assetKey}": <strong>${role}</strong>`,
+                `Role for ${truncateAddress(address)} on asset "${assetKey}": ${role}`,
                 'success',
                 8000
             );
@@ -1184,46 +1284,83 @@ function renderTransactionHistory(filters = { type: 'all', status: 'all' }) {
         return;
     }
 
-    // Build transaction list HTML
-    const txListHTML = transactions.map(tx => {
-        const statusBadge = getStatusBadge(tx.status);
+    const list = document.createElement('div');
+    list.className = 'list-group list-group-flush';
+
+    transactions.forEach(tx => {
         const typeLabel = formatTxType(tx.type);
         const timestamp = new Date(tx.timestamp).toLocaleString();
-        const txLink = AppState.network ? createTxHashLink(tx.hash, tx.chainId) : truncateHashUtil(tx.hash);
         const blockInfo = tx.blockNumber ? `#${tx.blockNumber.toLocaleString()}` : 'Pending';
 
-        return `
-            <div class="list-group-item list-group-item-action">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div class="flex-grow-1">
-                        <div class="d-flex align-items-center mb-2">
-                            ${statusBadge}
-                            <span class="badge bg-secondary ms-2">${typeLabel}</span>
-                        </div>
-                        <p class="mb-1">${tx.description}</p>
-                        <small class="text-muted">
-                            <div>Tx: ${txLink}</div>
-                            <div class="mt-1">Block: ${blockInfo} • ${timestamp}</div>
-                        </small>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
+        const item = document.createElement('div');
+        item.className = 'list-group-item list-group-item-action';
 
-    container.innerHTML = `<div class="list-group list-group-flush">${txListHTML}</div>`;
+        const row = document.createElement('div');
+        row.className = 'd-flex justify-content-between align-items-start';
+
+        const content = document.createElement('div');
+        content.className = 'flex-grow-1';
+
+        const badgeRow = document.createElement('div');
+        badgeRow.className = 'd-flex align-items-center mb-2';
+        badgeRow.appendChild(createStatusBadge(tx.status));
+
+        const typeBadge = document.createElement('span');
+        typeBadge.className = 'badge bg-secondary ms-2';
+        typeBadge.textContent = typeLabel;
+        badgeRow.appendChild(typeBadge);
+
+        const description = document.createElement('p');
+        description.className = 'mb-1';
+        description.textContent = tx.description || '';
+
+        const meta = document.createElement('small');
+        meta.className = 'text-muted';
+
+        const txInfo = document.createElement('div');
+        txInfo.append('Tx: ');
+        if (AppState.network) {
+            txInfo.appendChild(createTxHashElement(tx.hash, tx.chainId));
+        } else {
+            const txHash = document.createElement('code');
+            txHash.className = 'tx-hash';
+            txHash.textContent = truncateHashUtil(tx.hash);
+            txInfo.appendChild(txHash);
+        }
+
+        const block = document.createElement('div');
+        block.className = 'mt-1';
+        block.textContent = `Block: ${blockInfo} • ${timestamp}`;
+
+        meta.append(txInfo, block);
+        content.append(badgeRow, description, meta);
+        row.appendChild(content);
+        item.appendChild(row);
+        list.appendChild(item);
+    });
+
+    container.replaceChildren(list);
 }
 
 /**
- * Get status badge HTML
+ * Get status badge element
  */
-function getStatusBadge(status) {
+function createStatusBadge(status) {
     const badges = {
-        pending: '<span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split"></i> Pending</span>',
-        confirmed: '<span class="badge bg-success"><i class="bi bi-check-circle"></i> Confirmed</span>',
-        failed: '<span class="badge bg-danger"><i class="bi bi-x-circle"></i> Failed</span>'
+        pending: { className: 'badge bg-warning text-dark', icon: 'hourglass-split', label: 'Pending' },
+        confirmed: { className: 'badge bg-success', icon: 'check-circle', label: 'Confirmed' },
+        failed: { className: 'badge bg-danger', icon: 'x-circle', label: 'Failed' }
     };
-    return badges[status] || badges.pending;
+    const badge = badges[status] || badges.pending;
+
+    const element = document.createElement('span');
+    element.className = badge.className;
+
+    const icon = document.createElement('i');
+    icon.className = `bi bi-${badge.icon}`;
+
+    element.append(icon, ` ${badge.label}`);
+    return element;
 }
 
 /**

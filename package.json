@@ -23,11 +23,11 @@
     "@nomicfoundation/hardhat-ethers": "^4.0.12",
     "@nomicfoundation/hardhat-ethers-chai-matchers": "^3.0.9",
     "@nomicfoundation/hardhat-mocha": "^3.0.20",
-    "@vitest/ui": "^4.1.7",
+    "@vitest/ui": "^4.1.8",
     "chai": "^6.2.2",
     "ethers": "^6.16.0",
     "happy-dom": "^20.9.0",
-    "hardhat": "^3.5.1",
+    "hardhat": "^3.7.0",
     "jsdom": "^29.1.1",
     "vitest": "^4.0.10"
   },

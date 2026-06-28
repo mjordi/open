@@ -25,8 +25,8 @@
     "@nomicfoundation/hardhat-mocha": "^3.0.21",
     "@vitest/ui": "^4.1.9",
     "chai": "^6.2.2",
-    "ethers": "^6.16.0",
-    "happy-dom": "^20.10.3",
+    "ethers": "^6.17.0",
+    "happy-dom": "^20.10.6",
     "hardhat": "^3.9.0",
     "jsdom": "^29.1.1",
     "vitest": "^4.0.10"

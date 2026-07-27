@@ -26,9 +26,9 @@
     "@vitest/ui": "^4.1.10",
     "chai": "^6.2.2",
     "ethers": "^6.17.0",
-    "happy-dom": "^20.11.0",
-    "hardhat": "^3.11.0",
-    "jsdom": "^29.1.1",
+    "happy-dom": "^20.11.1",
+    "hardhat": "^3.11.1",
+    "jsdom": "^30.0.0",
     "vitest": "^4.0.10"
   },
   "overrides": {

@@ -217,6 +217,69 @@ Before deploying changes:
 - [ ] No SQL injection risks (if applicable)
 - [ ] Contract addresses verified before deployment
 
+## Dependency Security Overrides
+
+Every dependency in this project is a devDependency, but advisories still
+surface through `npm audit` and Dependabot. When a vulnerable package is a
+**transitive** dependency — nothing in `package.json` requires it directly — the
+fix goes in the `overrides` block of `package.json`.
+
+### Why overrides and not `npm audit fix`
+
+`npm audit fix` rewrites `package-lock.json` only. If the parent package's
+declared range still admits the vulnerable version (for example `minimatch`
+requiring `brace-expansion@^2.0.2`), the next lockfile regeneration can quietly
+resolve back to it. An entry in `overrides` is recorded in `package.json` and
+survives that, so the pin is the durable fix and the lockfile bump alone is not.
+
+### Current overrides
+
+| Override | Pinned to | Reason |
+| :--- | :--- | :--- |
+| `brace-expansion@2` | `^2.1.4` | GHSA-mh99-v99m-4gvg, GHSA-rgw5-rvv9-x895 (high) — unbounded expansion DoS; reached via `minimatch` |
+| `brace-expansion@5` | `^5.0.9` | Same advisories, 5.x line; reached via `glob` → `minimatch` |
+| `diff` | `^8.0.3` | Security pin inherited from "Fix vulnerable dependencies" (#126) |
+| `glob` | `>=11.1.0` | Build-compatibility pin, not an advisory (see #126-era Vercel build fixes) |
+| `js-yaml` | `^4.3.1` | GHSA-5p4m-2wfm-xmqj (high); reached via `mocha` |
+| `postcss` | `^8.5.18` | GHSA-r28c-9q8g-f849 (high); reached via `vitest` → `vite` |
+| `serialize-javascript` | `^7.0.5` | Security pin inherited from "Fix vulnerable dependencies" (#126) |
+| `undici@<6.28.0` | `^6.28.0` | CVE-2026-15157, CVE-2026-16728, CVE-2026-16729 (moderate); reached via `@nomicfoundation/hardhat-utils` |
+
+### Version-scoped keys
+
+Two entries above use the `name@range` form rather than a bare package name.
+This is deliberate and must be preserved:
+
+- **`undici@<6.28.0`** — the tree contains two copies of `undici`: 6.x under
+  `@nomicfoundation/hardhat-utils` (vulnerable) and 8.x under `jsdom` (already
+  unaffected). A bare `"undici": "^6.28.0"` would force `jsdom` down to a major
+  version it does not support. Scoping the key to `<6.28.0` rewrites only the
+  vulnerable edge.
+- **`brace-expansion@2` / `brace-expansion@5`** — two major lines coexist in the
+  tree and are patched independently. A single bare override would collapse one
+  onto the other.
+
+### Maintaining these pins
+
+- **Verify a pin actually holds** by regenerating a lockfile from scratch, not
+  just by reading the current one:
+  ```bash
+  mkdir /tmp/regen && cp package.json /tmp/regen/
+  cd /tmp/regen && npm install --package-lock-only && npm audit
+  ```
+  A pin that only exists in the committed lockfile will show its vulnerable
+  version here.
+- **After changing overrides**, run the full suite (`npm run test:all`) and
+  `npm run build`. Overrides move transitive versions under tooling, so build
+  and test breakage is the expected failure mode.
+- **Removing an override** is safe once every dependent's declared range no
+  longer admits a vulnerable version — usually after the parent package
+  publishes a release that requires the patched version itself. Check with
+  `npm ls <package>` before dropping an entry, then re-run the from-scratch
+  regeneration above to confirm `npm audit` stays clean. When in doubt, leave
+  the pin: a stale override costs little, a rolled-back one reintroduces a
+  known advisory.
+
 ## Documentation Requirements
 
 Update documentation when:

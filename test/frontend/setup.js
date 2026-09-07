@@ -35,7 +35,12 @@ class LocalStorageMock {
   }
 }
 
-global.localStorage = new LocalStorageMock();
+// happy-dom's window.localStorage is a getter-only accessor, so a plain
+// assignment throws ("Cannot set property localStorage ... which has only
+// a getter"). vi.stubGlobal defines the property directly instead of going
+// through the accessor, which works regardless of the environment's own
+// localStorage implementation.
+vi.stubGlobal('localStorage', new LocalStorageMock());
 
 // Mock console methods to reduce test noise (optional)
 const originalConsoleError = console.error;

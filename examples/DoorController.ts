@@ -44,6 +44,13 @@ interface AccessLogEntry {
   granted: boolean;
 }
 
+/** A batch that was submitted but whose receipt was never seen */
+interface UnconfirmedBatch {
+  txHash: string;
+  entries: AccessLogEntry[];
+  checks: number;
+}
+
 interface PermissionCache {
   owner: string;
   /** address (lowercase) -> expiry as a Unix timestamp, 0 when the grant never expires */
@@ -60,7 +67,9 @@ export class DoorController {
   private syncInterval: NodeJS.Timeout | null = null;
   private uploadInterval: NodeJS.Timeout | null = null;
   private isUploading = false;
+  private unconfirmedBatches: UnconfirmedBatch[] = [];
   private isSyncing = false;
+  private syncInFlight: Promise<void> | null = null;
   // Addresses whose authorization changed while a snapshot was being built
   private missedDuringSync = new Set<string>();
   // Whether ownership was transferred while a snapshot was being built
@@ -71,6 +80,7 @@ export class DoorController {
   private readonly UPLOAD_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
   private readonly MAX_CACHE_AGE_MS = 60 * 60 * 1000; // 1 hour
   private readonly MAX_BATCH_SIZE = 100;
+  private readonly MAX_RECEIPT_CHECKS = 5;
 
   constructor(
     providerUrl: string,
@@ -137,7 +147,25 @@ export class DoorController {
    * Sync permissions from blockchain
    * This is a view call, so it's free and fast
    */
-  private async syncPermissions(): Promise<void> {
+  private syncPermissions(): Promise<void> {
+    // A stale cache makes every validateAccess() trigger an emergency sync, so several
+    // can be launched at once while RPC connectivity recovers. They would share and
+    // clear the mid-sync bookkeeping below, and a late snapshot could overwrite a
+    // revocation an earlier one already replayed. Run one at a time and let callers
+    // await the snapshot already in flight.
+    if (this.syncInFlight) {
+      console.log('[DoorController] Sync already in progress, awaiting it');
+      return this.syncInFlight;
+    }
+
+    this.syncInFlight = this.runSyncPermissions().finally(() => {
+      this.syncInFlight = null;
+    });
+
+    return this.syncInFlight;
+  }
+
+  private async runSyncPermissions(): Promise<void> {
     this.isSyncing = true;
     this.missedDuringSync.clear();
     this.ownerChangedDuringSync = false;
@@ -430,38 +458,110 @@ export class DoorController {
 
     this.isUploading = true;
 
-    // Take the pending entries out of the buffer up front: entries logged while the
-    // upload runs stay queued for the next round instead of being dropped.
-    const pending = this.localAuditLog.splice(0, this.localAuditLog.length);
-    const batches = this.chunkArray(pending, this.MAX_BATCH_SIZE);
-    let uploaded = 0;
-
     try {
+      // Settle anything submitted earlier whose receipt never came back, before
+      // sending more. Re-sending a batch that did land duplicates audit events.
+      await this.reconcileUnconfirmedBatches();
+
+      if (this.localAuditLog.length === 0) return;
+
+      // Take the pending entries out of the buffer up front: entries logged while the
+      // upload runs stay queued for the next round instead of being dropped.
+      const pending = this.localAuditLog.splice(0, this.localAuditLog.length);
+      const batches = this.chunkArray(pending, this.MAX_BATCH_SIZE);
+
       console.log(`[DoorController] Uploading ${pending.length} logs in ${batches.length} batches...`);
 
       for (let i = 0; i < batches.length; i++) {
         const batch = batches[i];
+        let txHash: string | undefined;
 
         console.log(`[DoorController] Uploading batch ${i + 1}/${batches.length} (${batch.length} entries)...`);
 
-        // Send transaction
-        const tx = await this.contract.batchLogAccess(batch);
-        const receipt = await tx.wait();
-        uploaded = i + 1;
+        try {
+          // Send transaction
+          const tx = await this.contract.batchLogAccess(batch);
+          txHash = tx.hash;
+          const receipt = await tx.wait();
 
-        console.log(`[DoorController] Batch ${i + 1} uploaded: ${receipt.hash}`);
+          console.log(`[DoorController] Batch ${i + 1} uploaded: ${receipt.hash}`);
+        } catch (error) {
+          console.error(`[DoorController] Batch ${i + 1} failed:`, error);
+
+          const requeue: AccessLogEntry[] = [];
+
+          if (txHash) {
+            // The transaction was accepted by the node; only the receipt is missing
+            // (a dropped connection, say). It may well be mined, so hold the entries
+            // against the hash and check the receipt before ever re-sending them.
+            console.warn(`[DoorController] Batch ${i + 1} unconfirmed, holding tx ${txHash}`);
+            this.unconfirmedBatches.push({ txHash, entries: batch, checks: 0 });
+          } else {
+            // Never left this process, so it is safe to re-queue as-is
+            requeue.push(...batch);
+          }
+
+          // Whatever came after it was never attempted
+          requeue.push(...batches.slice(i + 1).flat());
+          this.localAuditLog.unshift(...requeue);
+          return;
+        }
       }
 
       console.log('[DoorController] All logs uploaded successfully');
     } catch (error) {
       console.error('[DoorController] Failed to upload logs:', error);
-      // Re-queue only what was not confirmed on-chain, so a failure halfway
-      // through does not duplicate the batches that already succeeded.
-      const notUploaded = batches.slice(uploaded).flat();
-      this.localAuditLog.unshift(...notUploaded);
     } finally {
       this.isUploading = false;
     }
+  }
+
+  /**
+   * Decide the fate of batches that were submitted but never confirmed.
+   *
+   * A mined transaction whose receipt was lost must not be re-sent: that would write
+   * the same access records to the audit trail twice. Look the receipt up by hash and
+   * only re-queue the entries when the transaction is known to have failed, or when it
+   * has stayed unmined long enough to be considered dropped.
+   */
+  private async reconcileUnconfirmedBatches(): Promise<void> {
+    if (this.unconfirmedBatches.length === 0) return;
+
+    console.log(`[DoorController] Reconciling ${this.unconfirmedBatches.length} unconfirmed batch(es)...`);
+    const stillUnconfirmed: UnconfirmedBatch[] = [];
+
+    for (const batch of this.unconfirmedBatches) {
+      try {
+        const receipt = await this.provider.getTransactionReceipt(batch.txHash);
+
+        if (receipt && receipt.status === 1) {
+          console.log(`[DoorController] Batch ${batch.txHash} did land, dropping local copy`);
+          continue;
+        }
+
+        if (receipt) {
+          console.warn(`[DoorController] Batch ${batch.txHash} reverted, re-queueing its entries`);
+          this.localAuditLog.unshift(...batch.entries);
+          continue;
+        }
+
+        // Not mined yet: give it a few more rounds before assuming it was dropped
+        batch.checks += 1;
+
+        if (batch.checks >= this.MAX_RECEIPT_CHECKS) {
+          console.warn(`[DoorController] Batch ${batch.txHash} never mined, re-queueing its entries`);
+          this.localAuditLog.unshift(...batch.entries);
+        } else {
+          stillUnconfirmed.push(batch);
+        }
+      } catch (error) {
+        console.error(`[DoorController] Could not check receipt for ${batch.txHash}:`, error);
+        // Keep holding it rather than risk a duplicate upload
+        stillUnconfirmed.push(batch);
+      }
+    }
+
+    this.unconfirmedBatches = stillUnconfirmed;
   }
 
   /**
@@ -544,7 +644,8 @@ export class DoorController {
       authorizedCount: this.permissionCache.authorized.size,
       lastSync: new Date(this.permissionCache.lastSync).toISOString(),
       cacheAge: Date.now() - this.permissionCache.lastSync,
-      pendingLogs: this.localAuditLog.length
+      pendingLogs: this.localAuditLog.length,
+      unconfirmedBatches: this.unconfirmedBatches.length
     };
   }
 }

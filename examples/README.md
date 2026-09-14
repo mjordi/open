@@ -250,6 +250,10 @@ the owner or an authorized reporter may submit entries, and `msg.sender` is writ
 - Entries the contract would reject (the zero address, malformed addresses) are kept out
   of the upload queue: one rejected entry reverts its whole batch, and a retry loop would
   re-submit it indefinitely, blocking every later record
+- A batch whose transaction was submitted but whose receipt never came back is held
+  against its transaction hash, not re-sent. The receipt is looked up on the next upload
+  and the entries are only re-queued if the transaction actually failed, or stayed unmined
+  long enough to count as dropped — re-sending a mined batch would duplicate audit records
 - Keep the controller key in secure storage; treat it as a writer to the audit trail
 - Grant the reporting authorization per door, so a compromised controller cannot log for other assets
 - Revoke the controller's authorization to cut off logging as soon as it is suspected compromised

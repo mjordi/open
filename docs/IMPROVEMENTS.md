@@ -279,19 +279,40 @@ function isAuthorized(string memory assetKey, address user) internal view return
 
 ---
 
-### 6. Array Index Not Updated on Removal
+### 6. ✅ Array Index Not Updated on Removal (COMPLETED)
 
-**Current State**: `removeAuthorization()` sets `active = false` but doesn't remove from array
-**Issue**: Array grows indefinitely, wasting gas when iterating
-**Location**: `contracts/aaas.sol`
+**Status**: ✅ RESOLVED
 
-**Recommendation**: Implement proper array element removal or use different data structure
+**Was**: `removeAuthorizationBatch()` set `active = false` but left the address in
+`authorizationList`, so the array grew indefinitely and anything reading it — including
+`getAssetAuthorizationAtIndex()` and off-chain permission caches — kept seeing revoked
+users as authorized.
 
-**Note**: This is a design decision that trades storage efficiency for gas efficiency. The current approach:
-- Uses more storage (inactive entries remain in array)
-- Saves gas on removal (no array restructuring)
-- The `active` flag prevents access to removed authorizations
-- Consider implementing array removal for production if storage costs are a concern
+**Now**: both the single and batch removal paths share `_removeAuthorizationInternal()`,
+which removes the entry from the array as well. The `Authorization.index` field (declared
+but previously never written) is maintained on insert, so removal is a swap-and-pop by
+index rather than a scan of the whole list:
+
+```solidity
+if (auth.active) {
+    address[] storage authList = assetStructs[assetKey].authorizationList;
+    uint removedIndex = auth.index;
+    address lastAuthorization = authList[authList.length - 1];
+
+    // Move the last entry into the freed slot and keep its index correct
+    authList[removedIndex] = lastAuthorization;
+    assetStructs[assetKey].authorizationStructs[lastAuthorization].index = removedIndex;
+    authList.pop();
+}
+```
+
+**Trade-off**: removal now costs a little more gas than leaving a tombstone, but the list
+stays bounded by the number of live authorizations, and every reader of the list sees the
+truth. Order is not preserved, which no caller depends on.
+
+**Tests**: batch removal shrinks the list, a removed-then-re-added address stays
+consistent, removing an address that was never authorized leaves the list untouched, and
+a removed temporary authorization has its expiry cleared.
 
 ---
 
@@ -1168,7 +1189,7 @@ string constant ROLE_TEMPORARY = "temporary";
 2. ✅ Fix deprecated keywords (`throw`, `constant`)
 3. ✅ Add input validation (empty strings, zero addresses) - **ALL CONTRACTS**
 4. ✅ Fix duplicate array entries in authorization - **RESOLVED**
-5. ✅ Add comprehensive unit tests (114 tests - all passing!)
+5. ✅ Add comprehensive unit tests (149 contract + 68 frontend tests - all passing!)
 6. ✅ Fix contract bugs (encoding, struct initialization)
 7. ✅ Set up development infrastructure (Hardhat)
 8. ✅ Add proper visibility modifiers

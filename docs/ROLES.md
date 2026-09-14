@@ -302,8 +302,12 @@ const owner = asset.assetOwner;
 // Check user's role
 const role = await contract.methods.getAssetAuthorization(assetKey, userAddress).call();
 
-// Verify access (transaction: writes an AccessLog entry to the audit trail)
-const hasAccess = await contract.methods.getAccess(assetKey).call({from: userAddress});
+// Verify access AND record it in the audit trail.
+// getAccess() changes state, so it has to be sent as a transaction: calling it with
+// .call() only simulates the result and mines nothing, so no AccessLog is written.
+// The return value is not available to the sender, so read the outcome from the event.
+const receipt = await contract.methods.getAccess(assetKey).send({from: userAddress});
+const hasAccess = receipt.events.AccessLog.returnValues.accessGranted;
 
 // Preview access for any address without writing to the audit trail (free view call)
 const canAccess = await contract.methods.canAccess(assetKey, userAddress).call();

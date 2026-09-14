@@ -72,9 +72,12 @@ export class DoorController {
   private localAuditLog: AccessLogEntry[] = [];
   private syncInterval: NodeJS.Timeout | null = null;
   private uploadInterval: NodeJS.Timeout | null = null;
-  private isUploading = false;
+  private uploadInFlight: Promise<void> | null = null;
   private heldBatches: HeldBatch[] = [];
   private isSyncing = false;
+  // Bumped on every event touching an address, so an in-flight refresh whose answer
+  // is superseded by a later event can be discarded instead of applied.
+  private authorizationVersions = new Map<string, number>();
   private syncInFlight: Promise<void> | null = null;
   // Addresses whose authorization changed while a snapshot was being built
   private missedDuringSync = new Set<string>();
@@ -282,6 +285,7 @@ export class DoorController {
     this.contract.on(createdFilter, async (account: string) => {
       console.log(`[DoorController] Real-time: Authorization added for ${account}`);
       this.noteChangeDuringSync(account);
+      this.bumpAuthorizationVersion(account);
       await this.refreshAuthorization(account);
     });
 
@@ -289,6 +293,9 @@ export class DoorController {
     this.contract.on(removedFilter, (account: string) => {
       console.log(`[DoorController] Real-time: Authorization removed for ${account}`);
       this.noteChangeDuringSync(account);
+      // Bumping first invalidates any refresh still in flight for this address, so a
+      // grant read before this revocation cannot land afterwards and restore access.
+      this.bumpAuthorizationVersion(account);
       this.permissionCache.authorized.delete(account.toLowerCase());
     });
 
@@ -316,11 +323,21 @@ export class DoorController {
    * so it has to be read back from the contract.
    */
   private async refreshAuthorization(account: string): Promise<void> {
+    const key = account.toLowerCase();
+    // The version as of this read. Any event for the address while the RPC is in
+    // flight bumps it, which makes this answer stale.
+    const version = this.authorizationVersions.get(key) ?? 0;
+
     try {
       const [, active, expiresAt] = await this.contract.getAuthorizationDetails(
         this.doorAssetKey,
         account
       );
+
+      if ((this.authorizationVersions.get(key) ?? 0) !== version) {
+        console.log(`[DoorController] Discarding stale refresh for ${account}`);
+        return;
+      }
 
       if (active) {
         this.permissionCache.authorized.set(account.toLowerCase(), Number(expiresAt));
@@ -330,8 +347,16 @@ export class DoorController {
     } catch (error) {
       console.error(`[DoorController] Failed to refresh authorization for ${account}:`, error);
       // Fail secure: drop the cached grant until the next full sync confirms it
-      this.permissionCache.authorized.delete(account.toLowerCase());
+      this.permissionCache.authorized.delete(key);
     }
+  }
+
+  /**
+   * Mark every refresh currently in flight for this address as superseded
+   */
+  private bumpAuthorizationVersion(account: string): void {
+    const key = account.toLowerCase();
+    this.authorizationVersions.set(key, (this.authorizationVersions.get(key) ?? 0) + 1);
   }
 
   /**
@@ -457,13 +482,23 @@ export class DoorController {
    * Upload audit logs to blockchain in batches
    * This creates the immutable audit trail
    */
-  private async uploadAuditLogs(): Promise<void> {
-    // A slow upload must not overlap with the next interval tick, or entries
-    // would be submitted twice.
-    if (this.isUploading) {
-      console.log('[DoorController] Upload already in progress, skipping');
-      return;
+  private uploadAuditLogs(): Promise<void> {
+    // A slow upload must not overlap with the next interval tick, or entries would be
+    // submitted twice. Hand back the running one rather than returning immediately, so
+    // shutdown can await an upload it did not start instead of exiting underneath it.
+    if (this.uploadInFlight) {
+      console.log('[DoorController] Upload already in progress, awaiting it');
+      return this.uploadInFlight;
     }
+
+    this.uploadInFlight = this.runUploadAuditLogs().finally(() => {
+      this.uploadInFlight = null;
+    });
+
+    return this.uploadInFlight;
+  }
+
+  private async runUploadAuditLogs(): Promise<void> {
 
     // Batches held from an earlier round still need settling even when nothing new
     // was logged since, so they must not be short-circuited by the empty queue.
@@ -472,12 +507,21 @@ export class DoorController {
       return;
     }
 
-    this.isUploading = true;
-
     try {
       // Settle anything held from an earlier round before sending more.
       // Re-sending a batch that did land duplicates audit events.
       await this.reconcileHeldBatches();
+
+      // A held batch may still be live on-chain. Sending the next one now risks the
+      // node assigning it the same nonce — replacing the original and losing the held
+      // entries for good — so wait until the held batch is settled. Nothing is lost:
+      // entries stay queued locally and in the log.
+      if (this.heldBatches.length > 0) {
+        console.warn(
+          `[DoorController] ${this.heldBatches.length} batch(es) still unresolved, deferring new uploads`
+        );
+        return;
+      }
 
       if (this.localAuditLog.length === 0) return;
 
@@ -529,8 +573,6 @@ export class DoorController {
       console.log('[DoorController] All logs uploaded successfully');
     } catch (error) {
       console.error('[DoorController] Failed to upload logs:', error);
-    } finally {
-      this.isUploading = false;
     }
   }
 
@@ -661,7 +703,10 @@ export class DoorController {
     if (this.syncInterval) clearInterval(this.syncInterval);
     if (this.uploadInterval) clearInterval(this.uploadInterval);
 
-    // Upload remaining logs
+    // Await an upload already running, then make a final pass for anything logged since
+    if (this.uploadInFlight) {
+      await this.uploadInFlight.catch(() => { /* already logged by the upload itself */ });
+    }
     await this.uploadAuditLogs();
 
     // Remove event listeners

@@ -261,6 +261,11 @@ the owner or an authorized reporter may submit entries, and `msg.sender` is writ
   Held batches are reported by `getStatus()` and settled on every upload, even when no
   new access has been logged since.
 
+  While a batch is unresolved, new uploads are deferred rather than sent: the held
+  transaction may still be live, and a fresh send can be handed the same nonce by a node
+  that never saw the original — replacing it and losing the held entries permanently.
+  Entries simply stay queued until the held batch settles.
+
   **This is where the example stops and a production controller must go further.** The
   right fix is to remove the ambiguity at the source: sign locally, persist the
   transaction hash and nonce *before* broadcasting, and on recovery resolve or replace

@@ -48,7 +48,7 @@ interface AccessLogEntry {
 interface UnconfirmedBatch {
   txHash: string;
   entries: AccessLogEntry[];
-  checks: number;
+  heldSince: number;
 }
 
 interface PermissionCache {
@@ -80,7 +80,6 @@ export class DoorController {
   private readonly UPLOAD_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
   private readonly MAX_CACHE_AGE_MS = 60 * 60 * 1000; // 1 hour
   private readonly MAX_BATCH_SIZE = 100;
-  private readonly MAX_RECEIPT_CHECKS = 5;
 
   constructor(
     providerUrl: string,
@@ -451,7 +450,9 @@ export class DoorController {
       return;
     }
 
-    if (this.localAuditLog.length === 0) {
+    // Batches held from an earlier round still need settling even when nothing new
+    // was logged since, so they must not be short-circuited by the empty queue.
+    if (this.localAuditLog.length === 0 && this.unconfirmedBatches.length === 0) {
       console.log('[DoorController] No logs to upload');
       return;
     }
@@ -495,7 +496,7 @@ export class DoorController {
             // (a dropped connection, say). It may well be mined, so hold the entries
             // against the hash and check the receipt before ever re-sending them.
             console.warn(`[DoorController] Batch ${i + 1} unconfirmed, holding tx ${txHash}`);
-            this.unconfirmedBatches.push({ txHash, entries: batch, checks: 0 });
+            this.unconfirmedBatches.push({ txHash, entries: batch, heldSince: Date.now() });
           } else {
             // Never left this process, so it is safe to re-queue as-is
             requeue.push(...batch);
@@ -521,8 +522,13 @@ export class DoorController {
    *
    * A mined transaction whose receipt was lost must not be re-sent: that would write
    * the same access records to the audit trail twice. Look the receipt up by hash and
-   * only re-queue the entries when the transaction is known to have failed, or when it
-   * has stayed unmined long enough to be considered dropped.
+   * only re-queue the entries once the original transaction is definitively gone.
+   *
+   * A missing receipt on its own proves nothing — an underpriced transaction can sit in
+   * the mempool for hours and still mine. Re-queueing it would send a second transaction
+   * under a different nonce, and both could land, duplicating the audit records. So the
+   * transaction itself is looked up too: entries are only re-queued when the node no
+   * longer knows it at all, which means it was dropped or replaced.
    */
   private async reconcileUnconfirmedBatches(): Promise<void> {
     if (this.unconfirmedBatches.length === 0) return;
@@ -545,15 +551,22 @@ export class DoorController {
           continue;
         }
 
-        // Not mined yet: give it a few more rounds before assuming it was dropped
-        batch.checks += 1;
+        // No receipt. Is the transaction still known to the node?
+        const transaction = await this.provider.getTransaction(batch.txHash);
 
-        if (batch.checks >= this.MAX_RECEIPT_CHECKS) {
-          console.warn(`[DoorController] Batch ${batch.txHash} never mined, re-queueing its entries`);
-          this.localAuditLog.unshift(...batch.entries);
-        } else {
+        if (transaction) {
+          // Still pending (underpriced, congestion, ...). It can mine at any time, so
+          // keep holding rather than racing it with a second transaction.
+          const heldMinutes = Math.round((Date.now() - batch.heldSince) / 60000);
+          console.log(`[DoorController] Batch ${batch.txHash} still pending after ${heldMinutes} min, holding`);
           stillUnconfirmed.push(batch);
+          continue;
         }
+
+        // The node has no record of it: dropped or replaced, so it can never mine
+        // under this hash and the entries are safe to send again.
+        console.warn(`[DoorController] Batch ${batch.txHash} is gone from the node, re-queueing its entries`);
+        this.localAuditLog.unshift(...batch.entries);
       } catch (error) {
         console.error(`[DoorController] Could not check receipt for ${batch.txHash}:`, error);
         // Keep holding it rather than risk a duplicate upload

@@ -250,15 +250,24 @@ the owner or an authorized reporter may submit entries, and `msg.sender` is writ
 - Entries the contract would reject (the zero address, malformed addresses) are kept out
   of the upload queue: one rejected entry reverts its whole batch, and a retry loop would
   re-submit it indefinitely, blocking every later record
-- A batch whose transaction was submitted but whose receipt never came back is held
-  against its transaction hash, not re-sent — re-sending a mined batch would duplicate
-  audit records. On the next upload the receipt is looked up, and the entries are
-  re-queued only once the original transaction is definitively gone: a reverted receipt,
-  or a transaction the node no longer knows at all. A missing receipt alone proves
-  nothing, since an underpriced transaction can sit in the mempool for hours and still
-  mine; re-queueing it would send a second transaction under a different nonce and both
-  could land. Held batches are surfaced in `getStatus()` and settled even when no new
-  access has been logged since
+- A batch whose on-chain outcome is ambiguous is **held, never automatically re-sent**.
+  A duplicate entry in an immutable audit trail cannot be taken back, so the controller
+  acts only on what the chain states outright: a receipt with status 1 means the batch
+  landed and the local copy is dropped; status 0 means it reverted without emitting, so
+  the entries are re-queued. Everything else keeps waiting — including a transaction the
+  node cannot find, which is *not* proof of a drop, since a load-balanced endpoint may be
+  asking a backend that never saw it while another peer still holds it. A lost submission
+  response is held too: no returned hash does not prove the transaction never left.
+  Held batches are reported by `getStatus()` and settled on every upload, even when no
+  new access has been logged since.
+
+  **This is where the example stops and a production controller must go further.** The
+  right fix is to remove the ambiguity at the source: sign locally, persist the
+  transaction hash and nonce *before* broadcasting, and on recovery resolve or replace
+  that nonce. Doing that properly needs durable storage and a nonce manager, which is
+  beyond what a reference example should imply it has solved. Nothing is lost in the
+  meantime — held entries remain in the local log, and an operator can reconcile them
+  against the chain's `AccessLogReported` events.
 - Keep the controller key in secure storage; treat it as a writer to the audit trail
 - Grant the reporting authorization per door, so a compromised controller cannot log for other assets
 - Revoke the controller's authorization to cut off logging as soon as it is suspected compromised

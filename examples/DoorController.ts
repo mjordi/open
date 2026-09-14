@@ -44,11 +44,17 @@ interface AccessLogEntry {
   granted: boolean;
 }
 
-/** A batch that was submitted but whose receipt was never seen */
-interface UnconfirmedBatch {
-  txHash: string;
+/**
+ * A batch whose on-chain outcome could not be established.
+ *
+ * `txHash` is null when even the submission outcome is unknown — the node may have
+ * accepted the transaction before the connection carrying its response dropped.
+ */
+interface HeldBatch {
+  txHash: string | null;
   entries: AccessLogEntry[];
   heldSince: number;
+  reason: string;
 }
 
 interface PermissionCache {
@@ -67,7 +73,7 @@ export class DoorController {
   private syncInterval: NodeJS.Timeout | null = null;
   private uploadInterval: NodeJS.Timeout | null = null;
   private isUploading = false;
-  private unconfirmedBatches: UnconfirmedBatch[] = [];
+  private heldBatches: HeldBatch[] = [];
   private isSyncing = false;
   private syncInFlight: Promise<void> | null = null;
   // Addresses whose authorization changed while a snapshot was being built
@@ -211,28 +217,37 @@ export class DoorController {
       };
 
       console.log(`[DoorController] Synced: Owner=${owner}, Authorized=${newAuthorized.size} addresses`);
+
+      // Events that arrived while the snapshot was being read describe changes the
+      // snapshot may predate, and the fresh cache has just replaced whatever they
+      // applied. Re-read those addresses from the contract, which is authoritative
+      // for both grants and revocations.
+      //
+      // A replay is itself an RPC round-trip, so an event can land after a replay has
+      // read the old state but before its answer arrives — and that stale answer would
+      // then overwrite the newer one. Keep isSyncing set so such events are still
+      // recorded, and drain until a pass adds nothing new.
+      while (this.missedDuringSync.size > 0 || this.ownerChangedDuringSync) {
+        const missed = [...this.missedDuringSync];
+        this.missedDuringSync.clear();
+
+        const replayOwner = this.ownerChangedDuringSync;
+        this.ownerChangedDuringSync = false;
+
+        if (missed.length > 0) {
+          console.log(`[DoorController] Replaying ${missed.length} change(s) seen during sync`);
+          await Promise.all(missed.map(account => this.refreshAuthorization(account)));
+        }
+
+        if (replayOwner) await this.refreshOwner();
+      }
     } catch (error) {
       console.error('[DoorController] Failed to sync permissions:', error);
       throw error;
     } finally {
       this.isSyncing = false;
-    }
-
-    // Events that arrived while the snapshot was being read describe changes the
-    // snapshot may predate, and the fresh cache has just replaced whatever they
-    // applied. Re-read those addresses from the contract, which is authoritative
-    // for both grants and revocations.
-    const missed = [...this.missedDuringSync];
-    this.missedDuringSync.clear();
-
-    if (missed.length > 0) {
-      console.log(`[DoorController] Replaying ${missed.length} change(s) seen during sync`);
-      await Promise.all(missed.map(account => this.refreshAuthorization(account)));
-    }
-
-    if (this.ownerChangedDuringSync) {
+      this.missedDuringSync.clear();
       this.ownerChangedDuringSync = false;
-      await this.refreshOwner();
     }
   }
 
@@ -452,7 +467,7 @@ export class DoorController {
 
     // Batches held from an earlier round still need settling even when nothing new
     // was logged since, so they must not be short-circuited by the empty queue.
-    if (this.localAuditLog.length === 0 && this.unconfirmedBatches.length === 0) {
+    if (this.localAuditLog.length === 0 && this.heldBatches.length === 0) {
       console.log('[DoorController] No logs to upload');
       return;
     }
@@ -460,9 +475,9 @@ export class DoorController {
     this.isUploading = true;
 
     try {
-      // Settle anything submitted earlier whose receipt never came back, before
-      // sending more. Re-sending a batch that did land duplicates audit events.
-      await this.reconcileUnconfirmedBatches();
+      // Settle anything held from an earlier round before sending more.
+      // Re-sending a batch that did land duplicates audit events.
+      await this.reconcileHeldBatches();
 
       if (this.localAuditLog.length === 0) return;
 
@@ -489,22 +504,24 @@ export class DoorController {
         } catch (error) {
           console.error(`[DoorController] Batch ${i + 1} failed:`, error);
 
-          const requeue: AccessLogEntry[] = [];
+          // The outcome is ambiguous either way. With a hash, the transaction was
+          // accepted and may yet mine. Without one, the node may still have accepted
+          // it before the connection carrying the response dropped — a missing hash
+          // is not proof the transaction never left. Since a duplicate entry in an
+          // immutable audit trail cannot be taken back, hold the batch rather than
+          // re-queue it, and let reconciliation settle it only on definitive evidence.
+          const reason = txHash ? 'receipt not received' : 'submission outcome unknown';
+          console.warn(`[DoorController] Holding batch ${i + 1} (${reason})`);
 
-          if (txHash) {
-            // The transaction was accepted by the node; only the receipt is missing
-            // (a dropped connection, say). It may well be mined, so hold the entries
-            // against the hash and check the receipt before ever re-sending them.
-            console.warn(`[DoorController] Batch ${i + 1} unconfirmed, holding tx ${txHash}`);
-            this.unconfirmedBatches.push({ txHash, entries: batch, heldSince: Date.now() });
-          } else {
-            // Never left this process, so it is safe to re-queue as-is
-            requeue.push(...batch);
-          }
+          this.heldBatches.push({
+            txHash: txHash ?? null,
+            entries: batch,
+            heldSince: Date.now(),
+            reason
+          });
 
-          // Whatever came after it was never attempted
-          requeue.push(...batches.slice(i + 1).flat());
-          this.localAuditLog.unshift(...requeue);
+          // Whatever came after it was never attempted, so it is safe to re-queue
+          this.localAuditLog.unshift(...batches.slice(i + 1).flat());
           return;
         }
       }
@@ -518,25 +535,45 @@ export class DoorController {
   }
 
   /**
-   * Decide the fate of batches that were submitted but never confirmed.
+   * Settle batches whose outcome was left ambiguous, on definitive evidence only.
    *
-   * A mined transaction whose receipt was lost must not be re-sent: that would write
-   * the same access records to the audit trail twice. Look the receipt up by hash and
-   * only re-queue the entries once the original transaction is definitively gone.
+   * A mined transaction whose receipt was lost must never be re-sent: that would write
+   * the same access records to an immutable audit trail twice, and nothing can undo it.
+   * The only automatic conclusions available are the two the chain states outright:
    *
-   * A missing receipt on its own proves nothing — an underpriced transaction can sit in
-   * the mempool for hours and still mine. Re-queueing it would send a second transaction
-   * under a different nonce, and both could land, duplicating the audit records. So the
-   * transaction itself is looked up too: entries are only re-queued when the node no
-   * longer knows it at all, which means it was dropped or replaced.
+   * - a receipt with status 1: the batch landed, so the local copy is dropped
+   * - a receipt with status 0: it reverted and emitted nothing, so the entries go back
+   *
+   * Everything else stays held. Notably, a transaction the node cannot find is NOT
+   * treated as dropped: a load-balanced endpoint may simply be asking a backend that
+   * never saw it, while another peer still holds it and can mine it at any time.
+   * Re-queueing on that guess is exactly how duplicates get written.
+   *
+   * Held batches therefore need an operator, and a production controller should remove
+   * the ambiguity at the source instead: sign locally, persist the transaction hash and
+   * nonce BEFORE broadcasting, and resolve or replace that nonce on recovery. That is
+   * deliberately out of scope here — the entries stay in the local log either way, so
+   * nothing is lost, and `getStatus()` reports anything awaiting attention.
    */
-  private async reconcileUnconfirmedBatches(): Promise<void> {
-    if (this.unconfirmedBatches.length === 0) return;
+  private async reconcileHeldBatches(): Promise<void> {
+    if (this.heldBatches.length === 0) return;
 
-    console.log(`[DoorController] Reconciling ${this.unconfirmedBatches.length} unconfirmed batch(es)...`);
-    const stillUnconfirmed: UnconfirmedBatch[] = [];
+    console.log(`[DoorController] Reconciling ${this.heldBatches.length} held batch(es)...`);
+    const stillHeld: HeldBatch[] = [];
 
-    for (const batch of this.unconfirmedBatches) {
+    for (const batch of this.heldBatches) {
+      const heldMinutes = Math.round((Date.now() - batch.heldSince) / 60000);
+
+      if (!batch.txHash) {
+        // No hash to ask about: this one can only be resolved by a human comparing the
+        // local log against the chain's AccessLogReported events.
+        console.warn(
+          `[DoorController] Batch held ${heldMinutes} min needs manual reconciliation (${batch.reason})`
+        );
+        stillHeld.push(batch);
+        continue;
+      }
+
       try {
         const receipt = await this.provider.getTransactionReceipt(batch.txHash);
 
@@ -551,30 +588,16 @@ export class DoorController {
           continue;
         }
 
-        // No receipt. Is the transaction still known to the node?
-        const transaction = await this.provider.getTransaction(batch.txHash);
-
-        if (transaction) {
-          // Still pending (underpriced, congestion, ...). It can mine at any time, so
-          // keep holding rather than racing it with a second transaction.
-          const heldMinutes = Math.round((Date.now() - batch.heldSince) / 60000);
-          console.log(`[DoorController] Batch ${batch.txHash} still pending after ${heldMinutes} min, holding`);
-          stillUnconfirmed.push(batch);
-          continue;
-        }
-
-        // The node has no record of it: dropped or replaced, so it can never mine
-        // under this hash and the entries are safe to send again.
-        console.warn(`[DoorController] Batch ${batch.txHash} is gone from the node, re-queueing its entries`);
-        this.localAuditLog.unshift(...batch.entries);
+        // No receipt yet. It can still mine, so hold rather than race it.
+        console.log(`[DoorController] Batch ${batch.txHash} unresolved after ${heldMinutes} min, holding`);
+        stillHeld.push(batch);
       } catch (error) {
         console.error(`[DoorController] Could not check receipt for ${batch.txHash}:`, error);
-        // Keep holding it rather than risk a duplicate upload
-        stillUnconfirmed.push(batch);
+        stillHeld.push(batch);
       }
     }
 
-    this.unconfirmedBatches = stillUnconfirmed;
+    this.heldBatches = stillHeld;
   }
 
   /**
@@ -658,7 +681,8 @@ export class DoorController {
       lastSync: new Date(this.permissionCache.lastSync).toISOString(),
       cacheAge: Date.now() - this.permissionCache.lastSync,
       pendingLogs: this.localAuditLog.length,
-      unconfirmedBatches: this.unconfirmedBatches.length
+      heldBatches: this.heldBatches.length,
+      heldEntries: this.heldBatches.reduce((total, batch) => total + batch.entries.length, 0)
     };
   }
 }

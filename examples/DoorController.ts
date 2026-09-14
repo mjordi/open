@@ -33,7 +33,8 @@ const ACCESS_MANAGEMENT_ABI = [
   "function getAsset(string assetKey) external view returns(address owner, string description, bool initialized, uint authorizationCount)",
   "function batchLogAccess(tuple(address user, string assetKey, uint256 timestamp, bool granted)[] entries) external returns(bool)",
   "event AuthorizationCreate(address indexed account, string indexed assetKey, string authorizationRole)",
-  "event AuthorizationRemove(address indexed account, string indexed assetKey)"
+  "event AuthorizationRemove(address indexed account, string indexed assetKey)",
+  "event OwnershipTransferred(string indexed assetKey, address indexed oldOwner, address indexed newOwner)"
 ];
 
 interface AccessLogEntry {
@@ -59,6 +60,11 @@ export class DoorController {
   private syncInterval: NodeJS.Timeout | null = null;
   private uploadInterval: NodeJS.Timeout | null = null;
   private isUploading = false;
+  private isSyncing = false;
+  // Addresses whose authorization changed while a snapshot was being built
+  private missedDuringSync = new Set<string>();
+  // Whether ownership was transferred while a snapshot was being built
+  private ownerChangedDuringSync = false;
 
   // Configuration
   private readonly SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
@@ -95,18 +101,20 @@ export class DoorController {
 
   /**
    * Initialize the door controller
-   * - Sync permissions from blockchain
    * - Set up event listeners
+   * - Sync permissions from blockchain
    * - Start periodic sync and upload
    */
   async initialize(): Promise<void> {
     console.log(`[DoorController] Initializing for asset: ${this.doorAssetKey}`);
 
-    // Initial permission sync
-    await this.syncPermissions();
-
-    // Listen for permission changes in real-time
+    // Subscribe BEFORE the first snapshot. Subscribing afterwards leaves a window in
+    // which a revocation is neither in the snapshot nor delivered as an event, so a
+    // revoked user would keep opening the door until the next periodic sync.
     this.setupEventListeners();
+
+    // Initial permission sync. Changes that land while it runs are replayed after it.
+    await this.syncPermissions();
 
     // Start periodic sync
     this.syncInterval = setInterval(() => {
@@ -130,6 +138,10 @@ export class DoorController {
    * This is a view call, so it's free and fast
    */
   private async syncPermissions(): Promise<void> {
+    this.isSyncing = true;
+    this.missedDuringSync.clear();
+    this.ownerChangedDuringSync = false;
+
     try {
       console.log('[DoorController] Syncing permissions from blockchain...');
 
@@ -175,6 +187,40 @@ export class DoorController {
     } catch (error) {
       console.error('[DoorController] Failed to sync permissions:', error);
       throw error;
+    } finally {
+      this.isSyncing = false;
+    }
+
+    // Events that arrived while the snapshot was being read describe changes the
+    // snapshot may predate, and the fresh cache has just replaced whatever they
+    // applied. Re-read those addresses from the contract, which is authoritative
+    // for both grants and revocations.
+    const missed = [...this.missedDuringSync];
+    this.missedDuringSync.clear();
+
+    if (missed.length > 0) {
+      console.log(`[DoorController] Replaying ${missed.length} change(s) seen during sync`);
+      await Promise.all(missed.map(account => this.refreshAuthorization(account)));
+    }
+
+    if (this.ownerChangedDuringSync) {
+      this.ownerChangedDuringSync = false;
+      await this.refreshOwner();
+    }
+  }
+
+  /**
+   * Re-read the asset owner from the contract.
+   * Used when a transfer lands while a snapshot is being built, since the snapshot
+   * then installs an owner the transfer has already superseded.
+   */
+  private async refreshOwner(): Promise<void> {
+    try {
+      const [owner] = await this.contract.getAsset(this.doorAssetKey);
+      this.permissionCache.owner = owner.toLowerCase();
+      console.log(`[DoorController] Owner refreshed: ${owner}`);
+    } catch (error) {
+      console.error('[DoorController] Failed to refresh owner:', error);
     }
   }
 
@@ -187,18 +233,39 @@ export class DoorController {
     // ethers hashes the string when building the filter.
     const createdFilter = this.contract.filters.AuthorizationCreate(null, this.doorAssetKey);
     const removedFilter = this.contract.filters.AuthorizationRemove(null, this.doorAssetKey);
+    // OwnershipTransferred declares assetKey first, so it is the first filter argument
+    const transferredFilter = this.contract.filters.OwnershipTransferred(this.doorAssetKey);
 
     // Listen for new authorizations
     this.contract.on(createdFilter, async (account: string) => {
       console.log(`[DoorController] Real-time: Authorization added for ${account}`);
+      this.noteChangeDuringSync(account);
       await this.refreshAuthorization(account);
     });
 
     // Listen for authorization removals
     this.contract.on(removedFilter, (account: string) => {
       console.log(`[DoorController] Real-time: Authorization removed for ${account}`);
+      this.noteChangeDuringSync(account);
       this.permissionCache.authorized.delete(account.toLowerCase());
     });
+
+    // The owner always has access, so a transfer changes who may open the door.
+    // Without this the former owner keeps access, and the new owner is denied,
+    // until the next periodic sync.
+    this.contract.on(transferredFilter, (_assetKey: unknown, oldOwner: string, newOwner: string) => {
+      console.log(`[DoorController] Real-time: Ownership transferred ${oldOwner} -> ${newOwner}`);
+      if (this.isSyncing) this.ownerChangedDuringSync = true;
+      this.permissionCache.owner = newOwner.toLowerCase();
+    });
+  }
+
+  /**
+   * Remember an address whose authorization changed while a snapshot was in flight,
+   * so syncPermissions() can re-read it once the fresh cache is installed.
+   */
+  private noteChangeDuringSync(account: string): void {
+    if (this.isSyncing) this.missedDuringSync.add(account);
   }
 
   /**
@@ -323,10 +390,25 @@ export class DoorController {
       granted
     };
 
-    this.localAuditLog.push(entry);
+    // batchLogAccess() rejects the zero address and malformed addresses, and one bad
+    // entry reverts its whole batch — which the retry path would then re-queue forever,
+    // blocking every later record. Keep such entries out of the upload queue; they are
+    // still written to the local log, where a rejected credential belongs.
+    if (this.isUploadableAddress(userAddress)) {
+      this.localAuditLog.push(entry);
+    } else {
+      console.warn(`[DoorController] Not queueing audit entry for invalid address: ${userAddress}`);
+    }
 
     // Also log to local storage/file for persistence
     this.persistLog(entry);
+  }
+
+  /**
+   * Can this address appear in an on-chain audit batch?
+   */
+  private isUploadableAddress(userAddress: string): boolean {
+    return ethers.isAddress(userAddress) && userAddress.toLowerCase() !== ethers.ZeroAddress;
   }
 
   /**

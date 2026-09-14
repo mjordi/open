@@ -214,6 +214,13 @@ const MAX_CACHE_AGE_MS = 60 * 60 * 1000; // 1 hour
 - Fail-secure mode (deny when stale)
 - Alert admins if sync fails repeatedly
 
+#### 2a. **Ownership transfers**
+
+The owner always has access, so `transferOwnership()` changes who may open the door.
+The controller listens for `OwnershipTransferred` alongside the authorization events;
+without that, the former owner keeps access and the new owner is denied until the next
+periodic sync.
+
 #### 2. **Revocation Latency**
 ```typescript
 // Time between revocation and door update
@@ -222,7 +229,10 @@ sync_interval = 5 minutes (worst case)
 
 **Mitigation:**
 - Critical revocations trigger immediate sync
-- Event listeners for real-time updates (when online)
+- Event listeners for real-time updates (when online), subscribed **before** the first
+  permission snapshot is taken. Subscribing afterwards leaves a window in which a
+  revocation is neither in the snapshot nor delivered as an event; changes that land
+  while a snapshot is being built are replayed against the contract once it is installed
 - Monitor for failed sync attempts
 
 #### 3. **Log Integrity**
@@ -237,6 +247,9 @@ the owner or an authorized reporter may submit entries, and `msg.sender` is writ
 
 **Mitigation:**
 - Tamper-evident local storage (append-only file with hashes)
+- Entries the contract would reject (the zero address, malformed addresses) are kept out
+  of the upload queue: one rejected entry reverts its whole batch, and a retry loop would
+  re-submit it indefinitely, blocking every later record
 - Keep the controller key in secure storage; treat it as a writer to the audit trail
 - Grant the reporting authorization per door, so a compromised controller cannot log for other assets
 - Revoke the controller's authorization to cut off logging as soon as it is suspected compromised

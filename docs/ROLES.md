@@ -308,7 +308,8 @@ const hasAccess = await contract.methods.getAccess(assetKey).call({from: userAdd
 // Preview access for any address without writing to the audit trail (free view call)
 const canAccess = await contract.methods.canAccess(assetKey, userAddress).call();
 
-// Read the full authorization record, including its expiration
+// Read the full authorization record, including its expiration.
+// Removed addresses leave the authorization list, but a temporary grant expires silently:
 // `active` ignores expiry, so callers that cache authorizations must honour `expiresAt`
 const details = await contract.methods.getAuthorizationDetails(assetKey, userAddress).call();
 // -> { authorizationRole, active, expiresAt }

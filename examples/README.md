@@ -67,10 +67,11 @@ await controller.initialize();
 // Downloads: owner + every authorized address with its expiry
 ```
 
-The authorization list keeps addresses until they are explicitly removed, so a listed address
-is not necessarily still authorized. The controller reads `getAuthorizationDetails()` for each
-address, skips inactive ones, and caches `expiresAt` so temporary grants that lapse **between**
-syncs are refused locally instead of opening the door until the next sync.
+The authorization list keeps addresses until they are explicitly removed, and a temporary grant
+expires without any event being emitted, so a listed address is not necessarily still authorized.
+The controller reads `getAuthorizationDetails()` for each address, skips inactive ones, and caches
+`expiresAt` so temporary grants that lapse **between** syncs are refused locally instead of opening
+the door until the next sync.
 
 #### 3. **Access Validation (Instant)**
 

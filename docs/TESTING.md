@@ -85,7 +85,8 @@ npm run test:all
 **Authorization Management**:
 - Adds authorizations with different roles (admin, permanent, temporary)
 - Prevents unauthorized users from adding authorizations
-- Removes authorizations correctly
+- Removes authorizations correctly, single and batch
+- Keeps the authorization list in sync with the records on removal and re-add
 - Prevents duplicate entries in authorization list
 - Validates zero addresses
 
@@ -172,6 +173,12 @@ npm run test:all
 - Explorer URL generation for mainnet, testnets, and L2s
 - Currency symbol retrieval
 - Handling of local development networks (Hardhat, Ganache)
+
+**Asset Key Registry Module** (9 tests):
+- Resolves the keccak256 hash of an indexed `assetKey` back to its plaintext key
+- Falls back to a shortened hash for assets not yet seen this session
+- Never renders the Indexed object ethers.js passes as `[object Object]`
+- Handles unicode keys, malformed values and clearing on contract switch
 
 **Explorer Utilities Module** (15 tests):
 - Transaction, address, block, and token URL generation

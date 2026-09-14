@@ -98,6 +98,7 @@ All actions are executed through MetaMask transactions on the blockchain.
 │   │   └── index.html     # Web interface
 │   └── src/
 │       ├── js/app.js      # Main application logic
+│       ├── js/asset-keys.js # Resolves indexed asset keys in events
 │       ├── css/styles.css # Styling
 │       └── generated/     # Auto-generated from contracts
 ├── scripts/               # Build and deployment scripts

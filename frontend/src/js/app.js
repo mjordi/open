@@ -8,6 +8,11 @@ import {
     truncateHash as truncateHashUtil
 } from './explorer-utils.js';
 import {
+    rememberAssetKey,
+    formatAssetKey,
+    clearAssetKeys
+} from './asset-keys.js';
+import {
     saveTransaction,
     updateTransaction,
     getAllTransactions,
@@ -235,6 +240,7 @@ function truncateAddress(address) {
     if (!address) return 'Unknown';
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
+
 
 /**
  * Set button loading state
@@ -482,6 +488,9 @@ function setupContractEvents() {
     // Remove all existing listeners to prevent duplicates
     AppState.contract.removeAllListeners();
 
+    // Asset keys remembered for a previously connected contract no longer apply
+    clearAssetKeys();
+
     // AssetCreate event
     // In ethers.js v6, indexed parameters come first, then non-indexed
     // Event signature: event AssetCreate(address indexed account, string indexed assetKey, string assetDescription)
@@ -489,7 +498,7 @@ function setupContractEvents() {
         console.log('AssetCreate event:', { account, assetKey, assetDescription });
         addEventToLog(
             'Asset Created',
-            `Asset "${assetKey}" (${assetDescription}) created by ${truncateAddress(account)}`,
+            `Asset "${formatAssetKey(assetKey)}" (${assetDescription}) created by ${truncateAddress(account)}`,
             'success'
         );
         // Reload assets with debouncing
@@ -502,7 +511,7 @@ function setupContractEvents() {
         console.log('RejectCreate event:', { account, assetKey, message });
         addEventToLog(
             'Asset Creation Rejected',
-            `${message} - Serial: ${assetKey}, Owner: ${truncateAddress(account)}`,
+            `${message} - Serial: ${formatAssetKey(assetKey)}, Owner: ${truncateAddress(account)}`,
             'error'
         );
     });
@@ -513,7 +522,7 @@ function setupContractEvents() {
         console.log('AuthorizationCreate event:', { account, assetKey, authorizationRole });
         addEventToLog(
             'Authorization Granted',
-            `Role "${authorizationRole}" granted for asset "${assetKey}" to ${truncateAddress(account)}`,
+            `Role "${authorizationRole}" granted for asset "${formatAssetKey(assetKey)}" to ${truncateAddress(account)}`,
             'success'
         );
         scheduleLoadAssets();
@@ -525,30 +534,57 @@ function setupContractEvents() {
         console.log('AuthorizationRemove event:', { account, assetKey });
         addEventToLog(
             'Authorization Revoked',
-            `Authorization removed for asset "${assetKey}" from ${truncateAddress(account)}`,
+            `Authorization removed for asset "${formatAssetKey(assetKey)}" from ${truncateAddress(account)}`,
             'info'
         );
         scheduleLoadAssets();
     });
 
-    // AccessLog event
+    // AccessLog event - access the contract verified itself, through getAccess()
     // Event signature: event AccessLog(address indexed account, string indexed assetKey, bool accessGranted)
     AppState.contract.on('AccessLog', (account, assetKey, accessGranted) => {
         console.log('AccessLog event:', { account, assetKey, accessGranted });
         if (accessGranted) {
             addEventToLog(
                 'Access Granted',
-                `Access granted to ${truncateAddress(account)} for asset "${assetKey}"`,
+                `Access granted to ${truncateAddress(account)} for asset "${formatAssetKey(assetKey)}"`,
                 'success'
             );
         } else {
             addEventToLog(
                 'Access Denied',
-                `Access denied to ${truncateAddress(account)} for asset "${assetKey}"`,
+                `Access denied to ${truncateAddress(account)} for asset "${formatAssetKey(assetKey)}"`,
                 'error'
             );
         }
     });
+
+    // AccessLogReported event - a decision an authorized reporter made off-chain and
+    // uploaded later via batchLogAccess(). The contract did not verify it, so it is
+    // shown as reported and attributed to the reporter that submitted it.
+    // Event signature: event AccessLogReported(address indexed reporter, address indexed account, string indexed assetKey, bool accessGranted, uint256 occurredAt)
+    AppState.contract.on('AccessLogReported', (reporter, account, assetKey, accessGranted, occurredAt) => {
+        console.log('AccessLogReported event:', { reporter, account, assetKey, accessGranted, occurredAt });
+
+        const when = formatLogTimestamp(occurredAt);
+        const outcome = accessGranted ? 'granted' : 'denied';
+
+        addEventToLog(
+            accessGranted ? 'Access Granted (reported)' : 'Access Denied (reported)',
+            `${truncateAddress(reporter)} reported access ${outcome} to ${truncateAddress(account)} ` +
+            `for asset "${formatAssetKey(assetKey)}" at ${when}`,
+            accessGranted ? 'info' : 'error'
+        );
+    });
+}
+
+/**
+ * Format a reporter-supplied Unix timestamp (seconds) for the event log
+ */
+function formatLogTimestamp(occurredAt) {
+    const seconds = Number(occurredAt);
+    if (!Number.isFinite(seconds) || seconds <= 0) return 'an unknown time';
+    return new Date(seconds * 1000).toLocaleString();
 }
 
 /**
@@ -609,6 +645,7 @@ async function loadAssets() {
             // Get authorization count
             const authCount = await AppState.contract.getAssetAuthorizationCount(assetKey);
 
+            rememberAssetKey(assetKey);
             assets.push({
                 key: assetKey,
                 owner: assetData[0],
@@ -901,6 +938,7 @@ async function addAsset(e) {
             );
         }
 
+        rememberAssetKey(assetKey);
         const tx = await AppState.contract.newAsset(assetKey, assetDescription);
 
         // Save transaction to history

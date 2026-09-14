@@ -125,27 +125,7 @@ contract AccessManagement {
     /// @param duration Duration in seconds (0 for permanent access)
     /// @return success True if authorization was added successfully
     function addAuthorization(string calldata assetKey, address authorizationKey, string calldata authorizationRole, uint256 duration) public returns(bool success) {
-        require(authorizationKey != address(0), "Invalid address");
-        require(bytes(authorizationRole).length > 0, "Role cannot be empty");
-        require(assetStructs[assetKey].initialized, "Asset does not exist");
-        require(assetStructs[assetKey].owner == msg.sender || isAuthorized(assetKey, msg.sender), "Only the owner or admins can add authorizations.");
-
-        // Calculate expiration time
-        uint256 expiresAt = 0;
-        if (keccak256(abi.encodePacked(authorizationRole)) == keccak256(abi.encodePacked("temporary"))) {
-            require(duration > 0, "Temporary roles must have expiration duration");
-            expiresAt = block.timestamp + duration;
-        }
-
-        // Only push if not already in the list
-        if (!assetStructs[assetKey].authorizationStructs[authorizationKey].active) {
-            assetStructs[assetKey].authorizationList.push(authorizationKey);
-        }
-
-        assetStructs[assetKey].authorizationStructs[authorizationKey].role = authorizationRole;
-        assetStructs[assetKey].authorizationStructs[authorizationKey].active = true;
-        assetStructs[assetKey].authorizationStructs[authorizationKey].expiresAt = expiresAt;
-        emit AuthorizationCreate(authorizationKey, assetKey, authorizationRole);
+        _addAuthorizationInternal(assetKey, authorizationKey, authorizationRole, duration);
         return true;
     }
 
@@ -157,22 +137,7 @@ contract AccessManagement {
     function removeAuthorization(string calldata assetKey, address authorizationKey) external returns(bool success) {
         require(assetStructs[assetKey].owner == msg.sender || isAuthorized(assetKey, msg.sender), "Only the owner or admins can remove authorizations.");
 
-        // Mark as inactive
-        assetStructs[assetKey].authorizationStructs[authorizationKey].role =  '';
-        assetStructs[assetKey].authorizationStructs[authorizationKey].active =  false;
-
-        // Remove from authorizationList array
-        address[] storage authList = assetStructs[assetKey].authorizationList;
-        for (uint i = 0; i < authList.length; i++) {
-            if (authList[i] == authorizationKey) {
-                // Replace with last element and pop
-                authList[i] = authList[authList.length - 1];
-                authList.pop();
-                break;
-            }
-        }
-
-        emit AuthorizationRemove(authorizationKey, assetKey);
+        _removeAuthorizationInternal(assetKey, authorizationKey);
         return true;
     }
 
@@ -374,9 +339,7 @@ contract AccessManagement {
         require(assetStructs[assetKey].owner == msg.sender || isAuthorized(assetKey, msg.sender), "Only the owner or admins can remove authorizations.");
 
         for (uint i = 0; i < authorizationKeys.length; i++) {
-            assetStructs[assetKey].authorizationStructs[authorizationKeys[i]].role = '';
-            assetStructs[assetKey].authorizationStructs[authorizationKeys[i]].active = false;
-            emit AuthorizationRemove(authorizationKeys[i], assetKey);
+            _removeAuthorizationInternal(assetKey, authorizationKeys[i]);
         }
 
         return true;
@@ -402,8 +365,10 @@ contract AccessManagement {
             expiresAt = block.timestamp + duration;
         }
 
-        // Only push if not already in the list
+        // Only push if not already in the list, and remember where it landed so
+        // removal can find it without scanning the whole list
         if (!assetStructs[assetKey].authorizationStructs[authorizationKey].active) {
+            assetStructs[assetKey].authorizationStructs[authorizationKey].index = assetStructs[assetKey].authorizationList.length;
             assetStructs[assetKey].authorizationList.push(authorizationKey);
         }
 
@@ -411,5 +376,33 @@ contract AccessManagement {
         assetStructs[assetKey].authorizationStructs[authorizationKey].active = true;
         assetStructs[assetKey].authorizationStructs[authorizationKey].expiresAt = expiresAt;
         emit AuthorizationCreate(authorizationKey, assetKey, authorizationRole);
+    }
+
+    /// @notice Internal helper for removing authorizations (used by the single and batch paths)
+    /// @dev Keeps authorizationList in sync with the authorization records: a stale entry would
+    ///      still be returned by getAssetAuthorizationAtIndex() and read as authorized by
+    ///      integrations that cache the list
+    function _removeAuthorizationInternal(string calldata assetKey, address authorizationKey) internal {
+        Authorization storage auth = assetStructs[assetKey].authorizationStructs[authorizationKey];
+
+        // Only touch the list for an address that is actually on it; `index` is
+        // meaningless for an address that was never authorized
+        if (auth.active) {
+            address[] storage authList = assetStructs[assetKey].authorizationList;
+            uint removedIndex = auth.index;
+            address lastAuthorization = authList[authList.length - 1];
+
+            // Move the last entry into the freed slot and keep its index correct
+            authList[removedIndex] = lastAuthorization;
+            assetStructs[assetKey].authorizationStructs[lastAuthorization].index = removedIndex;
+            authList.pop();
+        }
+
+        auth.role = '';
+        auth.active = false;
+        auth.expiresAt = 0;
+        auth.index = 0;
+
+        emit AuthorizationRemove(authorizationKey, assetKey);
     }
 }

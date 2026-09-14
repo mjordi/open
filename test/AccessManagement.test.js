@@ -593,6 +593,78 @@ describe("AccessManagement", function () {
       expect(role2).to.equal("");
     });
 
+    it("Should remove batch-removed addresses from the authorization list", async function () {
+      const addresses = [user1.address, user2.address, user3.address];
+      await accessManagement
+        .connect(owner)
+        .addAuthorizationBatch("ASSET-001", addresses, ["admin", "permanent", "admin"]);
+
+      await accessManagement
+        .connect(owner)
+        .removeAuthorizationBatch("ASSET-001", [user1.address, user3.address]);
+
+      // The list must shrink with the records, or stale addresses keep showing up
+      // as authorized to anything that caches getAssetAuthorizationAtIndex()
+      const count = await accessManagement.getAssetAuthorizationCount("ASSET-001");
+      expect(count).to.equal(1);
+
+      const remaining = await accessManagement.getAssetAuthorizationAtIndex("ASSET-001", 0);
+      expect(remaining).to.equal(user2.address);
+    });
+
+    it("Should keep the authorization list consistent when a removed address is re-added", async function () {
+      const addresses = [user1.address, user2.address, user3.address];
+      await accessManagement
+        .connect(owner)
+        .addAuthorizationBatch("ASSET-001", addresses, ["admin", "permanent", "admin"]);
+
+      // Removing the first entry swaps the last one into its slot
+      await accessManagement.connect(owner).removeAuthorizationBatch("ASSET-001", [user1.address]);
+      await accessManagement.connect(owner).addAuthorization("ASSET-001", user1.address, "permanent");
+
+      // Removing the swapped entry must still remove the right address
+      await accessManagement.connect(owner).removeAuthorizationBatch("ASSET-001", [user3.address]);
+
+      const count = await accessManagement.getAssetAuthorizationCount("ASSET-001");
+      expect(count).to.equal(2);
+
+      const listed = await Promise.all([
+        accessManagement.getAssetAuthorizationAtIndex("ASSET-001", 0),
+        accessManagement.getAssetAuthorizationAtIndex("ASSET-001", 1)
+      ]);
+      expect(listed).to.have.members([user1.address, user2.address]);
+      expect(await accessManagement.canAccess("ASSET-001", user3.address)).to.equal(false);
+    });
+
+    it("Should not shrink the list when removing an address that was never authorized", async function () {
+      await accessManagement.connect(owner).addAuthorization("ASSET-001", user1.address, "admin");
+
+      await accessManagement.connect(owner).removeAuthorizationBatch("ASSET-001", [user3.address]);
+
+      const count = await accessManagement.getAssetAuthorizationCount("ASSET-001");
+      expect(count).to.equal(1);
+      expect(await accessManagement.getAssetAuthorizationAtIndex("ASSET-001", 0)).to.equal(user1.address);
+    });
+
+    it("Should clear the expiry of a removed temporary authorization", async function () {
+      await accessManagement.connect(owner)["addAuthorization(string,address,string,uint256)"](
+        "ASSET-001",
+        user1.address,
+        "temporary",
+        3600
+      );
+
+      await accessManagement.connect(owner).removeAuthorizationBatch("ASSET-001", [user1.address]);
+
+      const [role, active, expiresAt] = await accessManagement.getAuthorizationDetails(
+        "ASSET-001",
+        user1.address
+      );
+      expect(role).to.equal("");
+      expect(active).to.equal(false);
+      expect(expiresAt).to.equal(0n);
+    });
+
     it("Should reject batch remove with empty array", async function () {
       await expect(
         accessManagement.connect(owner).removeAuthorizationBatch("ASSET-001", [])

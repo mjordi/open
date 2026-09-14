@@ -1,8 +1,10 @@
 import { defineConfig } from "hardhat/config";
-import hardhatToolboxMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
+import hardhatEthers from "@nomicfoundation/hardhat-ethers";
+import hardhatEthersChaiMatchers from "@nomicfoundation/hardhat-ethers-chai-matchers";
+import hardhatMocha from "@nomicfoundation/hardhat-mocha";
 
 export default defineConfig({
-  plugins: [hardhatToolboxMochaEthers],
+  plugins: [hardhatMocha, hardhatEthers, hardhatEthersChaiMatchers],
   solidity: {
     version: "0.8.20",
     settings: {

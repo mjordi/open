@@ -4,10 +4,10 @@
   "description": "Solidity smart contracts for access management",
   "type": "module",
   "engines": {
-    "node": ">=22.10.0"
+    "node": ">=24.0.0"
   },
   "scripts": {
-    "test": "npx hardhat test",
+    "test": "node scripts/prepare-solc-cache.js && npx hardhat test test/*.test.js",
     "test:frontend": "vitest run",
     "test:frontend:watch": "vitest",
     "test:frontend:ui": "vitest --ui",
@@ -20,14 +20,25 @@
     "serve": "npx http-server frontend/public -p 8000"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.1",
-    "@vitest/ui": "^4.0.10",
-    "happy-dom": "^20.0.10",
-    "hardhat": "^3.0.15",
-    "jsdom": "^27.2.0",
-    "vitest": "^4.0.10"
+    "@nomicfoundation/hardhat-ethers": "^4.0.15",
+    "@nomicfoundation/hardhat-ethers-chai-matchers": "^3.0.11",
+    "@nomicfoundation/hardhat-mocha": "^3.1.0",
+    "@vitest/ui": "^5.0.0",
+    "chai": "^6.2.2",
+    "ethers": "^6.17.0",
+    "happy-dom": "^20.14.0",
+    "hardhat": "^3.15.0",
+    "jsdom": "^30.0.1",
+    "vitest": "^5.0.0"
   },
   "overrides": {
-    "glob": ">=11.1.0"
+    "brace-expansion@2": "^2.1.4",
+    "brace-expansion@5": "^5.0.9",
+    "diff": "^8.0.3",
+    "glob": ">=11.1.0",
+    "js-yaml": "^4.3.1",
+    "postcss": "^8.5.18",
+    "serialize-javascript": "^7.0.5",
+    "undici@<6.28.0": "^6.28.0"
   }
 }

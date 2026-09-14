@@ -5,7 +5,7 @@ This project has been successfully migrated from Hardhat 2 to Hardhat 3 followin
 ## Migration Checklist ✓
 
 ### Prerequisites
-- ✓ Node.js version: v22.21.1 (meets v22.10.0+ requirement)
+- ✓ Node.js version: v22.21.1 at migration time (now requires v24.0.0+)
 - ✓ Cleared caches and artifacts
 - ✓ Removed Hardhat 2 dependencies
 - ✓ Renamed old config to `hardhat.config.old.js`

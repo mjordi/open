@@ -64,8 +64,13 @@ const controller = new DoorController(rpcUrl, contractAddress, "office-front-doo
 await controller.initialize();
 
 // Uses view calls - FREE and FAST
-// Downloads: owner + all authorized addresses
+// Downloads: owner + every authorized address with its expiry
 ```
+
+The authorization list keeps addresses until they are explicitly removed, so a listed address
+is not necessarily still authorized. The controller reads `getAuthorizationDetails()` for each
+address, skips inactive ones, and caches `expiresAt` so temporary grants that lapse **between**
+syncs are refused locally instead of opening the door until the next sync.
 
 #### 3. **Access Validation (Instant)**
 
@@ -88,6 +93,19 @@ await controller.uploadAuditLogs();
 // Creates immutable record on blockchain
 ```
 
+`batchLogAccess()` only accepts entries from the asset owner or from an address authorized on the
+asset, so the door controller needs its own on-chain identity:
+
+```typescript
+// One-time: authorize the controller's signing key on the door asset
+await contract.addAuthorization("office-front-door", controllerAddress, "device");
+```
+
+Each entry is emitted as `AccessLogReported(reporter, account, assetKey, accessGranted, occurredAt)`
+— never as `AccessLog` — so a decision the controller made off-chain can never be mistaken for one
+the contract verified itself. Revoking the controller's authorization immediately stops it from
+writing to the audit trail.
+
 ### Key Features
 
 #### ✅ Instant Access
@@ -104,7 +122,8 @@ await controller.uploadAuditLogs();
 - **Blockchain = source of truth** - tamper-proof permission registry
 - **Real-time updates** - listens for permission changes via events
 - **Cryptographic verification** - optional signature-based challenges
-- **Fail-secure** - denies access if cache is too old
+- **Fail-secure** - denies access if cache is too old, or if a cached grant has expired
+- **Accountable audit trail** - only authorized reporters can log, and every entry names its reporter
 
 #### ✅ Reliability
 - **Works offline** - uses cached permissions during brief outages
@@ -210,11 +229,19 @@ sync_interval = 5 minutes (worst case)
 // Logs stored locally before blockchain upload
 ```
 
+Entries uploaded through `batchLogAccess()` are **self-reported**: the contract records what the
+controller claims happened, not a decision it verified. What it does guarantee is attribution — only
+the owner or an authorized reporter may submit entries, and `msg.sender` is written into every
+`AccessLogReported` event.
+
 **Mitigation:**
 - Tamper-evident local storage (append-only file with hashes)
-- Door controller signs each log entry
+- Keep the controller key in secure storage; treat it as a writer to the audit trail
+- Grant the reporting authorization per door, so a compromised controller cannot log for other assets
+- Revoke the controller's authorization to cut off logging as soon as it is suspected compromised
 - Regular blockchain uploads (hourly)
 - Alerts if upload fails
+- Cross-check reported entries against on-chain permissions with `canAccess()`
 
 #### 4. **Replay Attacks**
 
@@ -304,6 +331,16 @@ await Promise.all(doors.map(d => d.initialize()));
 
 // Each door has its own asset key with separate permissions
 ```
+
+### Known Limitations
+
+- **TypeScript is not part of this project's build.** `DoorController.ts` is reference code for a
+  separate device project; it is not compiled or type-checked by `npm run build` or CI.
+- **Any address authorized on the asset may report logs.** The contract keeps a single
+  "owner or authorized" permission level, so an ordinary employee authorization on a door also
+  allows reporting for it. Use a dedicated asset per door if you need to separate the two.
+- **Uploads are eventual.** Access logs reach the chain at the next successful upload, so the
+  on-chain trail lags the door by up to `UPLOAD_INTERVAL_MS` (plus any retries).
 
 ### Support & Questions
 

@@ -302,8 +302,16 @@ const owner = asset.assetOwner;
 // Check user's role
 const role = await contract.methods.getAssetAuthorization(assetKey, userAddress).call();
 
-// Verify access
+// Verify access (transaction: writes an AccessLog entry to the audit trail)
 const hasAccess = await contract.methods.getAccess(assetKey).call({from: userAddress});
+
+// Preview access for any address without writing to the audit trail (free view call)
+const canAccess = await contract.methods.canAccess(assetKey, userAddress).call();
+
+// Read the full authorization record, including its expiration
+// `active` ignores expiry, so callers that cache authorizations must honour `expiresAt`
+const details = await contract.methods.getAuthorizationDetails(assetKey, userAddress).call();
+// -> { authorizationRole, active, expiresAt }
 ```
 
 ### Managing Agents
@@ -345,6 +353,13 @@ await contract.methods.removeAuthorizationBatch(
     assetKey,
     [addr1, addr2, addr3]
 ).send({from: ownerAddress});
+
+// Batch report access decisions made off-chain (max 100 entries per call).
+// The sender must be the asset owner or authorized on every asset it reports for.
+await contract.methods.batchLogAccess([
+    { user: addr1, assetKey, timestamp: 1763468573, granted: true },
+    { user: addr2, assetKey, timestamp: 1763468611, granted: false }
+]).send({from: reporterAddress});
 ```
 
 ## Events and Logging
@@ -354,10 +369,28 @@ All agent actions emit events that can be monitored:
 - **AssetCreate**: When an agent becomes an asset owner
 - **AuthorizationCreate**: When an agent gains access
 - **AuthorizationRemove**: When an agent loses access
-- **AccessLog**: When an agent attempts to access an asset
+- **AccessLog**: When an agent attempts to access an asset through `getAccess()`, where the contract itself verified the decision
+- **AccessLogReported**: When a reporter submits an access decision it made off-chain via `batchLogAccess()`
 - **OwnershipTransferred**: When asset ownership is transferred to a new owner
 
 These events provide an immutable audit trail of all agent activities in the system.
+
+### Verified vs. reported access
+
+`AccessLog` and `AccessLogReported` are deliberately separate events:
+
+| | `AccessLog` | `AccessLogReported` |
+|---|---|---|
+| Emitted by | `getAccess()` | `batchLogAccess()` |
+| Decision made by | The contract | The reporter, off-chain |
+| Who may emit it | Anyone, for themselves | Asset owner or an address authorized on that asset |
+| Extra data | - | `reporter` and the reporter-supplied `occurredAt` |
+
+A reported entry says "this reporter claims it granted or denied this user", not "the chain verified
+this access". Both the reporter and its authorization are recorded on-chain, so an entry can always be
+traced back to an accountable party, but a compromised reporter can still report inaccurate entries for
+the assets it is authorized on. Consumers of the audit trail should therefore weigh `AccessLogReported`
+entries against their `reporter`, and revoke that reporter's authorization to stop it from logging.
 
 ---
 

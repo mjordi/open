@@ -74,7 +74,9 @@ All actions are executed through MetaMask transactions on the blockchain.
 - **Role-Based Access Control** - Assign admin, permanent, or temporary authorization roles
 - **Permission Management** - Grant and revoke access permissions to Ethereum addresses
 - **Access Verification** - Verify permissions in a tamper-proof, transparent manner
+- **Free Preview Checks** - `canAccess()` answers "may this address enter?" as a gas-free view call
 - **Immutable Audit Trail** - All access attempts and changes logged on-chain
+- **Batched Off-chain Logging** - Authorized devices report cached access decisions in one transaction
 - **MetaMask Integration** - Seamless wallet connection for transaction signing
 - **Comprehensive Testing** - Full test coverage for all contract functionality
 
@@ -101,6 +103,7 @@ All actions are executed through MetaMask transactions on the blockchain.
 ├── scripts/               # Build and deployment scripts
 │   ├── generate-frontend-artifacts.js
 │   └── build-frontend.js
+├── examples/              # Integration examples (e.g. IoT door controller)
 ├── docs/                  # Documentation
 ├── .github/workflows/     # GitHub Actions CI/CD
 └── hardhat.config.js      # Hardhat configuration

@@ -15,6 +15,11 @@
  * - Works during brief network outages
  * - Maintains audit trail on blockchain
  * - Tamper-proof permission management
+ *
+ * Requirements:
+ * - The controller's signing key must be the asset owner or hold an authorization
+ *   on the door asset: batchLogAccess() only accepts entries from an accountable
+ *   reporter, and records that reporter in every AccessLogReported event.
  */
 
 import { ethers } from 'ethers';
@@ -24,6 +29,7 @@ const ACCESS_MANAGEMENT_ABI = [
   "function canAccess(string assetKey, address user) external view returns(bool)",
   "function getAssetAuthorizationCount(string assetKey) external view returns(uint)",
   "function getAssetAuthorizationAtIndex(string assetKey, uint row) external view returns(address)",
+  "function getAuthorizationDetails(string assetKey, address authorizationKey) external view returns(string role, bool active, uint256 expiresAt)",
   "function getAsset(string assetKey) external view returns(address owner, string description, bool initialized, uint authorizationCount)",
   "function batchLogAccess(tuple(address user, string assetKey, uint256 timestamp, bool granted)[] entries) external returns(bool)",
   "event AuthorizationCreate(address indexed account, string indexed assetKey, string authorizationRole)",
@@ -39,7 +45,8 @@ interface AccessLogEntry {
 
 interface PermissionCache {
   owner: string;
-  authorized: Set<string>;
+  /** address (lowercase) -> expiry as a Unix timestamp, 0 when the grant never expires */
+  authorized: Map<string, number>;
   lastSync: number;
 }
 
@@ -51,6 +58,7 @@ export class DoorController {
   private localAuditLog: AccessLogEntry[] = [];
   private syncInterval: NodeJS.Timeout | null = null;
   private uploadInterval: NodeJS.Timeout | null = null;
+  private isUploading = false;
 
   // Configuration
   private readonly SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
@@ -80,7 +88,7 @@ export class DoorController {
     this.doorAssetKey = doorAssetKey;
     this.permissionCache = {
       owner: '',
-      authorized: new Set(),
+      authorized: new Map(),
       lastSync: 0
     };
   }
@@ -132,17 +140,29 @@ export class DoorController {
         throw new Error(`Asset ${this.doorAssetKey} does not exist`);
       }
 
-      // Clear and rebuild authorized set
-      const newAuthorized = new Set<string>();
+      // Clear and rebuild the authorized map
+      const newAuthorized = new Map<string, number>();
 
-      // Fetch all authorized addresses
-      for (let i = 0; i < authCount; i++) {
-        const address = await this.contract.getAssetAuthorizationAtIndex(
-          this.doorAssetKey,
-          i
-        );
-        newAuthorized.add(address.toLowerCase());
-      }
+      // Fetch all listed addresses. The list also holds revoked and expired entries,
+      // so every address is checked against its authorization record before caching.
+      const total = Number(authCount);
+      const addresses: string[] = await Promise.all(
+        Array.from({ length: total }, (_, i) =>
+          this.contract.getAssetAuthorizationAtIndex(this.doorAssetKey, i)
+        )
+      );
+
+      const details = await Promise.all(
+        addresses.map(address =>
+          this.contract.getAuthorizationDetails(this.doorAssetKey, address)
+        )
+      );
+
+      addresses.forEach((address, i) => {
+        const [, active, expiresAt] = details[i];
+        if (!active) return; // revoked since it was added to the list
+        newAuthorized.set(address.toLowerCase(), Number(expiresAt));
+      });
 
       // Update cache
       this.permissionCache = {
@@ -162,21 +182,66 @@ export class DoorController {
    * Listen for real-time permission changes
    */
   private setupEventListeners(): void {
+    // `assetKey` is an indexed string, so the event only carries its keccak256 hash and
+    // cannot be compared to the plain key in the handler. Filter on the topic instead:
+    // ethers hashes the string when building the filter.
+    const createdFilter = this.contract.filters.AuthorizationCreate(null, this.doorAssetKey);
+    const removedFilter = this.contract.filters.AuthorizationRemove(null, this.doorAssetKey);
+
     // Listen for new authorizations
-    this.contract.on('AuthorizationCreate', async (account, assetKey, role) => {
-      if (assetKey === this.doorAssetKey) {
-        console.log(`[DoorController] Real-time: Authorization added for ${account}`);
-        this.permissionCache.authorized.add(account.toLowerCase());
-      }
+    this.contract.on(createdFilter, async (account: string) => {
+      console.log(`[DoorController] Real-time: Authorization added for ${account}`);
+      await this.refreshAuthorization(account);
     });
 
     // Listen for authorization removals
-    this.contract.on('AuthorizationRemove', async (account, assetKey) => {
-      if (assetKey === this.doorAssetKey) {
-        console.log(`[DoorController] Real-time: Authorization removed for ${account}`);
+    this.contract.on(removedFilter, (account: string) => {
+      console.log(`[DoorController] Real-time: Authorization removed for ${account}`);
+      this.permissionCache.authorized.delete(account.toLowerCase());
+    });
+  }
+
+  /**
+   * Refresh a single address in the cache, including its expiry.
+   * The AuthorizationCreate event does not carry the expiration timestamp,
+   * so it has to be read back from the contract.
+   */
+  private async refreshAuthorization(account: string): Promise<void> {
+    try {
+      const [, active, expiresAt] = await this.contract.getAuthorizationDetails(
+        this.doorAssetKey,
+        account
+      );
+
+      if (active) {
+        this.permissionCache.authorized.set(account.toLowerCase(), Number(expiresAt));
+      } else {
         this.permissionCache.authorized.delete(account.toLowerCase());
       }
-    });
+    } catch (error) {
+      console.error(`[DoorController] Failed to refresh authorization for ${account}:`, error);
+      // Fail secure: drop the cached grant until the next full sync confirms it
+      this.permissionCache.authorized.delete(account.toLowerCase());
+    }
+  }
+
+  /**
+   * Is there a cached grant for this address that has not expired yet?
+   * Temporary authorizations expire on their own, without any event being emitted,
+   * so the expiry has to be re-checked on every validation and not only at sync time.
+   */
+  private hasValidGrant(normalizedAddress: string): boolean {
+    const expiresAt = this.permissionCache.authorized.get(normalizedAddress);
+    if (expiresAt === undefined) return false;
+    if (expiresAt === 0) return true; // never expires
+
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    if (expiresAt <= nowSeconds) {
+      this.permissionCache.authorized.delete(normalizedAddress);
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -202,7 +267,7 @@ export class DoorController {
 
     // Check cached permissions (instant!)
     const isOwner = normalizedAddress === this.permissionCache.owner;
-    const isAuthorized = this.permissionCache.authorized.has(normalizedAddress);
+    const isAuthorized = this.hasValidGrant(normalizedAddress);
     const hasAccess = isOwner || isAuthorized;
 
     // Log locally
@@ -269,16 +334,28 @@ export class DoorController {
    * This creates the immutable audit trail
    */
   private async uploadAuditLogs(): Promise<void> {
+    // A slow upload must not overlap with the next interval tick, or entries
+    // would be submitted twice.
+    if (this.isUploading) {
+      console.log('[DoorController] Upload already in progress, skipping');
+      return;
+    }
+
     if (this.localAuditLog.length === 0) {
       console.log('[DoorController] No logs to upload');
       return;
     }
 
-    try {
-      // Split logs into batches
-      const batches = this.chunkArray(this.localAuditLog, this.MAX_BATCH_SIZE);
+    this.isUploading = true;
 
-      console.log(`[DoorController] Uploading ${this.localAuditLog.length} logs in ${batches.length} batches...`);
+    // Take the pending entries out of the buffer up front: entries logged while the
+    // upload runs stay queued for the next round instead of being dropped.
+    const pending = this.localAuditLog.splice(0, this.localAuditLog.length);
+    const batches = this.chunkArray(pending, this.MAX_BATCH_SIZE);
+    let uploaded = 0;
+
+    try {
+      console.log(`[DoorController] Uploading ${pending.length} logs in ${batches.length} batches...`);
 
       for (let i = 0; i < batches.length; i++) {
         const batch = batches[i];
@@ -288,17 +365,20 @@ export class DoorController {
         // Send transaction
         const tx = await this.contract.batchLogAccess(batch);
         const receipt = await tx.wait();
+        uploaded = i + 1;
 
         console.log(`[DoorController] Batch ${i + 1} uploaded: ${receipt.hash}`);
       }
 
-      // Clear uploaded logs
-      this.localAuditLog = [];
-
       console.log('[DoorController] All logs uploaded successfully');
     } catch (error) {
       console.error('[DoorController] Failed to upload logs:', error);
-      // Keep logs for retry
+      // Re-queue only what was not confirmed on-chain, so a failure halfway
+      // through does not duplicate the batches that already succeeded.
+      const notUploaded = batches.slice(uploaded).flat();
+      this.localAuditLog.unshift(...notUploaded);
+    } finally {
+      this.isUploading = false;
     }
   }
 

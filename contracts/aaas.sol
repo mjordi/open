@@ -26,16 +26,21 @@ contract AccessManagement {
     }
 
     /// @notice Access log entry for batch audit logging
-    /// @dev Used by IoT devices to submit multiple access logs in one transaction
+    /// @dev Used by authorized reporters (e.g. IoT devices) to submit multiple access logs
+    ///      in one transaction. Every field is self-reported by the caller and is therefore
+    ///      only as trustworthy as the reporter recorded in the emitted event.
     struct AccessLogEntry {
         address user;          // User who attempted access
         string assetKey;       // Asset that was accessed
-        uint256 timestamp;     // When the access occurred (Unix timestamp)
-        bool granted;          // Whether access was granted
+        uint256 timestamp;     // When the access occurred, as reported (Unix timestamp)
+        bool granted;          // Whether the reporter granted access
     }
 
     mapping(string => Asset) assetStructs;  // Mapping from asset key to Asset
     string[] assetList;  // List of all asset keys
+
+    /// @notice Maximum number of entries accepted by a single batchLogAccess() call
+    uint256 private constant MAX_LOG_BATCH_SIZE = 100;
 
     /// @notice Emitted when a new asset is created
     event AssetCreate(address indexed account, string indexed assetKey, string assetDescription);
@@ -49,8 +54,24 @@ contract AccessManagement {
     /// @notice Emitted when an authorization is removed from an asset
     event AuthorizationRemove(address indexed account, string indexed assetKey);
 
-    /// @notice Emitted when someone attempts to access an asset
+    /// @notice Emitted when someone attempts to access an asset through this contract
     event AccessLog(address indexed account, string indexed assetKey, bool accessGranted);
+
+    /// @notice Emitted when an authorized reporter records an access decision that was made off-chain
+    /// @dev Deliberately distinct from AccessLog: the decision was not verified by this contract,
+    ///      so consumers must weigh it against the `reporter` that submitted it
+    /// @param reporter The account that submitted the log entry (the asset owner or an authorized address)
+    /// @param account The user the reporter says attempted access
+    /// @param assetKey The asset the reporter says was accessed
+    /// @param accessGranted Whether the reporter granted access
+    /// @param occurredAt Reporter-supplied Unix timestamp of the access attempt
+    event AccessLogReported(
+        address indexed reporter,
+        address indexed account,
+        string indexed assetKey,
+        bool accessGranted,
+        uint256 occurredAt
+    );
 
     /// @notice Emitted when asset ownership is transferred
     event OwnershipTransferred(string indexed assetKey, address indexed oldOwner, address indexed newOwner);
@@ -224,25 +245,54 @@ contract AccessManagement {
     /// @dev Does NOT emit events or modify state, making it gas-free when called off-chain
     /// @param assetKey The unique identifier of the asset
     /// @param user The address to check
-    /// @return bool True if user is owner or has valid non-expired authorization
+    /// @return bool True if the asset exists and user is its owner or has a valid, non-expired authorization
     function canAccess(string calldata assetKey, address user)
         external view returns(bool) {
+        if (!assetStructs[assetKey].initialized) return false;
         return assetStructs[assetKey].owner == user || isAuthorized(assetKey, user);
     }
 
-    /// @notice Batch log multiple access events in a single transaction
-    /// @dev More gas-efficient than calling getAccess() multiple times
-    /// @dev Intended for IoT devices (e.g., door controllers) to periodically upload access logs
-    /// @dev Caller is responsible for ensuring log integrity and accuracy
-    /// @param entries Array of access log entries to record
+    /// @notice Returns the full authorization record for an address, including its expiration
+    /// @dev Lets off-chain caches (e.g. door controllers) drop entries that expire between syncs;
+    ///      addresses stay in the authorization list until explicitly removed, so `active` and
+    ///      `expiresAt` must both be honoured before treating a listed address as authorized
+    /// @param assetKey The unique identifier of the asset
+    /// @param authorizationKey The address to look up
+    /// @return authorizationRole The role assigned to the address ('' if none)
+    /// @return active Whether the authorization is currently active (ignores expiration)
+    /// @return expiresAt Unix timestamp at which the authorization expires, 0 if it never expires
+    function getAuthorizationDetails(string calldata assetKey, address authorizationKey)
+        external view returns(string memory authorizationRole, bool active, uint256 expiresAt) {
+        Authorization storage auth = assetStructs[assetKey].authorizationStructs[authorizationKey];
+        return (auth.role, auth.active, auth.expiresAt);
+    }
+
+    /// @notice Batch report access decisions that were made off-chain, in a single transaction
+    /// @dev Much cheaper than one transaction per access; intended for devices (e.g. door
+    ///      controllers) that validate against a cached permission set and upload logs periodically
+    /// @dev Only the asset owner or an address authorized on that asset may report for it, so every
+    ///      entry can be traced back to an accountable reporter. Entries are still self-reported:
+    ///      they are emitted as AccessLogReported, never as AccessLog, so they can never be mistaken
+    ///      for an access decision this contract verified itself
+    /// @param entries Array of access log entries to record, at most MAX_LOG_BATCH_SIZE
     /// @return success True if all logs were recorded successfully
     function batchLogAccess(AccessLogEntry[] calldata entries)
         external returns(bool success) {
-        require(entries.length > 0, "Empty log entries");
-        require(entries.length <= 100, "Too many entries, max 100 per batch");
+        uint256 entryCount = entries.length;
+        require(entryCount > 0, "Empty log entries");
+        require(entryCount <= MAX_LOG_BATCH_SIZE, "Too many entries, max 100 per batch");
 
-        for (uint i = 0; i < entries.length; i++) {
-            emit AccessLog(entries[i].user, entries[i].assetKey, entries[i].granted);
+        for (uint i = 0; i < entryCount; i++) {
+            AccessLogEntry calldata entry = entries[i];
+            require(entry.user != address(0), "Invalid user address");
+            require(entry.timestamp > 0, "Log timestamp cannot be zero");
+            require(assetStructs[entry.assetKey].initialized, "Asset does not exist");
+            require(
+                assetStructs[entry.assetKey].owner == msg.sender || isAuthorized(entry.assetKey, msg.sender),
+                "Only the owner or authorized reporters can log access"
+            );
+
+            emit AccessLogReported(msg.sender, entry.user, entry.assetKey, entry.granted, entry.timestamp);
         }
 
         return true;

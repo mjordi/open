@@ -123,7 +123,8 @@ writing to the audit trail.
 - **Blockchain = source of truth** - tamper-proof permission registry
 - **Real-time updates** - listens for permission changes via events
 - **Cryptographic verification** - optional signature-based challenges
-- **Fail-secure** - denies access if cache is too old, or if a cached grant has expired
+- **Fail-secure** - denies access if the cache is too old, if a cached grant has expired,
+  or if the owner could not be re-read after an ownership transfer
 - **Accountable audit trail** - only authorized reporters can log, and every entry names its reporter
 
 #### ✅ Reliability
@@ -260,6 +261,12 @@ the owner or an authorized reporter may submit entries, and `msg.sender` is writ
   response is held too: no returned hash does not prove the transaction never left.
   Held batches are reported by `getStatus()` and settled on every upload, even when no
   new access has been logged since.
+
+  A failure the node rejected *before* broadcasting — gas estimation reverting because
+  the reporter's authorization lapsed, an unfunded wallet, bad arguments — is not
+  ambiguous, so those entries are re-queued rather than held. Holding them would wedge
+  the uploader: the deferral below would then block every later upload long after the
+  underlying problem was fixed. Anything unrecognised is still treated as ambiguous.
 
   While a batch is unresolved, new uploads are deferred rather than sent: the held
   transaction may still be live, and a fresh send can be handed the same nonce by a node

@@ -265,7 +265,14 @@ export class DoorController {
       this.permissionCache.owner = owner.toLowerCase();
       console.log(`[DoorController] Owner refreshed: ${owner}`);
     } catch (error) {
-      console.error('[DoorController] Failed to refresh owner:', error);
+      // The snapshot installed an owner that a transfer has already superseded, and
+      // this read was the only thing that would have corrected it. Swallowing the
+      // failure would leave the former owner cached behind a fresh lastSync, letting
+      // them open the door until some later sync happens to succeed. Fail secure:
+      // treat the owner as unknown, so only explicit authorizations grant access.
+      console.error('[DoorController] Failed to refresh owner, clearing cached owner:', error);
+      this.permissionCache.owner = '';
+      throw error;
     }
   }
 
@@ -548,24 +555,37 @@ export class DoorController {
         } catch (error) {
           console.error(`[DoorController] Batch ${i + 1} failed:`, error);
 
-          // The outcome is ambiguous either way. With a hash, the transaction was
-          // accepted and may yet mine. Without one, the node may still have accepted
-          // it before the connection carrying the response dropped — a missing hash
-          // is not proof the transaction never left. Since a duplicate entry in an
-          // immutable audit trail cannot be taken back, hold the batch rather than
-          // re-queue it, and let reconciliation settle it only on definitive evidence.
-          const reason = txHash ? 'receipt not received' : 'submission outcome unknown';
-          console.warn(`[DoorController] Holding batch ${i + 1} (${reason})`);
+          const requeue: AccessLogEntry[] = [];
 
-          this.heldBatches.push({
-            txHash: txHash ?? null,
-            entries: batch,
-            heldSince: Date.now(),
-            reason
-          });
+          if (!txHash && this.failedBeforeBroadcast(error)) {
+            // The node rejected this before it could be broadcast — gas estimation
+            // reverted, the wallet is short of funds, the arguments were bad. Nothing
+            // reached the chain, so re-queue it. Holding these would be worse than
+            // useless: the unresolved-batch guard would then block every later upload,
+            // long after the authorization or funding problem was put right.
+            console.warn(`[DoorController] Batch ${i + 1} never left, re-queueing its entries`);
+            requeue.push(...batch);
+          } else {
+            // Genuinely ambiguous. With a hash, the transaction was accepted and may
+            // yet mine. Without one, the node may still have accepted it before the
+            // connection carrying the response dropped — a missing hash is not proof
+            // the transaction never left. A duplicate entry in an immutable audit
+            // trail cannot be taken back, so hold it and let reconciliation settle it
+            // only on definitive evidence.
+            const reason = txHash ? 'receipt not received' : 'submission outcome unknown';
+            console.warn(`[DoorController] Holding batch ${i + 1} (${reason})`);
+
+            this.heldBatches.push({
+              txHash: txHash ?? null,
+              entries: batch,
+              heldSince: Date.now(),
+              reason
+            });
+          }
 
           // Whatever came after it was never attempted, so it is safe to re-queue
-          this.localAuditLog.unshift(...batches.slice(i + 1).flat());
+          requeue.push(...batches.slice(i + 1).flat());
+          this.localAuditLog.unshift(...requeue);
           return;
         }
       }
@@ -574,6 +594,32 @@ export class DoorController {
     } catch (error) {
       console.error('[DoorController] Failed to upload logs:', error);
     }
+  }
+
+  /**
+   * Did this error occur before the transaction could be broadcast?
+   *
+   * Only errors that prove nothing reached the chain qualify, so anything unrecognised
+   * is treated as ambiguous and held. Being wrong in that direction costs a delay and
+   * an operator's attention; being wrong in the other direction writes an audit record
+   * twice, which cannot be undone.
+   */
+  private failedBeforeBroadcast(error: unknown): boolean {
+    const code = (error as { code?: string })?.code;
+    if (!code) return false;
+
+    return [
+      'CALL_EXCEPTION',        // gas estimation reverted (e.g. reporter no longer authorized)
+      'INSUFFICIENT_FUNDS',    // the wallet cannot pay for it
+      'NONCE_EXPIRED',         // rejected outright
+      'REPLACEMENT_UNDERPRICED', // rejected outright
+      'ACTION_REJECTED',       // the signer declined
+      'INVALID_ARGUMENT',
+      'MISSING_ARGUMENT',
+      'UNEXPECTED_ARGUMENT',
+      'UNSUPPORTED_OPERATION',
+      'NUMERIC_FAULT'
+    ].includes(code);
   }
 
   /**

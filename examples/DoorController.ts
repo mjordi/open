@@ -497,9 +497,12 @@ export class DoorController {
 
   /**
    * Upload audit logs to blockchain in batches
-   * This creates the immutable audit trail
+   * This creates the immutable audit trail.
+   *
+   * Runs on the upload interval, and is public so an operator can flush on demand —
+   * before maintenance, say. Concurrent calls share one in-flight upload.
    */
-  private uploadAuditLogs(): Promise<void> {
+  uploadAuditLogs(): Promise<void> {
     // A slow upload must not overlap with the next interval tick, or entries would be
     // submitted twice. Hand back the running one rather than returning immediately, so
     // shutdown can await an upload it did not start instead of exiting underneath it.

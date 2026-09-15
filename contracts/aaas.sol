@@ -347,6 +347,10 @@ contract AccessManagement {
 
     /// @notice Internal helper for adding authorizations (used by batch operations)
     /// @dev Prevents code duplication in batch functions
+    /// @param assetKey The unique identifier of the asset
+    /// @param authorizationKey The address to authorize
+    /// @param authorizationRole The role to assign
+    /// @param duration Duration in seconds (0 for permanent access)
     function _addAuthorizationInternal(
         string calldata assetKey,
         address authorizationKey,
@@ -382,6 +386,8 @@ contract AccessManagement {
     /// @dev Keeps authorizationList in sync with the authorization records: a stale entry would
     ///      still be returned by getAssetAuthorizationAtIndex() and read as authorized by
     ///      integrations that cache the list
+    /// @param assetKey The unique identifier of the asset
+    /// @param authorizationKey The address to remove authorization from
     function _removeAuthorizationInternal(string calldata assetKey, address authorizationKey) internal {
         Authorization storage auth = assetStructs[assetKey].authorizationStructs[authorizationKey];
 

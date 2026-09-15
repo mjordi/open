@@ -262,6 +262,13 @@ the owner or an authorized reporter may submit entries, and `msg.sender` is writ
   Held batches are reported by `getStatus()` and settled on every upload, even when no
   new access has been logged since.
 
+  A transaction repriced or cancelled while the controller waits is reported definitively
+  by ethers (`TRANSACTION_REPLACED`, carrying the replacement's receipt), so it is settled
+  immediately rather than held: a repriced transaction performed the same call, so those
+  entries landed, while a cancelled or replaced one means they never did and they go back
+  in the queue. Holding one of these would be fatal — the original hash can never receive
+  a receipt, so it would wait forever and block every later upload.
+
   A failure the node rejected *before* broadcasting — gas estimation reverting because
   the reporter's authorization lapsed, an unfunded wallet, bad arguments — is not
   ambiguous, so those entries are re-queued rather than held. Holding them would wedge

@@ -556,8 +556,24 @@ export class DoorController {
           console.error(`[DoorController] Batch ${i + 1} failed:`, error);
 
           const requeue: AccessLogEntry[] = [];
+          const replaced = this.asReplacedTransaction(error);
 
-          if (!txHash && this.failedBeforeBroadcast(error)) {
+          if (replaced) {
+            // An operator or another process repriced or cancelled this transaction
+            // while we were waiting. ethers reports that outcome definitively, along
+            // with the replacement's receipt, so there is nothing ambiguous to hold —
+            // and holding would be fatal, since the original hash can never receive a
+            // receipt and the unresolved-batch guard would block uploads for good.
+            if (!replaced.cancelled && replaced.receipt?.status === 1) {
+              // Repriced: the same call mined under a new hash, so the entries landed
+              console.log(`[DoorController] Batch ${i + 1} was repriced and mined as ${replaced.receipt.hash}`);
+            } else {
+              // Cancelled or replaced by a different transaction, or the replacement
+              // reverted: these entries were never recorded
+              console.warn(`[DoorController] Batch ${i + 1} was ${replaced.reason}, re-queueing its entries`);
+              requeue.push(...batch);
+            }
+          } else if (!txHash && this.failedBeforeBroadcast(error)) {
             // The node rejected this before it could be broadcast — gas estimation
             // reverted, the wallet is short of funds, the arguments were bad. Nothing
             // reached the chain, so re-queue it. Holding these would be worse than
@@ -594,6 +610,34 @@ export class DoorController {
     } catch (error) {
       console.error('[DoorController] Failed to upload logs:', error);
     }
+  }
+
+  /**
+   * Recognise ethers' TRANSACTION_REPLACED error, which reports the fate of a pending
+   * transaction that was repriced or cancelled while we waited for its receipt.
+   *
+   * `cancelled` is false only when the replacement performed the same call ("repriced"),
+   * in which case its receipt tells us whether the entries were recorded.
+   */
+  private asReplacedTransaction(error: unknown): {
+    cancelled: boolean;
+    reason: string;
+    receipt?: { status: number | null; hash: string };
+  } | null {
+    const candidate = error as {
+      code?: string;
+      cancelled?: boolean;
+      reason?: string;
+      receipt?: { status: number | null; hash: string };
+    };
+
+    if (candidate?.code !== 'TRANSACTION_REPLACED') return null;
+
+    return {
+      cancelled: candidate.cancelled !== false,
+      reason: candidate.reason ?? 'replaced',
+      receipt: candidate.receipt
+    };
   }
 
   /**

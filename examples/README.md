@@ -88,7 +88,11 @@ const hasAccess = await controller.validateAccess(userAddress);
 
 ```typescript
 // Every hour, upload accumulated logs
-await controller.uploadAuditLogs();
+const result = await controller.uploadAuditLogs();
+if (!result.flushed) {
+  // Entries are still queued or a batch is held: the audit trail is incomplete
+  alertOperator(result);
+}
 // Batches 100 entries in one transaction
 // Cost: ~$1-5 depending on network
 // Creates immutable record on blockchain
@@ -261,6 +265,14 @@ the owner or an authorized reporter may submit entries, and `msg.sender` is writ
   response is held too: no returned hash does not prove the transaction never left.
   Held batches are reported by `getStatus()` and settled on every upload, even when no
   new access has been logged since.
+
+  `uploadAuditLogs()` resolves with `{ flushed, uploadedBatches, queuedEntries,
+  heldBatches }` rather than throwing — a held batch is an expected outcome here, not an
+  exception — so callers must check `flushed` before treating the audit trail as
+  complete. `shutdown()` does exactly that: it returns the same result and, when the
+  trail is incomplete, says so loudly instead of reporting a clean exit, since
+  terminating then would lose both the queue and the record of which transaction still
+  needs reconciling.
 
   A transaction repriced or cancelled while the controller waits is reported definitively
   by ethers (`TRANSACTION_REPLACED`, carrying the replacement's receipt), so it is settled

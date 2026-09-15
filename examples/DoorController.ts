@@ -45,6 +45,20 @@ interface AccessLogEntry {
 }
 
 /**
+ * What an upload attempt achieved.
+ *
+ * `flushed` is true only when nothing is left behind — no entries re-queued, no batches
+ * held. Anything else means the audit trail is incomplete and a caller (or an operator
+ * at shutdown) needs to know.
+ */
+export interface UploadResult {
+  flushed: boolean;
+  uploadedBatches: number;
+  queuedEntries: number;
+  heldBatches: number;
+}
+
+/**
  * A batch whose on-chain outcome could not be established.
  *
  * `txHash` is null when even the submission outcome is unknown — the node may have
@@ -72,7 +86,7 @@ export class DoorController {
   private localAuditLog: AccessLogEntry[] = [];
   private syncInterval: NodeJS.Timeout | null = null;
   private uploadInterval: NodeJS.Timeout | null = null;
-  private uploadInFlight: Promise<void> | null = null;
+  private uploadInFlight: Promise<UploadResult> | null = null;
   private heldBatches: HeldBatch[] = [];
   private isSyncing = false;
   // Bumped on every event touching an address, so an in-flight refresh whose answer
@@ -501,8 +515,12 @@ export class DoorController {
    *
    * Runs on the upload interval, and is public so an operator can flush on demand —
    * before maintenance, say. Concurrent calls share one in-flight upload.
+   *
+   * Resolves with what the attempt achieved rather than throwing: a held batch is an
+   * expected outcome of this design, not an exception. Check `flushed` before acting as
+   * though the audit trail is complete — `shutdown()` does.
    */
-  uploadAuditLogs(): Promise<void> {
+  uploadAuditLogs(): Promise<UploadResult> {
     // A slow upload must not overlap with the next interval tick, or entries would be
     // submitted twice. Hand back the running one rather than returning immediately, so
     // shutdown can await an upload it did not start instead of exiting underneath it.
@@ -518,13 +536,14 @@ export class DoorController {
     return this.uploadInFlight;
   }
 
-  private async runUploadAuditLogs(): Promise<void> {
+  private async runUploadAuditLogs(): Promise<UploadResult> {
+    let uploadedBatches = 0;
 
     // Batches held from an earlier round still need settling even when nothing new
     // was logged since, so they must not be short-circuited by the empty queue.
     if (this.localAuditLog.length === 0 && this.heldBatches.length === 0) {
       console.log('[DoorController] No logs to upload');
-      return;
+      return this.uploadResult(uploadedBatches);
     }
 
     try {
@@ -540,10 +559,10 @@ export class DoorController {
         console.warn(
           `[DoorController] ${this.heldBatches.length} batch(es) still unresolved, deferring new uploads`
         );
-        return;
+        return this.uploadResult(uploadedBatches);
       }
 
-      if (this.localAuditLog.length === 0) return;
+      if (this.localAuditLog.length === 0) return this.uploadResult(uploadedBatches);
 
       // Take the pending entries out of the buffer up front: entries logged while the
       // upload runs stay queued for the next round instead of being dropped.
@@ -563,6 +582,7 @@ export class DoorController {
           const tx = await this.contract.batchLogAccess(batch);
           txHash = tx.hash;
           const receipt = await tx.wait();
+          uploadedBatches += 1;
 
           console.log(`[DoorController] Batch ${i + 1} uploaded: ${receipt.hash}`);
         } catch (error) {
@@ -615,7 +635,7 @@ export class DoorController {
           // Whatever came after it was never attempted, so it is safe to re-queue
           requeue.push(...batches.slice(i + 1).flat());
           this.localAuditLog.unshift(...requeue);
-          return;
+          return this.uploadResult(uploadedBatches);
         }
       }
 
@@ -623,6 +643,20 @@ export class DoorController {
     } catch (error) {
       console.error('[DoorController] Failed to upload logs:', error);
     }
+
+    return this.uploadResult(uploadedBatches);
+  }
+
+  /**
+   * Summarise the state the controller is in after an upload attempt
+   */
+  private uploadResult(uploadedBatches: number): UploadResult {
+    return {
+      flushed: this.localAuditLog.length === 0 && this.heldBatches.length === 0,
+      uploadedBatches,
+      queuedEntries: this.localAuditLog.length,
+      heldBatches: this.heldBatches.length
+    };
   }
 
   /**
@@ -799,7 +833,7 @@ export class DoorController {
   /**
    * Graceful shutdown
    */
-  async shutdown(): Promise<void> {
+  async shutdown(): Promise<UploadResult> {
     console.log('[DoorController] Shutting down...');
 
     // Stop intervals
@@ -810,12 +844,24 @@ export class DoorController {
     if (this.uploadInFlight) {
       await this.uploadInFlight.catch(() => { /* already logged by the upload itself */ });
     }
-    await this.uploadAuditLogs();
+    const result = await this.uploadAuditLogs();
 
     // Remove event listeners
     this.contract.removeAllListeners();
 
-    console.log('[DoorController] Shutdown complete');
+    if (result.flushed) {
+      console.log('[DoorController] Shutdown complete');
+    } else {
+      // Terminating now would lose the queue, and with it the record of which held
+      // transaction still needs reconciling against the chain.
+      console.error(
+        `[DoorController] Shutdown complete with an UNFLUSHED audit trail: ` +
+        `${result.queuedEntries} entr(ies) still queued, ${result.heldBatches} batch(es) held. ` +
+        `Persist them and alert an operator before terminating the process.`
+      );
+    }
+
+    return result;
   }
 
   /**

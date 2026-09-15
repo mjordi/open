@@ -23,6 +23,7 @@
  */
 
 import { ethers } from 'ethers';
+import { pathToFileURL } from 'node:url';
 
 // Contract ABI - only the functions we need
 const ACCESS_MANAGEMENT_ABI = [
@@ -599,6 +600,8 @@ export class DoorController {
             // receipt and the unresolved-batch guard would block uploads for good.
             if (!replaced.cancelled && replaced.receipt?.status === 1) {
               // Repriced: the same call mined under a new hash, so the entries landed
+              // and this attempt did commit a batch, whatever the reported outcome.
+              uploadedBatches += 1;
               console.log(`[DoorController] Batch ${i + 1} was repriced and mined as ${replaced.receipt.hash}`);
             } else {
               // Cancelled or replaced by a different transaction, or the replacement
@@ -916,7 +919,12 @@ async function main() {
   }
 }
 
-// Run if executed directly
-if (require.main === module) {
+// Run if executed directly.
+// This project is an ES module package ("type": "module"), where `require` and `module`
+// do not exist — the usual CommonJS guard would throw a ReferenceError while the module
+// was still being evaluated, before anything could import DoorController.
+const entryPoint = process.argv[1] ? pathToFileURL(process.argv[1]).href : undefined;
+
+if (entryPoint && import.meta.url === entryPoint) {
   main().catch(console.error);
 }

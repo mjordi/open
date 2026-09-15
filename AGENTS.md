@@ -54,15 +54,16 @@ npx hardhat clean
 **CRITICAL**: All changes to smart contracts or core functionality MUST be verified with tests before completing any task.
 
 ### Required Testing Steps
-1. Run full test suite: `npx hardhat test`
-2. Verify all 87 tests pass (100% success rate)
+1. Run the full suite: `npm run test:all` (contract tests plus frontend tests)
+2. Verify all 149 contract tests and 68 frontend tests pass (100% success rate)
 3. Update tests when adding new functionality
 4. Add tests for any new input validation
 
 ### Test Organization
-- `test/AccessManagement.test.js` - 32 tests for access control contract
-- `test/AssetTracker.test.js` - 22 tests for asset tracking
-- `test/RoleBasedAcl.test.js` - 33 tests for role-based ACL
+- `test/AccessManagement.test.js` - 93 tests for access control contract
+- `test/AssetTracker.test.js` - 24 tests for asset tracking
+- `test/RoleBasedAcl.test.js` - 32 tests for role-based ACL
+- `test/frontend/*.test.js` - 68 Vitest tests for the frontend modules
 
 **NEVER mark a task complete without running and passing all tests.**
 

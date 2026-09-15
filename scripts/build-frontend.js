@@ -75,6 +75,12 @@ fs.copyFileSync(
 console.log('✓ Copied transaction-storage.js');
 
 fs.copyFileSync(
+    path.join(SRC_DIR, 'js/asset-keys.js'),
+    path.join(DIST_DIR, 'js/asset-keys.js')
+);
+console.log('✓ Copied asset-keys.js');
+
+fs.copyFileSync(
     path.join(SRC_DIR, 'generated/abi.js'),
     path.join(DIST_DIR, 'js/abi.js')
 );

@@ -25,8 +25,22 @@ contract AccessManagement {
         bool initialized;      // Whether this asset has been created
     }
 
+    /// @notice Access log entry for batch audit logging
+    /// @dev Used by authorized reporters (e.g. IoT devices) to submit multiple access logs
+    ///      in one transaction. Every field is self-reported by the caller and is therefore
+    ///      only as trustworthy as the reporter recorded in the emitted event.
+    struct AccessLogEntry {
+        address user;          // User who attempted access
+        string assetKey;       // Asset that was accessed
+        uint256 timestamp;     // When the access occurred, as reported (Unix timestamp)
+        bool granted;          // Whether the reporter granted access
+    }
+
     mapping(string => Asset) assetStructs;  // Mapping from asset key to Asset
     string[] assetList;  // List of all asset keys
+
+    /// @notice Maximum number of entries accepted by a single batchLogAccess() call
+    uint256 private constant MAX_LOG_BATCH_SIZE = 100;
 
     /// @notice Emitted when a new asset is created
     event AssetCreate(address indexed account, string indexed assetKey, string assetDescription);
@@ -40,8 +54,24 @@ contract AccessManagement {
     /// @notice Emitted when an authorization is removed from an asset
     event AuthorizationRemove(address indexed account, string indexed assetKey);
 
-    /// @notice Emitted when someone attempts to access an asset
+    /// @notice Emitted when someone attempts to access an asset through this contract
     event AccessLog(address indexed account, string indexed assetKey, bool accessGranted);
+
+    /// @notice Emitted when an authorized reporter records an access decision that was made off-chain
+    /// @dev Deliberately distinct from AccessLog: the decision was not verified by this contract,
+    ///      so consumers must weigh it against the `reporter` that submitted it
+    /// @param reporter The account that submitted the log entry (the asset owner or an authorized address)
+    /// @param account The user the reporter says attempted access
+    /// @param assetKey The asset the reporter says was accessed
+    /// @param accessGranted Whether the reporter granted access
+    /// @param occurredAt Reporter-supplied Unix timestamp of the access attempt
+    event AccessLogReported(
+        address indexed reporter,
+        address indexed account,
+        string indexed assetKey,
+        bool accessGranted,
+        uint256 occurredAt
+    );
 
     /// @notice Emitted when asset ownership is transferred
     event OwnershipTransferred(string indexed assetKey, address indexed oldOwner, address indexed newOwner);
@@ -95,27 +125,7 @@ contract AccessManagement {
     /// @param duration Duration in seconds (0 for permanent access)
     /// @return success True if authorization was added successfully
     function addAuthorization(string calldata assetKey, address authorizationKey, string calldata authorizationRole, uint256 duration) public returns(bool success) {
-        require(authorizationKey != address(0), "Invalid address");
-        require(bytes(authorizationRole).length > 0, "Role cannot be empty");
-        require(assetStructs[assetKey].initialized, "Asset does not exist");
-        require(assetStructs[assetKey].owner == msg.sender || isAuthorized(assetKey, msg.sender), "Only the owner or admins can add authorizations.");
-
-        // Calculate expiration time
-        uint256 expiresAt = 0;
-        if (keccak256(abi.encodePacked(authorizationRole)) == keccak256(abi.encodePacked("temporary"))) {
-            require(duration > 0, "Temporary roles must have expiration duration");
-            expiresAt = block.timestamp + duration;
-        }
-
-        // Only push if not already in the list
-        if (!assetStructs[assetKey].authorizationStructs[authorizationKey].active) {
-            assetStructs[assetKey].authorizationList.push(authorizationKey);
-        }
-
-        assetStructs[assetKey].authorizationStructs[authorizationKey].role = authorizationRole;
-        assetStructs[assetKey].authorizationStructs[authorizationKey].active = true;
-        assetStructs[assetKey].authorizationStructs[authorizationKey].expiresAt = expiresAt;
-        emit AuthorizationCreate(authorizationKey, assetKey, authorizationRole);
+        _addAuthorizationInternal(assetKey, authorizationKey, authorizationRole, duration);
         return true;
     }
 
@@ -127,22 +137,7 @@ contract AccessManagement {
     function removeAuthorization(string calldata assetKey, address authorizationKey) external returns(bool success) {
         require(assetStructs[assetKey].owner == msg.sender || isAuthorized(assetKey, msg.sender), "Only the owner or admins can remove authorizations.");
 
-        // Mark as inactive
-        assetStructs[assetKey].authorizationStructs[authorizationKey].role =  '';
-        assetStructs[assetKey].authorizationStructs[authorizationKey].active =  false;
-
-        // Remove from authorizationList array
-        address[] storage authList = assetStructs[assetKey].authorizationList;
-        for (uint i = 0; i < authList.length; i++) {
-            if (authList[i] == authorizationKey) {
-                // Replace with last element and pop
-                authList[i] = authList[authList.length - 1];
-                authList.pop();
-                break;
-            }
-        }
-
-        emit AuthorizationRemove(authorizationKey, assetKey);
+        _removeAuthorizationInternal(assetKey, authorizationKey);
         return true;
     }
 
@@ -208,6 +203,64 @@ contract AccessManagement {
             emit AccessLog(msg.sender, assetKey, false);
             return false;
         }
+    }
+
+    /// @notice Checks if a user can access an asset without creating an audit trail
+    /// @dev View function - free to call off-chain, ideal for IoT devices and UI state management
+    /// @dev Does NOT emit events or modify state, making it gas-free when called off-chain
+    /// @param assetKey The unique identifier of the asset
+    /// @param user The address to check
+    /// @return bool True if the asset exists and user is its owner or has a valid, non-expired authorization
+    function canAccess(string calldata assetKey, address user)
+        external view returns(bool) {
+        if (!assetStructs[assetKey].initialized) return false;
+        return assetStructs[assetKey].owner == user || isAuthorized(assetKey, user);
+    }
+
+    /// @notice Returns the full authorization record for an address, including its expiration
+    /// @dev Lets off-chain caches (e.g. door controllers) drop entries that expire between syncs;
+    ///      addresses stay in the authorization list until explicitly removed, so `active` and
+    ///      `expiresAt` must both be honoured before treating a listed address as authorized
+    /// @param assetKey The unique identifier of the asset
+    /// @param authorizationKey The address to look up
+    /// @return authorizationRole The role assigned to the address ('' if none)
+    /// @return active Whether the authorization is currently active (ignores expiration)
+    /// @return expiresAt Unix timestamp at which the authorization expires, 0 if it never expires
+    function getAuthorizationDetails(string calldata assetKey, address authorizationKey)
+        external view returns(string memory authorizationRole, bool active, uint256 expiresAt) {
+        Authorization storage auth = assetStructs[assetKey].authorizationStructs[authorizationKey];
+        return (auth.role, auth.active, auth.expiresAt);
+    }
+
+    /// @notice Batch report access decisions that were made off-chain, in a single transaction
+    /// @dev Much cheaper than one transaction per access; intended for devices (e.g. door
+    ///      controllers) that validate against a cached permission set and upload logs periodically
+    /// @dev Only the asset owner or an address authorized on that asset may report for it, so every
+    ///      entry can be traced back to an accountable reporter. Entries are still self-reported:
+    ///      they are emitted as AccessLogReported, never as AccessLog, so they can never be mistaken
+    ///      for an access decision this contract verified itself
+    /// @param entries Array of access log entries to record, at most MAX_LOG_BATCH_SIZE
+    /// @return success True if all logs were recorded successfully
+    function batchLogAccess(AccessLogEntry[] calldata entries)
+        external returns(bool success) {
+        uint256 entryCount = entries.length;
+        require(entryCount > 0, "Empty log entries");
+        require(entryCount <= MAX_LOG_BATCH_SIZE, "Too many entries, max 100 per batch");
+
+        for (uint i = 0; i < entryCount; i++) {
+            AccessLogEntry calldata entry = entries[i];
+            require(entry.user != address(0), "Invalid user address");
+            require(entry.timestamp > 0, "Log timestamp cannot be zero");
+            require(assetStructs[entry.assetKey].initialized, "Asset does not exist");
+            require(
+                assetStructs[entry.assetKey].owner == msg.sender || isAuthorized(entry.assetKey, msg.sender),
+                "Only the owner or authorized reporters can log access"
+            );
+
+            emit AccessLogReported(msg.sender, entry.user, entry.assetKey, entry.granted, entry.timestamp);
+        }
+
+        return true;
     }
 
     /// @notice Transfers ownership of an asset to a new owner
@@ -286,9 +339,7 @@ contract AccessManagement {
         require(assetStructs[assetKey].owner == msg.sender || isAuthorized(assetKey, msg.sender), "Only the owner or admins can remove authorizations.");
 
         for (uint i = 0; i < authorizationKeys.length; i++) {
-            assetStructs[assetKey].authorizationStructs[authorizationKeys[i]].role = '';
-            assetStructs[assetKey].authorizationStructs[authorizationKeys[i]].active = false;
-            emit AuthorizationRemove(authorizationKeys[i], assetKey);
+            _removeAuthorizationInternal(assetKey, authorizationKeys[i]);
         }
 
         return true;
@@ -296,6 +347,10 @@ contract AccessManagement {
 
     /// @notice Internal helper for adding authorizations (used by batch operations)
     /// @dev Prevents code duplication in batch functions
+    /// @param assetKey The unique identifier of the asset
+    /// @param authorizationKey The address to authorize
+    /// @param authorizationRole The role to assign
+    /// @param duration Duration in seconds (0 for permanent access)
     function _addAuthorizationInternal(
         string calldata assetKey,
         address authorizationKey,
@@ -314,8 +369,10 @@ contract AccessManagement {
             expiresAt = block.timestamp + duration;
         }
 
-        // Only push if not already in the list
+        // Only push if not already in the list, and remember where it landed so
+        // removal can find it without scanning the whole list
         if (!assetStructs[assetKey].authorizationStructs[authorizationKey].active) {
+            assetStructs[assetKey].authorizationStructs[authorizationKey].index = assetStructs[assetKey].authorizationList.length;
             assetStructs[assetKey].authorizationList.push(authorizationKey);
         }
 
@@ -323,5 +380,35 @@ contract AccessManagement {
         assetStructs[assetKey].authorizationStructs[authorizationKey].active = true;
         assetStructs[assetKey].authorizationStructs[authorizationKey].expiresAt = expiresAt;
         emit AuthorizationCreate(authorizationKey, assetKey, authorizationRole);
+    }
+
+    /// @notice Internal helper for removing authorizations (used by the single and batch paths)
+    /// @dev Keeps authorizationList in sync with the authorization records: a stale entry would
+    ///      still be returned by getAssetAuthorizationAtIndex() and read as authorized by
+    ///      integrations that cache the list
+    /// @param assetKey The unique identifier of the asset
+    /// @param authorizationKey The address to remove authorization from
+    function _removeAuthorizationInternal(string calldata assetKey, address authorizationKey) internal {
+        Authorization storage auth = assetStructs[assetKey].authorizationStructs[authorizationKey];
+
+        // Only touch the list for an address that is actually on it; `index` is
+        // meaningless for an address that was never authorized
+        if (auth.active) {
+            address[] storage authList = assetStructs[assetKey].authorizationList;
+            uint removedIndex = auth.index;
+            address lastAuthorization = authList[authList.length - 1];
+
+            // Move the last entry into the freed slot and keep its index correct
+            authList[removedIndex] = lastAuthorization;
+            assetStructs[assetKey].authorizationStructs[lastAuthorization].index = removedIndex;
+            authList.pop();
+        }
+
+        auth.role = '';
+        auth.active = false;
+        auth.expiresAt = 0;
+        auth.index = 0;
+
+        emit AuthorizationRemove(authorizationKey, assetKey);
     }
 }

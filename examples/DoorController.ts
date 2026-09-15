@@ -347,13 +347,23 @@ export class DoorController {
       }
 
       if (active) {
-        this.permissionCache.authorized.set(account.toLowerCase(), Number(expiresAt));
+        this.permissionCache.authorized.set(key, Number(expiresAt));
       } else {
-        this.permissionCache.authorized.delete(account.toLowerCase());
+        this.permissionCache.authorized.delete(key);
       }
     } catch (error) {
       console.error(`[DoorController] Failed to refresh authorization for ${account}:`, error);
-      // Fail secure: drop the cached grant until the next full sync confirms it
+
+      // A failure is only evidence about the read it belongs to. Two refreshes for one
+      // address can overlap, and an older request failing after a newer one already
+      // cached the grant must not erase that newer result — it would deny a valid
+      // credential until the next snapshot.
+      if ((this.authorizationVersions.get(key) ?? 0) !== version) {
+        console.log(`[DoorController] Discarding stale refresh failure for ${account}`);
+        return;
+      }
+
+      // Fail secure: drop the cached grant until a later read or sync confirms it
       this.permissionCache.authorized.delete(key);
     }
   }

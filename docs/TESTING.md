@@ -12,7 +12,7 @@ The project includes comprehensive automated testing for both smart contracts an
 
 | Contract | Coverage |
 |----------|----------|
-| AccessManagement | Asset creation, authorization management, access control, edge cases |
+| AccessManagement | Asset creation, authorization management, access control, preview checks, batch audit logging, edge cases |
 | AssetTracker | Asset creation, transfers, ownership verification, edge cases |
 | RoleBasedAcl | Role assignment, unassignment, access control, modifiers |
 
@@ -85,7 +85,8 @@ npm run test:all
 **Authorization Management**:
 - Adds authorizations with different roles (admin, permanent, temporary)
 - Prevents unauthorized users from adding authorizations
-- Removes authorizations correctly
+- Removes authorizations correctly, single and batch
+- Keeps the authorization list in sync with the records on removal and re-add
 - Prevents duplicate entries in authorization list
 - Validates zero addresses
 
@@ -95,11 +96,29 @@ npm run test:all
 - Verifies role assignment
 - Validates owner permissions
 
+**Preview Access (`canAccess`)**:
+- Returns the same result as `getAccess()` without emitting events or spending gas
+- Honours expiration of temporary authorizations
+- Returns false for non-existent assets, including for the zero address
+
+**Authorization Details (`getAuthorizationDetails`)**:
+- Exposes role, active flag and expiration for cache-based integrations
+- Reports removed authorizations as inactive
+- Documents that `active` ignores expiry, so callers must honour `expiresAt`
+
+**Batch Audit Logging (`batchLogAccess`)**:
+- Emits one AccessLogReported event per entry, carrying the reporter and reported timestamp
+- Accepts 1 to 100 entries and rejects empty or oversized batches
+- Rejects reporters that are not the asset owner or authorized on the asset
+- Rejects unknown assets, zero user addresses and zero timestamps
+- Reverts the whole batch if any entry is unauthorized
+
 **Event Emission**:
 - AssetCreate events
 - AuthorizationCreate events
 - AuthorizationRemove events
-- AccessLog events
+- AccessLog events (verified access through `getAccess()`)
+- AccessLogReported events (off-chain decisions reported through `batchLogAccess()`)
 
 ### AssetTracker Tests
 
@@ -154,6 +173,12 @@ npm run test:all
 - Explorer URL generation for mainnet, testnets, and L2s
 - Currency symbol retrieval
 - Handling of local development networks (Hardhat, Ganache)
+
+**Asset Key Registry Module** (9 tests):
+- Resolves the keccak256 hash of an indexed `assetKey` back to its plaintext key
+- Falls back to a shortened hash for assets not yet seen this session
+- Never renders the Indexed object ethers.js passes as `[object Object]`
+- Handles unicode keys, malformed values and clearing on contract switch
 
 **Explorer Utilities Module** (15 tests):
 - Transaction, address, block, and token URL generation

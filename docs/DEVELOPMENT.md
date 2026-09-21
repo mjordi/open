@@ -33,7 +33,7 @@ This document outlines the development practices and requirements for the OPEN b
 
 The project has comprehensive automated testing across all contracts.
 
-Run all tests with: `npm test`
+Run all tests with: `npm run test:all` (contract tests plus frontend tests).
 
 ### Verification Methods
 
@@ -90,15 +90,18 @@ npm run test:frontend:watch
 
 #### Test Coverage
 
-**Smart Contracts:**
-- **AccessManagement**: Asset creation, authorization, access control, edge cases
-- **AssetTracker**: Asset creation, transfers, ownership verification
-- **RoleBasedAcl**: Role assignment, unassignment, access control
+**Smart Contracts (149 tests):**
+- **AccessManagement**: Asset creation, authorization, access control, preview checks
+  (`canAccess`), authorization details (`getAuthorizationDetails`), batch audit logging
+  (`batchLogAccess`), authorization list consistency, edge cases (93 tests)
+- **AssetTracker**: Asset creation, transfers, ownership verification (24 tests)
+- **RoleBasedAcl**: Role assignment, unassignment, access control (32 tests)
 
-**Frontend JavaScript:**
+**Frontend JavaScript (68 tests):**
 - **Transaction Storage**: localStorage operations, filtering, import/export (35 tests)
 - **Network Configuration**: Explorer configs, chain support (9 tests)
 - **Explorer Utilities**: URL generation, truncation helpers (15 tests)
+- **Asset Key Registry**: Resolving indexed `assetKey` hashes back to plaintext keys (9 tests)
 
 #### Test Structure Examples
 

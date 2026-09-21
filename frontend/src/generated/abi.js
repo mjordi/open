@@ -36,6 +36,43 @@ const contractABI = [
       {
         "indexed": true,
         "internalType": "address",
+        "name": "reporter",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "string",
+        "name": "assetKey",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "accessGranted",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "occurredAt",
+        "type": "uint256"
+      }
+    ],
+    "name": "AccessLogReported",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
         "name": "account",
         "type": "address"
       },
@@ -278,6 +315,71 @@ const contractABI = [
   {
     "inputs": [
       {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "user",
+            "type": "address"
+          },
+          {
+            "internalType": "string",
+            "name": "assetKey",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "timestamp",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "granted",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct AccessManagement.AccessLogEntry[]",
+        "name": "entries",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "batchLogAccess",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "success",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "assetKey",
+        "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      }
+    ],
+    "name": "canAccess",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "string",
         "name": "assetKey",
         "type": "string"
@@ -421,6 +523,40 @@ const contractABI = [
       {
         "internalType": "uint256",
         "name": "assetCount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "assetKey",
+        "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "authorizationKey",
+        "type": "address"
+      }
+    ],
+    "name": "getAuthorizationDetails",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "authorizationRole",
+        "type": "string"
+      },
+      {
+        "internalType": "bool",
+        "name": "active",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "expiresAt",
         "type": "uint256"
       }
     ],

@@ -20,14 +20,14 @@
     "serve": "npx http-server frontend/public -p 8000"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-ethers": "^4.2.1",
+    "@nomicfoundation/hardhat-ethers": "^4.2.2",
     "@nomicfoundation/hardhat-ethers-chai-matchers": "^3.0.13",
     "@nomicfoundation/hardhat-mocha": "^4.0.1",
     "@vitest/ui": "^5.0.5",
     "chai": "^6.3.0",
     "ethers": "^6.17.0",
-    "happy-dom": "^21.0.3",
-    "hardhat": "^3.20.0",
+    "happy-dom": "^21.0.4",
+    "hardhat": "^3.21.2",
     "jsdom": "^30.1.3",
     "vitest": "^5.0.0"
   },
